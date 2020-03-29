@@ -29,12 +29,15 @@ void debug_print(const char *fmt, ...)
 void LEDTask(void *pvParameters)
 {
     unsigned char n = 0;
+
+    dio_init(0, 0); // Not implemented yet !!
+
     while (1)
     {
-        debug_print("Hello world: %d!\r\n", n); // TODO: currently present for debug purposes, to remove later on
-	dio_write(DIO_PIN_DEBUGLED, n & 1); // toggle debug LED
+        debug_print("LED Task: %d!\r\n", n); // TODO: currently present for debug purposes, to remove later on
+        dio_write(DIO_PIN_DEBUGLED, n & 1); // toggle debug LED
 
-	vTaskDelay(1000 / portTICK_PERIOD_MS); // sleep 1s
+        vTaskDelay(100 / portTICK_PERIOD_MS); // sleep 1s
         n++;
     }
 }
