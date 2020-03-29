@@ -8,33 +8,22 @@
 
 #include "core/debug.h"
 
+#include "hal/io.h"
+#include "hal/pins.h"
 #include "hal/uart.h"
 
-void UART_Task(void *pvParameters)
+void initHardware(void)
 {
-    int n = 0;
-    while (1) {
-        for(int i=0; i <1000; i++)
-	{
-            for(int j=0; j <1000; j++);
-	}
-        debug_print("Hello world: %d!\r\n", n);
-        n++;
-    }
+    uart_init();
+    dio_init(DIO_PIN_DEBUGLED, DIO_OUTPUT);
 }
 
 int main(void)
 {
-    // Initialize the hardware
-    uart_init();
+    initHardware();
 
     // Create the different tasks
-    xTaskCreate(    UART_Task,
-                    (const char *) "UART",
-                    256,
-                    NULL,
-                    10,
-                    NULL);
+    xTaskCreate(LEDTask, (const char *) "LEDTask", 256, NULL, 1, NULL);
 
     // Run the OS
     vTaskStartScheduler();
