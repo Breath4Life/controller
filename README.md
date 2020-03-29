@@ -9,4 +9,4 @@ This project requires the following tools and librairies to be installed:
 ### Compilation & flashing
 To compile the project, use `make`. The project can be cleaned using `make clean`.
 
-To flash the Arduino after compilation, use `tools/flash.sh [<DEV>]` where <DEV> is an optional argument indicating the device path (default: /dev/ttyACM0). The UART0 bus displaying the debug messages uses a baud rate of 19200.
+To flash the Arduino after compilation, use `tools/flash.sh [<DEV>]` where `<DEV>` is an optional argument indicating the device path (default: `/dev/ttyACM0`). The UART0 bus displaying the debug messages uses a baud rate of 19200.
