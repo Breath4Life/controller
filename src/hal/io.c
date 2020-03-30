@@ -4,7 +4,8 @@
 #include "hal/pins.h"
 #include "hal/io.h"
 
-static volatile uint8_t * PORTS [] = {
+static volatile uint8_t * PORTS [] =
+{
     &PORTA,
     &PORTB,
     &PORTC,
@@ -15,7 +16,8 @@ static volatile uint8_t * PORTS [] = {
     &PORTH,
 };
 
-static volatile uint8_t * DDRS [] = {
+static volatile uint8_t * DDRS [] =
+{
     &DDRA,
     &DDRB,
     &DDRC,
@@ -26,7 +28,8 @@ static volatile uint8_t * DDRS [] = {
     &DDRH
 };
 
-static volatile uint8_t * PINS [] = {
+static volatile uint8_t * PINS [] =
+{
     &PINA,
     &PINB,
     &PINC,
@@ -43,7 +46,8 @@ void dio_init(uint8_t pin, uint8_t mode)
     const uint8_t io_port = DIO_PIN_CONFIG[pin].io_port;
     const uint8_t bit_pos = DIO_PIN_CONFIG[pin].pos;
 
-    switch(mode) {
+    switch(mode)
+    {
         case DIO_INPUT:
             *DDRS[io_port] &= ~(1 << bit_pos);
             break;
@@ -74,10 +78,12 @@ void dio_write(uint8_t pin, uint8_t level)
     const uint8_t io_port = DIO_PIN_CONFIG[pin].io_port;
     const uint8_t bit_pos = DIO_PIN_CONFIG[pin].pos;
 
-    if (level == DIO_HIGH) {
+    if (level == DIO_HIGH)
+    {
         *PORTS[io_port] |= (1 << bit_pos);
     }
-    else {
+    else
+    {
         *PORTS[io_port] &= ~(1 << bit_pos);
     }
 }
