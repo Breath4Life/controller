@@ -14,3 +14,10 @@ void debug_print(const char *fmt, ...);
  * @param pvParameters Set to NULL.
  */
 void LEDTask(void *pvParameters);
+
+/**
+ * @ReadIOTask Read a digital io every second (for testing purpose)
+ *
+ * @param pvParameters Set to NULL.
+ */
+void ReadIOTask(void *pvParameters);

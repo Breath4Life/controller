@@ -26,6 +26,18 @@ static volatile uint8_t * DDRS [] = {
     &DDRH
 };
 
+static volatile uint8_t * PINS [] = {
+    &PINA,
+    &PINB,
+    &PINC,
+    &PIND,
+    &PINE,
+    &PINF,
+    &PING,
+    &PINH
+};
+
+
 void dio_init(uint8_t pin, uint8_t mode)
 {
     const uint8_t io_port = DIO_PIN_CONFIG[pin].io_port;
@@ -47,8 +59,13 @@ void dio_init(uint8_t pin, uint8_t mode)
 
 uint8_t dio_read(uint8_t pin)
 {
-    // TODO
-    return DIO_LOW;
+    const uint8_t io_port = DIO_PIN_CONFIG[pin].io_port;
+    const uint8_t bit_pos = DIO_PIN_CONFIG[pin].pos;
+
+    volatile uint8_t *pin_reg = PINS[io_port];
+    const uint8_t mask = 1 << bit_pos;
+
+    return (*pin_reg & mask) == 0 ? DIO_LOW : DIO_HIGH;
 }
 
 
