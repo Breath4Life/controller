@@ -57,7 +57,7 @@ void dio_write(uint8_t pin, uint8_t level)
     const uint8_t io_port = DIO_PIN_CONFIG[pin].io_port;
     const uint8_t bit_pos = DIO_PIN_CONFIG[pin].pos;
 
-    if (level == 1) {
+    if (level == DIO_HIGH) {
         *PORTS[io_port] |= (1 << bit_pos);
     }
     else {
