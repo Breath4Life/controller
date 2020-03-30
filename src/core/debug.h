@@ -21,3 +21,10 @@ void LEDTask(void *pvParameters);
  * @param pvParameters Set to NULL.
  */
 void ReadIOTask(void *pvParameters);
+
+/**
+ * @ReadAnalogTask Read an analog input every second (for testing purpose)
+ *
+ * @param pvParameters Set to NULL.
+ */
+void ReadAnalogTask(void *pvParameters);

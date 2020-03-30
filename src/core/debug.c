@@ -49,3 +49,14 @@ void ReadIOTask(void *pvParameters)
         vTaskDelay(1000 / portTICK_PERIOD_MS); // sleep 1s
     }
 }
+
+
+void ReadAnalogTask(void *pvParameters)
+{
+    while (1)
+    {
+        debug_print("Read Analog Task: %d!\r\n", aio_read(AIO_PIN_PRESSURE)); // for testing to remove later on
+
+        vTaskDelay(1000 / portTICK_PERIOD_MS); // sleep 1s
+    }
+}

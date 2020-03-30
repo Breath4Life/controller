@@ -13,6 +13,6 @@ struct pin_config DIO_PIN_CONFIG[] = {
 
 // The order of declaration in this array needs to be the same as for aio_pin
 struct pin_config AIO_PIN_CONFIG[] = {
-    {AIO_PIN_PRESSURE, IO_PORTF, 0},
+    {AIO_PIN_PRESSURE, 42, 0},
 };
 

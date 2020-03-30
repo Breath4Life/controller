@@ -36,4 +36,11 @@ uint8_t dio_read(uint8_t pin);
  */
 void dio_write(uint8_t pin, uint8_t level);
 
-//TODO: same thing for analog input
+/**
+ * @aio_read Read from an analog input pin.
+ *
+ * @param pin An analog input pin.
+ * @return Return the analog reading.
+ */
+uint16_t aio_read(uint8_t pin);
+

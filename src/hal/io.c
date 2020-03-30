@@ -3,6 +3,7 @@
 
 #include "hal/pins.h"
 #include "hal/io.h"
+#include "../core/debug.h"
 
 static volatile uint8_t * PORTS [] =
 {
@@ -40,6 +41,7 @@ static volatile uint8_t * PINS [] =
     &PINH
 };
 
+#define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 
 void dio_init(uint8_t pin, uint8_t mode)
 {
@@ -87,3 +89,30 @@ void dio_write(uint8_t pin, uint8_t level)
         *PORTS[io_port] &= ~(1 << bit_pos);
     }
 }
+
+
+uint16_t aio_read(uint8_t pin) {
+    // Very expérimental here !!!
+    ADMUX = 64;
+    ADCSRB = 0;
+    ADCSRA = 151;
+    char a, b, c;
+    a = ADMUX;
+    b = ADCSRB;
+
+    ADCSRA |= (1<<ADSC);
+
+    c = ADCSRA;
+
+    // Wait conversion
+    while (bit_is_set(ADCSRA, ADSC));
+
+    debug_print("%u %u %u\r\n", a, b, c);
+
+    // Order is important here !
+    const uint8_t low  = ADCL;
+    const uint8_t high = ADCH;
+
+    return (high << 8) | low;
+}
+
