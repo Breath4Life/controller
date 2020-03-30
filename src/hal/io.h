@@ -2,6 +2,7 @@
 
 enum dio_mode {
     DIO_INPUT,
+    DIO_INPUT_PULLUP,
     DIO_OUTPUT,
     DIO_DISABLED
 };
