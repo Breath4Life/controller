@@ -12,8 +12,8 @@ void MotorControlTask(void *pvParameters)
 {
     while (1)
     {
-	//TODO: write this function!
-	vTaskDelay(100 / portTICK_PERIOD_MS); // sleep 100ms
+        //TODO: write this function!
+        vTaskDelay(100 / portTICK_PERIOD_MS); // sleep 100ms
     }
 }
 

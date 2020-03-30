@@ -63,7 +63,7 @@
 #define FREERTOS_MESSAGE_BUFFER_H
 
 #ifndef INC_FREERTOS_H
-	#error "include FreeRTOS.h must appear in source files before include message_buffer.h"
+    #error "include FreeRTOS.h must appear in source files before include message_buffer.h"
 #endif
 
 /* Message buffers are built on top of stream buffers. */
@@ -799,4 +799,4 @@ BaseType_t xMessageBufferReceiveCompletedFromISR( MessageBufferHandle_t xStreamB
 }
 #endif
 
-#endif	/* !defined( FREERTOS_MESSAGE_BUFFER_H ) */
+#endif    /* !defined( FREERTOS_MESSAGE_BUFFER_H ) */

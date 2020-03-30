@@ -20,9 +20,9 @@ void debug_print(const char *fmt, ...)
     char *c = buffer;
     while (*c != '\0')
     {
-	// TODO: put mutex on uart_transmit
+        // TODO: put mutex on uart_transmit
         uart_transmit(*c);
-	c++;
+        c++;
     }
 }
 
