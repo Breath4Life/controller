@@ -3,7 +3,7 @@
 /* ==== PHYSICAL PIN MAPPING  ==== */
 // See: https://www.arduino.cc/en/Hacking/PinMapping2560 */ 
 
-struct pin_config DIO_PIN_CONFIG[] = {
+struct io_pin_config DIO_PIN_CONFIG[] = {
     {DIO_PIN_STARTSTOP, IO_PORTA, 0},
     {DIO_PIN_MAINPOWER, IO_PORTA, 1},
     {DIO_PIN_AUXPOWER,  IO_PORTA, 2},
@@ -12,7 +12,8 @@ struct pin_config DIO_PIN_CONFIG[] = {
 };
 
 // The order of declaration in this array needs to be the same as for aio_pin
-struct pin_config AIO_PIN_CONFIG[] = {
-    {AIO_PIN_PRESSURE, 42, 0},
+
+struct aio_pin_config AIO_PIN_CONFIG[] = {
+    {AIO_PIN_PRESSURE, 0},  // ANALOG IN PIN 0
 };
 

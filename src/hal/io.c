@@ -3,7 +3,6 @@
 
 #include "hal/pins.h"
 #include "hal/io.h"
-#include "../core/debug.h"
 
 static volatile uint8_t * PORTS [] =
 {
@@ -92,13 +91,15 @@ void dio_write(uint8_t pin, uint8_t level)
 
 
 uint16_t aio_read(uint8_t pin) {
-    // Quite experimental here !!!
+
+    const uint8_t analog_pin = AIO_PIN_CONFIG[AIO_PIN_PRESSURE].analog_pin;
+    const uint8_t pin_mask = analog_pin;
 
     const uint8_t refs1 = 0 << 7;
     const uint8_t refs0 = 1 << 6;
     const uint8_t adlar = 0 << 5;
 
-    ADMUX = refs1 | refs0 | adlar | pin;
+    ADMUX = refs1 | refs0 | adlar | pin_mask;
 
     const uint8_t aden  = 1 << 7;
     const uint8_t adsc  = 0 << 6;
