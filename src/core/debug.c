@@ -30,7 +30,7 @@ void LEDTask(void *pvParameters)
 {
     unsigned char n = 0;
 
-    dio_init(0, 0); // Not implemented yet !!
+    dio_init(DIO_PIN_DEBUGLED, DIO_OUTPUT);
 
     while (1)
     {
