@@ -30,8 +30,6 @@ void LEDTask(void *pvParameters)
 {
     unsigned char n = 0;
 
-    dio_init(DIO_PIN_DEBUGLED, DIO_OUTPUT);
-
     while (1)
     {
         debug_print("LED Task: %d!\r\n", n); // TODO: currently present for debug purposes, to remove later on
@@ -44,8 +42,6 @@ void LEDTask(void *pvParameters)
 
 void ReadIOTask(void *pvParameters)
 {
-    dio_init(DIO_PIN_READ_IO_TEST, DIO_INPUT);
-
     while (1)
     {
         debug_print("Read IO Task: %d!\r\n", dio_read(DIO_PIN_READ_IO_TEST)); // for testing to remove later on
