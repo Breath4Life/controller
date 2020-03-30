@@ -92,22 +92,29 @@ void dio_write(uint8_t pin, uint8_t level)
 
 
 uint16_t aio_read(uint8_t pin) {
-    // Very expérimental here !!!
-    ADMUX = 64;
-    ADCSRB = 0;
-    ADCSRA = 151;
-    char a, b, c;
-    a = ADMUX;
-    b = ADCSRB;
+    // Quite experimental here !!!
 
-    ADCSRA |= (1<<ADSC);
+    const uint8_t refs1 = 0 << 7;
+    const uint8_t refs0 = 1 << 6;
+    const uint8_t adlar = 0 << 5;
 
-    c = ADCSRA;
+    ADMUX = refs1 | refs0 | adlar | pin;
+
+    const uint8_t aden  = 1 << 7;
+    const uint8_t adsc  = 0 << 6;
+    const uint8_t adate = 0 << 5;
+    const uint8_t adif  = 1 << 4;
+    const uint8_t adie  = 0 << 3;
+    const uint8_t adsp2 = 1 << 2;
+    const uint8_t adsp1 = 1 << 1;
+    const uint8_t adsp0 = 1 << 0;
+
+    ADCSRA = aden | adsc | adate | adif | adie | adsp2 | adsp1 | adsp0;
+
+    ADCSRA |= 1 << ADSC;
 
     // Wait conversion
     while (bit_is_set(ADCSRA, ADSC));
-
-    debug_print("%u %u %u\r\n", a, b, c);
 
     // Order is important here !
     const uint8_t low  = ADCL;
