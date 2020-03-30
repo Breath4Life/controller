@@ -21,6 +21,7 @@ void initHardware(void)
     uart_init();
     dio_init(DIO_PIN_DEBUGLED, DIO_OUTPUT);
     dio_init(DIO_PIN_READ_IO_TEST, DIO_INPUT);
+    dio_init(DIO_PIN_READ_PULLUP_IO_TEST, DIO_INPUT_PULLUP);
 }
 
 int main(void)

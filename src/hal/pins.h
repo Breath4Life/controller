@@ -25,7 +25,8 @@ enum dio_pin {
     DIO_PIN_MAINPOWER,
     DIO_PIN_AUXPOWER,
     DIO_PIN_DEBUGLED,
-    DIO_PIN_READ_IO_TEST
+    DIO_PIN_READ_IO_TEST,
+    DIO_PIN_READ_PULLUP_IO_TEST
     // TODO: to complete ...
 };
 

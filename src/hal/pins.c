@@ -8,7 +8,8 @@ struct pin_config DIO_PIN_CONFIG[] = {
     {DIO_PIN_MAINPOWER, IO_PORTA, 1},
     {DIO_PIN_AUXPOWER,  IO_PORTA, 2},
     {DIO_PIN_DEBUGLED,  IO_PORTB, 7},
-    {DIO_PIN_READ_IO_TEST, IO_PORTA, 0},
+    {DIO_PIN_READ_IO_TEST, IO_PORTA, 0},        // PIN 22
+    {DIO_PIN_READ_PULLUP_IO_TEST, IO_PORTB, 6}, // PIN 12
 };
 
 // The order of declaration in this array needs to be the same as for aio_pin
