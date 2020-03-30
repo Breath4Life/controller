@@ -34,6 +34,7 @@ int main(void)
     xTaskCreate(AlarmsTask,        (const char *) "AlarmsTask",        64,  NULL,  4, NULL);
     xTaskCreate(LEDTask,           (const char *) "LEDTask",           128, NULL,  1, NULL);
     xTaskCreate(ReadIOTask,        (const char *) "ReadIOTask",        128, NULL,  1, NULL);
+    xTaskCreate(ReadAnalogTask,    (const char *) "ReadAnalogTask",    128, NULL,  1, NULL);
 
     // Run the OS
     vTaskStartScheduler();
