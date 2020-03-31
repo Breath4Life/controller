@@ -50,3 +50,10 @@ Several real times tasks are spawned in the main function. They are listed by de
 1. `LCDDisplayTask`: handle the display of the LCD screen.
 1. `AlarmsTask`: handle the different alarms.
 1. `LEDTask`: blink a simple LED.
+
+### Technical note
+
+enum dio_pin and struct io_pin_config DIO_PIN_CONFIG[] should stay aligned as the dio_pin is used to index the array.
+
+Do not forget to init your ios in the initHardware() in main.c.
+In the future, we could add the dio_mode into io_pin_conf, so the digital io setup could be done automatically (a loop on DIO_PIN_CONFIG).
