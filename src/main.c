@@ -24,6 +24,7 @@ void initHardware(void)
     dio_init(DIO_PIN_MOTOR_UART_RX,           DIO_OUTPUT);
 
     dio_init(DIO_PIN_MOTOR_STEP,              DIO_OUTPUT);
+    dio_init(DIO_PIN_MOTOR_STEP_BIS,          DIO_OUTPUT);
     dio_init(DIO_PIN_MOTOR_ENABLE,            DIO_OUTPUT);
     dio_init(DIO_PIN_MOTOR_DIRECTION,         DIO_OUTPUT);
     dio_init(DIO_PIN_MOTOR_PDN,               DIO_OUTPUT);
@@ -33,8 +34,11 @@ void initHardware(void)
 
     dio_init(DIO_PIN_AUX_POWER_MONITORING,    DIO_INPUT);
     dio_init(DIO_PIN_MAIN_POWER_MONITORING,   DIO_INPUT);
+
     dio_init(DIO_PIN_LIM_SWITCH_0_MONITORING, DIO_INPUT);
     dio_init(DIO_PIN_LIM_SWITCH_1_MONITORING, DIO_INPUT);
+
+    dio_init(DIO_PIN_DEBUGLED,                DIO_OUTPUT);
 
     dio_init(DIO_PIN_I2C_FLOW_SENSOR_DATA,    DIO_OUTPUT);
     dio_init(DIO_PIN_I2C_FLOW_SENSOR_CLOCK,   DIO_OUTPUT);
@@ -43,21 +47,22 @@ void initHardware(void)
     dio_init(DIO_PIN_BUTTON_LEFT,             DIO_INPUT);
     dio_init(DIO_PIN_BUTTON_UP,               DIO_INPUT);
     dio_init(DIO_PIN_BUTTON_DOWN,             DIO_INPUT);
-    dio_init(DIO_PIN_BUTTON_STARTSTOP,        DIO_INPUT);
     dio_init(DIO_PIN_BUTTON_VTIDAL_UP,        DIO_INPUT);
     dio_init(DIO_PIN_BUTTON_VTIDAL_DOWN,      DIO_INPUT);
+    dio_init(DIO_PIN_BUTTON_FREQ_RESPI_DOWN,  DIO_INPUT);
     dio_init(DIO_PIN_BUTTON_FREQ_RESPI_UP,    DIO_INPUT);
 
     dio_init(DIO_PIN_AUX_ALARM_GATE_PIN,      DIO_INPUT);
 
-    dio_init(DIO_PIN_BUTTON_FREQ_RESPI_DOWN,  DIO_INPUT);
     dio_init(DIO_PIN_BUTTON_ALARM_MUTE,       DIO_INPUT);
+    dio_init(DIO_PIN_BUTTON_STARTSTOP,        DIO_INPUT);
 
     dio_init(DIO_PIN_ALARM_SOUND,             DIO_OUTPUT);
-    dio_init(DIO_PIN_ALARM_LED,               DIO_OUTPUT);
+    dio_init(DIO_PIN_ALARM_LED_HPA,           DIO_OUTPUT);
+    dio_init(DIO_PIN_ALARM_LED_LPA,           DIO_OUTPUT);
+    dio_init(DIO_PIN_STEP_COUNTER_TN,         DIO_OUTPUT);
     dio_init(DIO_PIN_ALARM_LED_PAUSED,        DIO_OUTPUT);
-
-    dio_init(DIO_PIN_DEBUGLED,                DIO_OUTPUT);
+    dio_init(DIO_PIN_LED_NORMAL_STATE,        DIO_OUTPUT);
 }
 
 int main(void)

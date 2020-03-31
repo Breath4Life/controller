@@ -26,6 +26,7 @@ static volatile uint8_t * PORTS [] =
     &PORTF,
     &PORTG,
     &PORTH,
+    &PORTJ,
     &PORTK,
     &PORTL,
 };
@@ -40,6 +41,7 @@ static volatile uint8_t * DDRS [] =
     &DDRF,
     &DDRG,
     &DDRH,
+    &DDRJ,
     &DDRK,
     &DDRL
 };
