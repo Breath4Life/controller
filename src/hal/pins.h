@@ -56,7 +56,12 @@ enum dio_pin {
     DIO_PIN_BUTTON_FREQ_RESPI_DOWN,
     DIO_PIN_BUTTON_FREQ_RESPI_UP,
 
-    // LCD pins are available in Google Sheets if needed
+    DIO_PIN_LCD_EN,
+    DIO_PIN_LCD_RS,
+    DIO_PIN_LCD_D4,
+    DIO_PIN_LCD_D5,
+    DIO_PIN_LCD_D6,
+    DIO_PIN_LCD_D7,
 
     DIO_PIN_AUX_ALARM_GATE_PIN,
 

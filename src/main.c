@@ -63,6 +63,15 @@ void initHardware(void)
     dio_init(DIO_PIN_STEP_COUNTER_TN,         DIO_OUTPUT);
     dio_init(DIO_PIN_ALARM_LED_PAUSED,        DIO_OUTPUT);
     dio_init(DIO_PIN_LED_NORMAL_STATE,        DIO_OUTPUT);
+
+    dio_init(DIO_PIN_LCD_EN,                  DIO_OUTPUT);
+    dio_init(DIO_PIN_LCD_RS,                  DIO_OUTPUT);
+    dio_init(DIO_PIN_LCD_D4,                  DIO_OUTPUT);
+    dio_init(DIO_PIN_LCD_D5,                  DIO_OUTPUT);
+    dio_init(DIO_PIN_LCD_D6,                  DIO_OUTPUT);
+    dio_init(DIO_PIN_LCD_D7,                  DIO_OUTPUT);
+
+    lcd_initLCD();
 }
 
 int main(void)
@@ -85,5 +94,3 @@ int main(void)
 
     return 0;
 }
-
-
