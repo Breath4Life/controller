@@ -7,11 +7,6 @@ struct io_pin_config {
     uint8_t pos;
 };
 
-struct aio_pin_config {
-    uint8_t io_pin;
-    uint8_t analog_pin;
-};
-
 /* ==== IO PORTS DECLARATION ==== */
 enum io_port {
     IO_PORTA,
@@ -40,4 +35,4 @@ enum aio_pin {
 
 // The declaration of the mappings are contained in hal/pins.c.
 extern struct io_pin_config DIO_PIN_CONFIG[];
-extern struct aio_pin_config AIO_PIN_CONFIG[];
+extern struct io_pin_config AIO_PIN_CONFIG[];

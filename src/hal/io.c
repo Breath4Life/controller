@@ -40,7 +40,7 @@ static volatile uint8_t * PINS [] =
     &PINH
 };
 
-#define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
+//#define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 
 void dio_init(uint8_t pin, uint8_t mode)
 {
@@ -92,14 +92,11 @@ void dio_write(uint8_t pin, uint8_t level)
 
 uint16_t aio_read(uint8_t pin) {
 
-    const uint8_t analog_pin = AIO_PIN_CONFIG[AIO_PIN_PRESSURE].analog_pin;
-    const uint8_t pin_mask = analog_pin;
-
     const uint8_t refs1 = 0 << 7;
     const uint8_t refs0 = 1 << 6;
     const uint8_t adlar = 0 << 5;
 
-    ADMUX = refs1 | refs0 | adlar | pin_mask;
+    ADMUX = refs1 | refs0 | adlar | AIO_PIN_CONFIG[pin].pos;
 
     const uint8_t aden  = 1 << 7;
     const uint8_t adsc  = 0 << 6;
