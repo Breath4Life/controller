@@ -4,6 +4,18 @@
 #include "hal/pins.h"
 #include "hal/io.h"
 
+// From ATmega 2560 datasheet, section 13.2.1:
+// > The DDxn bit in the DDRx Register selects the direction of this pin.  If DDxn
+// > is written logic one, Pxn is configured as an output pin.  If DDxn is written
+// > logic zero, Pxn is configured as an input pin.  If PORTxn is written logic one
+// > when the pin is configured as an input pin, the
+// > pull-up resistor is activated. To switch the pull-up resistor off, PORTxn has
+// > to be written logic zero or the pin has to be configured as an output pin. The
+// > port pins are tri-stated when reset condition becomes active, even if no clocks
+// > are running.  If PORTxn is written logic one when the pin is configured as an
+// > output pin, the port pin is driven high (one). If PORTxn is written logic zero
+// > when the pin is configured as an output pin, the port pin is driven low (zero).
+
 static volatile uint8_t * PORTS [] =
 {
     &PORTA,
@@ -50,6 +62,11 @@ void dio_init(uint8_t pin, uint8_t mode)
     switch(mode)
     {
         case DIO_INPUT:
+            *PORTS[io_port] &= ~(1 << bit_pos);
+            *DDRS[io_port] &= ~(1 << bit_pos);
+            break;
+        case DIO_INPUT_PULLUP:
+            *PORTS[io_port] |= (1 << bit_pos);
             *DDRS[io_port] &= ~(1 << bit_pos);
             break;
         case DIO_OUTPUT:

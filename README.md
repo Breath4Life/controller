@@ -15,6 +15,8 @@ To compile the project, use `make`. The project can be cleaned using `make clean
 
 To flash the Arduino after compilation, use `tools/flash.sh [<DEV>]` where `<DEV>` is an optional argument indicating the device path (default: `/dev/ttyACM0`). The UART0 bus displaying the debug messages uses a baud rate of 19200.
 
+Note: An easy way to read the UART from a linux machine: `screen /dev/ttyACM0 19200`.
+
 ### Hierarchy organization
 
 All source files have to be written in C11. The `src/` folder is organized as follows:
@@ -36,6 +38,8 @@ This section presents some rules regarding the coding style used in this project
 * *Braces*: curly braces go on their own lines. Use curly braces even for one-line blocks, and use parentheses even when precedence of operator applies.
 * *Abbreviations*: use `ptr` for denoting a pointer, and `cbf` for a callback function.
 * *Documentation*: please respect the Doxygen syntax (http://www.doxygen.nl/manual/docblocks.html). For every function declared in a .h file, there **MUST** be a description of the function.
+
+* Use `stdint.h` integer types.
 
 ### Architecture
 

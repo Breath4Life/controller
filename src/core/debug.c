@@ -55,7 +55,7 @@ void ReadAnalogTask(void *pvParameters)
 {
     while (1)
     {
-        debug_print("Read Analog Task: %d!\r\n", aio_read(AIO_PIN_PRESSURE)); // for testing to remove later on
+        debug_print("Read Analog Task: %d!\r\n", aio_read(AIO_PIN_PRESSURE_SENSOR_0)); // for testing to remove later on
 
         vTaskDelay(1000 / portTICK_PERIOD_MS); // sleep 1s
     }
