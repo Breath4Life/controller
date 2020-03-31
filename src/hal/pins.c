@@ -39,7 +39,7 @@ struct io_pin_config DIO_PIN_CONFIG[] = {
 
     // LCD pins are available in Google Sheets if needed
 
-    {DIO_PIN_AUX_ALARM_GATE_PIN,      IO_PORTD, 7},
+    {DIO_PIN_AUX_ALARM_GATE_PIN,      IO_PORTG, 1},
 
     {DIO_PIN_BUTTON_ALARM_MUTE,       IO_PORTD, 7},
     {DIO_PIN_BUTTON_STARTSTOP,        IO_PORTG, 2},
