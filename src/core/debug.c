@@ -44,7 +44,7 @@ void ReadIOTask(void *pvParameters)
 {
     while (1)
     {
-        debug_print("Read IO Task: %d!\r\n", dio_read(DIO_PIN_READ_IO_TEST)); // for testing to remove later on
+        debug_print("Read IO Task: %d!\r\n", dio_read(DIO_PIN_MAIN_POWER_MONITORING)); // for testing to remove later on
 
         vTaskDelay(1000 / portTICK_PERIOD_MS); // sleep 1s
     }

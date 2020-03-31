@@ -26,6 +26,8 @@ static volatile uint8_t * PORTS [] =
     &PORTF,
     &PORTG,
     &PORTH,
+    &PORTK,
+    &PORTL,
 };
 
 static volatile uint8_t * DDRS [] =
@@ -37,7 +39,9 @@ static volatile uint8_t * DDRS [] =
     &DDRE,
     &DDRF,
     &DDRG,
-    &DDRH
+    &DDRH,
+    &DDRK,
+    &DDRL
 };
 
 static volatile uint8_t * PINS [] =
@@ -49,7 +53,9 @@ static volatile uint8_t * PINS [] =
     &PINE,
     &PINF,
     &PING,
-    &PINH
+    &PINH,
+    &PINK,
+    &PINL,
 };
 
 //#define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
@@ -95,7 +101,7 @@ void dio_write(uint8_t pin, uint8_t level)
 {
     const uint8_t io_port = DIO_PIN_CONFIG[pin].io_port;
     const uint8_t bit_pos = DIO_PIN_CONFIG[pin].pos;
-
+    //debug_print("port:%d bit:%d\r\n", io_port, bit_pos);
     if (level == DIO_HIGH)
     {
         *PORTS[io_port] |= (1 << bit_pos);

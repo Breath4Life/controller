@@ -14,12 +14,16 @@ struct io_pin_config DIO_PIN_CONFIG[] = {
     {DIO_PIN_MOTOR_SPRD,              IO_PORTH, 3},
     {DIO_PIN_MOTOR_INDEX,             IO_PORTH, 4},
     {DIO_PIN_MOTOR_DIAG,              IO_PORTH, 5},
-    {DIO_PIN_AUX_POWER_MONITORING,    IO_PORTB, 4},
-    {DIO_PIN_MAIN_POWER_MONITORING,   IO_PORTB, 5},
-    {DIO_PIN_LIM_SWITCH_0_MONITORING, IO_PORTB, 6},
-    {DIO_PIN_LIM_SWITCH_1_MONITORING, IO_PORTB, 7},
+
+    {DIO_PIN_AUX_POWER_MONITORING,    IO_PORTH, 6},
+    {DIO_PIN_MAIN_POWER_MONITORING,   IO_PORTB, 4},
+
+    {DIO_PIN_LIM_SWITCH_0_MONITORING, IO_PORTB, 5},
+    {DIO_PIN_LIM_SWITCH_1_MONITORING, IO_PORTB, 6},
+
     {DIO_PIN_I2C_FLOW_SENSOR_DATA,    IO_PORTD, 0},
     {DIO_PIN_I2C_FLOW_SENSOR_CLOCK,   IO_PORTD, 1},
+
     {DIO_PIN_BUTTON_RIGHT,            IO_PORTA, 0},
     {DIO_PIN_BUTTON_LEFT,             IO_PORTA, 1},
     {DIO_PIN_BUTTON_UP,               IO_PORTA, 2},
@@ -28,16 +32,17 @@ struct io_pin_config DIO_PIN_CONFIG[] = {
     {DIO_PIN_BUTTON_VTIDAL_UP,        IO_PORTA, 5},
     {DIO_PIN_BUTTON_VTIDAL_DOWN,      IO_PORTA, 6},
     {DIO_PIN_BUTTON_FREQ_RESPI_UP,    IO_PORTA, 7},
+
     {DIO_PIN_AUX_ALARM_GATE_PIN,      IO_PORTD, 7},
+
     {DIO_PIN_BUTTON_FREQ_RESPI_DOWN,  IO_PORTG, 2},
     {DIO_PIN_BUTTON_ALARM_MUTE,       IO_PORTG, 1},
+
     {DIO_PIN_ALARM_SOUND,             IO_PORTL, 5},
     {DIO_PIN_ALARM_LED,               IO_PORTL, 4},
     {DIO_PIN_ALARM_LED_PAUSED,        IO_PORTL, 3},
 
-    {DIO_PIN_DEBUGLED,                IO_PORTB, 7},
-    {DIO_PIN_READ_IO_TEST,            IO_PORTA, 0}           // PIN 22
-    //{DIO_PIN_READ_PULLUP_IO_TEST, IO_PORTB, 6}, // PIN 12
+    {DIO_PIN_DEBUGLED,                IO_PORTB, 7}
 };
 
 // The order of declaration in this array needs to be the same as for aio_pin
