@@ -436,8 +436,8 @@ void lcd_refreshLCD();
 
 ///  ISR (TIMER0_OVF_vect)
 ///
-/// Info: ISR handler that gets called from timer
+/// Info: ISR handler that gets called from timer, Timer2 compare match A ISR
 ///
-ISR (TIMER0_OVF_vect);
+ISR (TIMER2_COMPA_vect);
 
 #endif /* LCD_H_ */ /// Don't touch

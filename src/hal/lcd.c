@@ -297,7 +297,8 @@ void lcd_timer_isr( void )
               u8__data_byte = u8__row_start_address[((u8__buffer_counter / LCD_NR_OF_COLUMNS) - 1)];
             #else
               u8__data_byte = 0x40;
-              TIMSK0 = (0 << TOIE0) ;   // Disable timer0 overflow interrupt(TOIE0)
+              //TIMSK0 = (0 << TOIE0) ;   // Disable timer0 overflow interrupt(TOIE0)
+              TIMSK2 = 1<<OCIE2A; // Disable timer2 compare match interrupt
             #endif
           }
           else
@@ -700,23 +701,21 @@ uint8_t lcd_output_unsigned_16bit_value( uint16_t u16__value, uint8_t u8__leadin
   return u8__last_written_buffer_position;
 }
 
-
-ISR (TIMER0_OVF_vect)    // Timer0 ISR
+ISR (TIMER2_COMPA_vect)    // Timer2 compare match A ISR
 {
-  TCNT0 = 225;   // for 0.5 (0.496) ms at 16 MHz
   lcd_timer_isr();
 }
 
 void lcd_initLCD() {
   // LCD timer setting
-  TCNT0 = 225;   // for 0.5 ms at 16 MHz w/ 256 prescaler or 2ms with 1024 prescaler
-  TCCR0A = 0x00;
-  //TCCR0B = (1<<CS00)|(1<<CS02);  // Timer mode with 1024 prescler
-  TCCR0B = 1<<CS02;  // Timer mode with 256 prescler
+  OCR2A = 30;
+  TCCR2A = 0x2; // WGM21 : CTC mode
+  TCCR2B =  (1<<CS22)|(1<<CS21); // with 256 prescler
+  TIMSK2 = 1<<OCIE2A; // Enable interrupt
   sei(); // enable interrupts
 }
 
 
 void lcd_refreshLCD() {
-  TIMSK0 = (1 << TOIE0) ;   // Enable timer0 overflow interrupt(TOIE0)
+  TIMSK2 = 1<<OCIE2A; // Enable timer2 compare match interrupt
 }
