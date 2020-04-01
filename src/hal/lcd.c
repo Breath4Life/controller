@@ -297,7 +297,6 @@ void lcd_timer_isr( void )
                             u8__data_byte = u8__row_start_address[((u8__buffer_counter / LCD_NR_OF_COLUMNS) - 1)];
                         #else
                             u8__data_byte = 0x40;
-                            //TIMSK0 = (0 << TOIE0) ; // Disable timer0 overflow interrupt(TOIE0)
                             TIMSK2 = 1<<OCIE2A; // Disable timer2 compare match interrupt
                         #endif
                     }
@@ -707,6 +706,11 @@ ISR (TIMER2_COMPA_vect) // Timer2 compare match A ISR
 }
 
 void lcd_initLCD() {
+
+    DDRC = 0xC0; //PC6 & 7
+
+    PORTD &=0x3F; // PC6&7 to LOW
+    
     // LCD timer setting
     OCR2A = 30;
     TCCR2A = 0x2; // WGM21 : CTC mode

@@ -122,7 +122,7 @@
 
 ///  INSERT YOUR CONFIGURATION: Define the hardware connection for ENABLE of HD44780
 ///
-#define LCD_ENABLE_MCU_OUT_PORT         PORTB          /// Define MCU output port that is connected to ENABLE of HD44780
+#define LCD_ENABLE_MCU_OUT_PORT         PORTC          /// Define MCU output port that is connected to ENABLE of HD44780
 #define LCD_ENABLE_MCU_OUT_PIN          BIT4           /// Define MCU output pin that is connected to ENABLE of HD44780
 ///#define LCD_ENABLE_INVERTED                          /// Enable if signal for ENABLE is inverted by external hardware
 ///
@@ -132,7 +132,7 @@
 
 ///  INSERT YOUR CONFIGURATION: Define the hardware connection for RS of HD44780
 ///
-#define LCD_RS_MCU_OUT_PORT             PORTB          /// Define MCU output port that is connected to RS of HD44780
+#define LCD_RS_MCU_OUT_PORT             PORTC          /// Define MCU output port that is connected to RS of HD44780
 #define LCD_RS_MCU_OUT_PIN              BIT5           /// Define MCU output pin that is connected to RS of HD44780
 ///#define LCD_RS_INVERTED                              /// Enable if signal for RS is inverted by external hardware
 ///
@@ -142,7 +142,7 @@
 
 ///  INSERT YOUR CONFIGURATION: Define the port of the MCU that the HD44780 is connected to
 ///
-#define LCD_MCU_OUT_PORT                PORTB          /// Define MCU output port that is connected to HD44780
+#define LCD_MCU_OUT_PORT                PORTC          /// Define MCU output port that is connected to HD44780
 ///
 ///
 
