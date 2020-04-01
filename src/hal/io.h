@@ -41,7 +41,7 @@ void dio_write(uint8_t pin, uint8_t level);
  * @aio_read Read from an analog input pin.
  *
  * @param pin An analog input pin.
- * @return Return the analog reading.
+ * @return Return the analog reading (0 for 0V - 1023 for 5V)
  */
 uint16_t aio_read(uint8_t pin);
 

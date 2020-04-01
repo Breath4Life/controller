@@ -83,6 +83,8 @@ enum aio_pin {
     AIO_PIN_TEMP_SENSOR_0,
     AIO_PIN_TEMP_SENSOR_1,
     AIO_PIN_TEMP_SENSOR_2,
+    AIO_PIN_TEST_1,
+    AIO_PIN_TEST_2,
 };
 
 // The declaration of the mappings are contained in hal/pins.c.
