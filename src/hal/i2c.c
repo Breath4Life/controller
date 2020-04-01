@@ -47,7 +47,7 @@ void (*user_onReceive)(int);
 void i2c_onRequestService(void);
 void i2c_onReceiveService(uint8_t* inBytes, int numBytes);
 
-void i2c_begin_0(void)
+void i2c_begin(void)
 {
   rxBufferIndex = 0;
   rxBufferLength = 0;
@@ -109,7 +109,7 @@ uint8_t i2c_requestFrom3(uint8_t address, uint8_t quantity, uint8_t sendStop) {
 	return i2c_requestFrom5((uint8_t)address, (uint8_t)quantity, (uint32_t)0, (uint8_t)0, (uint8_t)sendStop);
 }
 
-uint8_t i2c_requestFrom2(uint8_t address, uint8_t quantity)
+uint8_t i2c_requestFrom(uint8_t address, uint8_t quantity)
 {
   return i2c_requestFrom3((uint8_t)address, (uint8_t)quantity, (uint8_t)true);
 }
