@@ -58,6 +58,7 @@ enum dio_pin {
 
     DIO_PIN_LCD_EN,
     DIO_PIN_LCD_RS,
+    DIO_PIN_LCD_RW,
     DIO_PIN_LCD_D4,
     DIO_PIN_LCD_D5,
     DIO_PIN_LCD_D6,
