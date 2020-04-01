@@ -37,19 +37,19 @@ struct io_pin_config DIO_PIN_CONFIG[] = {
     {DIO_PIN_BUTTON_FREQ_RESPI_DOWN,  IO_PORTA, 5},
     {DIO_PIN_BUTTON_FREQ_RESPI_UP,    IO_PORTA, 6},
 
-    {DIO_PIN_LCD_EN,                  IO_PORTB, 4},
-    {DIO_PIN_LCD_RS,                  IO_PORTB, 5},
-    {DIO_PIN_LCD_D4,                  IO_PORTB, 0},
-    {DIO_PIN_LCD_D5,                  IO_PORTB, 1},
-    {DIO_PIN_LCD_D6,                  IO_PORTB, 2},
-    {DIO_PIN_LCD_D7,                  IO_PORTB, 3},
+    {DIO_PIN_LCD_EN,                  IO_PORTC, 4},
+    {DIO_PIN_LCD_RS,                  IO_PORTC, 5},
+    {DIO_PIN_LCD_D4,                  IO_PORTC, 0},
+    {DIO_PIN_LCD_D5,                  IO_PORTC, 1},
+    {DIO_PIN_LCD_D6,                  IO_PORTC, 2},
+    {DIO_PIN_LCD_D7,                  IO_PORTC, 3},
 
     {DIO_PIN_AUX_ALARM_GATE_PIN,      IO_PORTG, 1},
 
     {DIO_PIN_BUTTON_ALARM_MUTE,       IO_PORTD, 7},
     {DIO_PIN_BUTTON_STARTSTOP,        IO_PORTG, 2},
 
-    {DIO_PIN_ALARM_SOUND,             IO_PORTD, 6},
+    {DIO_PIN_ALARM_SOUND,             IO_PORTB, 7},
     {DIO_PIN_ALARM_LED_HPA,           IO_PORTL, 4},
     {DIO_PIN_ALARM_LED_LPA,           IO_PORTL, 3},
     {DIO_PIN_STEP_COUNTER_TN,         IO_PORTL, 2},
