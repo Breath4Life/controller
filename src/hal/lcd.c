@@ -706,11 +706,6 @@ ISR (TIMER2_COMPA_vect) // Timer2 compare match A ISR
 }
 
 void lcd_initLCD() {
-
-    DDRC = 0xC0; //PC6 & 7
-
-    PORTD &=0x3F; // PC6&7 to LOW
-    
     // LCD timer setting
     OCR2A = 30;
     TCCR2A = 0x2; // WGM21 : CTC mode

@@ -11,9 +11,11 @@
 void LCDDisplayTask(void *pvParameters)
 {
   uint16_t u16__cntr = 0;
+  lcd_initLCD();
   lcd_clear_screen();
   while (1)
   {
+
     // DEMO
     if (u16__cntr&0x1)
     {
