@@ -33,9 +33,9 @@ struct io_pin_config DIO_PIN_CONFIG[] = {
     {DIO_PIN_BUTTON_UP,               IO_PORTA, 2},
     {DIO_PIN_BUTTON_DOWN,             IO_PORTA, 3},
     {DIO_PIN_BUTTON_VTIDAL_UP,        IO_PORTA, 4},
-    {DIO_PIN_BUTTON_VTIDAL_DOWN,      IO_PORTA, 5},
-    {DIO_PIN_BUTTON_FREQ_RESPI_DOWN,  IO_PORTA, 6},
-    {DIO_PIN_BUTTON_FREQ_RESPI_UP,    IO_PORTA, 7},
+    {DIO_PIN_BUTTON_VTIDAL_DOWN,      IO_PORTA, 7},
+    {DIO_PIN_BUTTON_FREQ_RESPI_DOWN,  IO_PORTA, 5},
+    {DIO_PIN_BUTTON_FREQ_RESPI_UP,    IO_PORTA, 6},
 
     {DIO_PIN_LCD_EN,                  IO_PORTC, 4},
     {DIO_PIN_LCD_RS,                  IO_PORTC, 5},
