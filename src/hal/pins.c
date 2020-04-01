@@ -39,6 +39,7 @@ struct io_pin_config DIO_PIN_CONFIG[] = {
 
     {DIO_PIN_LCD_EN,                  IO_PORTC, 4},
     {DIO_PIN_LCD_RS,                  IO_PORTC, 5},
+    {DIO_PIN_LCD_RW,                  IO_PORTC, 6},
     {DIO_PIN_LCD_D4,                  IO_PORTC, 0},
     {DIO_PIN_LCD_D5,                  IO_PORTC, 1},
     {DIO_PIN_LCD_D6,                  IO_PORTC, 2},
