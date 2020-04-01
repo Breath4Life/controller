@@ -652,29 +652,6 @@ void lcd_write_shared_shift_register_bits( uint8_t u8__sr_bitmap )
   #endif
 }
 
-
-uint8_t lcd_output_adc_value_mv( uint32_t u32__adc_value, uint16_t u16__adc_reference_mv, uint8_t u8__adc_resolution_bits, uint8_t u8__leading_zero_handling, uint8_t u8__row, uint8_t u8__column, uint8_t u8__cr_lf )
-{
-  uint16_t u16__max_adc_result = 0;
-  uint16_t u16__adc_value_mv;
-  uint8_t  u8__last_written_buffer_position;
-
-  if     ( u8__adc_resolution_bits ==  8 ) { u16__max_adc_result = 255;   }
-  else if( u8__adc_resolution_bits == 10 ) { u16__max_adc_result = 1023;  }
-  else if( u8__adc_resolution_bits == 12 ) { u16__max_adc_result = 4095;  }
-  else if( u8__adc_resolution_bits == 14 ) { u16__max_adc_result = 16383; }
-  else if( u8__adc_resolution_bits == 16 ) { u16__max_adc_result = 65535; }
-
-  if( u16__max_adc_result )
-  {
-    u16__adc_value_mv = ((u16__adc_reference_mv * u32__adc_value) / u16__max_adc_result);
-    u8__last_written_buffer_position = lcd_output_unsigned_16bit_value( u16__adc_value_mv, u8__leading_zero_handling, u8__row, u8__column, u8__cr_lf );
-  }
-
-  return u8__last_written_buffer_position;
-}
-
-
 uint8_t lcd_output_unsigned_16bit_value( uint16_t u16__value, uint8_t u8__leading_zero_handling, uint8_t u8__row, uint8_t u8__column, uint8_t u8__cr_lf )
 {
   char ch__string_buffer[6];
