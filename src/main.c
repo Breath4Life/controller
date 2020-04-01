@@ -16,6 +16,7 @@
 #include "hal/pins.h"
 #include "hal/uart.h"
 #include "hal/lcd.h"
+#include "hal/motor.h"
 
 void initHardware(void)
 {
@@ -73,6 +74,8 @@ void initHardware(void)
     dio_init(DIO_PIN_LCD_D7,                  DIO_OUTPUT);
 
     lcd_initLCD();
+
+    setup_motor();
 }
 
 int main(void)
