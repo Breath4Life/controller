@@ -15,6 +15,7 @@
 #include "hal/io.h"
 #include "hal/pins.h"
 #include "hal/uart.h"
+#include "hal/lcd.h"
 
 void initHardware(void)
 {
