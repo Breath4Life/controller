@@ -5,8 +5,8 @@
 
 struct io_pin_config DIO_PIN_CONFIG[] = {
 
-    {DIO_PIN_MOTOR_UART_TX,           IO_PORTH, 0},
-    {DIO_PIN_MOTOR_UART_RX,           IO_PORTH, 1},
+    {DIO_PIN_MOTOR_UART_TX,           IO_PORTE, 0},
+    {DIO_PIN_MOTOR_UART_RX,           IO_PORTE, 1},
 
     {DIO_PIN_MOTOR_STEP,              IO_PORTE, 4},
     {DIO_PIN_MOTOR_STEP_BIS,          IO_PORTE, 5},
