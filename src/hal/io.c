@@ -134,6 +134,16 @@ uint16_t aio_read(uint8_t pin) {
 
     ADCSRA = aden | adsc | adate | adif | adie | adsp2 | adsp1 | adsp0;
 
+    const uint8_t mask5 = 1 << 3;
+    if (AIO_PIN_CONFIG[pin].io_port == IO_PORTF)
+    {
+        ADCSRB = ~ mask5;
+    }
+    else if (AIO_PIN_CONFIG[pin].io_port == IO_PORTK)
+    {
+        ADCSRB |= mask5;
+    }
+
     ADCSRA |= 1 << ADSC;
 
     // Wait conversion

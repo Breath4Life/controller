@@ -5,8 +5,8 @@
 
 struct io_pin_config DIO_PIN_CONFIG[] = {
 
-    {DIO_PIN_MOTOR_UART_TX,           IO_PORTH, 0},
-    {DIO_PIN_MOTOR_UART_RX,           IO_PORTH, 1},
+    {DIO_PIN_MOTOR_UART_TX,           IO_PORTE, 0},
+    {DIO_PIN_MOTOR_UART_RX,           IO_PORTE, 1},
 
     {DIO_PIN_MOTOR_STEP,              IO_PORTE, 4},
     {DIO_PIN_MOTOR_STEP_BIS,          IO_PORTE, 5},
@@ -66,4 +66,7 @@ struct io_pin_config AIO_PIN_CONFIG[] = {
     {AIO_PIN_TEMP_SENSOR_0,     IO_PORTF, 3},
     {AIO_PIN_TEMP_SENSOR_1,     IO_PORTF, 4},
     {AIO_PIN_TEMP_SENSOR_2,     IO_PORTF, 5},
+
+    {AIO_PIN_TEST_1,            IO_PORTF, 6},
+    {AIO_PIN_TEST_2,            IO_PORTK, 0},
 };
