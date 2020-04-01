@@ -28,3 +28,10 @@ void ReadIOTask(void *pvParameters);
  * @param pvParameters Set to NULL.
  */
 void ReadAnalogTask(void *pvParameters);
+
+/**
+ * @TestI2CTask Test I2C communication (for testing purpose)
+ *
+ * @param pvParameters Set to NULL.
+ */
+void TestI2CTask(void *pvParameters);

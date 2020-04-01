@@ -74,6 +74,9 @@ void initHardware(void)
     dio_init(DIO_PIN_LCD_D7,                  DIO_OUTPUT);
     dio_write(DIO_PIN_LCD_RW,                 DIO_LOW);
 
+    dio_init(DIO_PIN_I2C_SCL,                 DIO_OUTPUT);
+    dio_init(DIO_PIN_I2C_SDA,                 DIO_OUTPUT);
+
     lcd_initLCD();
 }
 
@@ -90,6 +93,7 @@ int main(void)
     xTaskCreate(LEDTask,           (const char *) "LEDTask",           128, NULL,  1, NULL);
     xTaskCreate(ReadIOTask,        (const char *) "ReadIOTask",        128, NULL,  1, NULL);
     xTaskCreate(ReadAnalogTask,    (const char *) "ReadAnalogTask",    128, NULL,  1, NULL);
+    xTaskCreate(TestI2CTask,       (const char *) "TestI2CTask",       128, NULL,  1, NULL);
 
     // Run the OS
     vTaskStartScheduler();
