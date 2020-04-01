@@ -7,6 +7,7 @@
 #include "hal/uart.h"
 #include "hal/io.h"
 #include "hal/pins.h"
+#include "hal/i2c.h"
 
 void debug_print(const char *fmt, ...)
 {
@@ -60,5 +61,16 @@ void ReadAnalogTask(void *pvParameters)
 
         debug_print("\r\n");
         vTaskDelay(1000 / portTICK_PERIOD_MS); // sleep 1s
+    }
+}
+
+void TestI2CTask(void *pvParameters)
+{
+    i2c_begin_0();
+    while (1)
+    {
+        i2c_beginTransmission(9);
+        i2c_endTransmission(0);
+        vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }
