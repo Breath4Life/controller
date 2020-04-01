@@ -60,11 +60,7 @@ void i2c_begin_0(void)
   twi_attachSlaveRxEvent(i2c_onReceiveService); // default callback must exist
 }
 
-void i2c_begin(uint8_t address)
-{
-  i2c_begin_0();
-  twi_setAddress(address);
-}
+
 
 void i2c_end(void)
 {
@@ -76,7 +72,7 @@ void i2c_setClock(uint32_t clock)
   twi_setFrequency(clock);
 }
 
-uint8_t i2c_requestFrom(uint8_t address, uint8_t quantity, uint32_t iaddress, uint8_t isize, uint8_t sendStop)
+uint8_t i2c_requestFrom5(uint8_t address, uint8_t quantity, uint32_t iaddress, uint8_t isize, uint8_t sendStop)
 {
   if (isize > 0) {
     // send internal address; this mode allows sending a repeated start to access
@@ -110,7 +106,7 @@ uint8_t i2c_requestFrom(uint8_t address, uint8_t quantity, uint32_t iaddress, ui
 }
 
 uint8_t i2c_requestFrom3(uint8_t address, uint8_t quantity, uint8_t sendStop) {
-	return i2c_requestFrom((uint8_t)address, (uint8_t)quantity, (uint32_t)0, (uint8_t)0, (uint8_t)sendStop);
+	return i2c_requestFrom5((uint8_t)address, (uint8_t)quantity, (uint32_t)0, (uint8_t)0, (uint8_t)sendStop);
 }
 
 uint8_t i2c_requestFrom2(uint8_t address, uint8_t quantity)
@@ -158,7 +154,7 @@ uint8_t i2c_endTransmission(uint8_t sendStop)
 // must be called in:
 // slave tx event callback
 // or after beginTransmission(address)
-size_t i2c_write(uint8_t data)
+int i2c_write(uint8_t data)
 {
   if(transmitting){
   // in master transmitter mode
@@ -170,7 +166,7 @@ size_t i2c_write(uint8_t data)
     // put byte in tx buffer
     txBuffer[txBufferIndex] = data;
     ++txBufferIndex;
-    // update amount in buffer   
+    // update amount in buffer
     txBufferLength = txBufferIndex;
   }else{
   // in slave send mode
