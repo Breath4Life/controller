@@ -22,6 +22,11 @@
 
 #include <avr/interrupt.h>
 
+#include "core/system.h"
+
+#include "FreeRTOS.h"
+#include "task.h"
+
 #define MOTORCTRL_DIR_FORWARD 0
 #define MOTORCTRL_DIR_BACKWARD 1
 #define MOTORCTRL_DRIVE_ENBL_TRUE 0
@@ -61,7 +66,7 @@ static volatile long motor_position = 0;
 static volatile long motor_target_position = 0;
 static volatile uint8_t motor_direction = 0;
 static volatile uint8_t motor_inmotion = 0;
-static volatile int  motor_step_cnt_incr = 0; 
+static volatile int  motor_step_cnt_incr = 0;
 
 static void setup_pwm_step();
 static void disable_cnt5_irq();
@@ -286,6 +291,10 @@ ISR(MOTORCTRL_PWM_OVF_IRQ)
   TIMSK3 &= ~ MOTORCTRL_PWM_OVF_IRQ_CFG;
   // Report that motor is not in motion anymore
   motor_inmotion = 0;
+  // Notify motor control task
+  BaseType_t higherPriorityTaskWoken = pdFALSE;
+  vTaskNotifyGiveFromISR(motorControlTaskHandle, &higherPriorityTaskWoken);
+  portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
 // Maximum input threshold is COUNTER_STEP_MAX

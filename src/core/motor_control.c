@@ -31,6 +31,7 @@ void MotorControlTask(void *pvParameters)
         vTaskDelay(100 / portTICK_PERIOD_MS); // sleep 100ms
         debug_print("Start moving +\r\n");
         set_motor_goto_position(16*200L, 16*200L);
+        ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
         while (motor_moving()) {
             vTaskDelay(1000 / portTICK_PERIOD_MS); // sleep 100ms
             debug_print("moving + pos: %i\r\n", motor_remaining_distance());
@@ -39,6 +40,7 @@ void MotorControlTask(void *pvParameters)
         vTaskDelay(100 / portTICK_PERIOD_MS); // sleep 100ms
         debug_print("Start moving -\r\n");
         set_motor_goto_position(0, 16*200L);
+        ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
         while (motor_moving()) {
             vTaskDelay(100 / portTICK_PERIOD_MS); // sleep 100ms
         }
