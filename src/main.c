@@ -96,7 +96,7 @@ int main(void)
     xTaskCreate(AlarmsTask,        (const char *) "AlarmsTask",        64,  NULL,  4, NULL);
     //xTaskCreate(ReadIOTask,        (const char *) "ReadIOTask",        128, NULL,  1, NULL);
     //xTaskCreate(ReadAnalogTask,    (const char *) "ReadAnalogTask",    128, NULL,  1, NULL);
-    xTaskCreate(TestI2CTask,       (const char *) "TestI2CTask",       200, NULL,  1, NULL);
+    xTaskCreate(SFM3000Task,       (const char *) "SFM3000Task",       200, NULL,  1, NULL);
 
     // Run the OS
     vTaskStartScheduler();

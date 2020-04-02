@@ -45,7 +45,7 @@ void debug_print(const char *fmt, ...)
     }
 }
 
-void TestI2CTask(void *pvParameters)
+void SFM3000Task(void *pvParameters)
 {
     sfm3000_init();
 
