@@ -72,9 +72,7 @@ void initHardware(void)
     dio_init(DIO_PIN_LCD_D5,                  DIO_OUTPUT);
     dio_init(DIO_PIN_LCD_D6,                  DIO_OUTPUT);
     dio_init(DIO_PIN_LCD_D7,                  DIO_OUTPUT);
-    dio_write(DIO_PIN_LCD_RW,                 DIO_LOW);
-
-    lcd_initLCD();
+    dio_write(DIO_PIN_LCD_RW,                  DIO_LOW);
 }
 
 int main(void)

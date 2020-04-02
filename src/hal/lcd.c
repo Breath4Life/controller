@@ -297,13 +297,13 @@ void lcd_timer_isr( void )
                             u8__data_byte = u8__row_start_address[((u8__buffer_counter / LCD_NR_OF_COLUMNS) - 1)];
                         #else
                             u8__data_byte = 0x40;
-                            TIMSK2 = 1<<OCIE2A; // Disable timer2 compare match interrupt
                         #endif
                     }
                     else
                     {
                         u8__data_byte = 0x00;
                         u8__buffer_counter = 0;
+                        TIMSK2 = 0<<OCIE2A; // Disable timer2 compare match interrupt
                     }
 
                     u8__data_byte |= 0x80;
