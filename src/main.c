@@ -17,6 +17,8 @@
 #include "hal/uart.h"
 #include "hal/lcd.h"
 
+#include "hal/timers.h"
+
 void initHardware(void)
 {
 
@@ -77,6 +79,8 @@ void initHardware(void)
     dio_init(DIO_PIN_LCD_D7,                  DIO_OUTPUT);
     dio_write(DIO_PIN_LCD_RW,                 DIO_LOW);
 
+    clock_init();
+
     lcd_initLCD();
 }
 
@@ -92,7 +96,7 @@ int main(void)
     xTaskCreate(AlarmsTask,        (const char *) "AlarmsTask",        64,  NULL,  4, NULL);
     //xTaskCreate(ReadIOTask,        (const char *) "ReadIOTask",        128, NULL,  1, NULL);
     //xTaskCreate(ReadAnalogTask,    (const char *) "ReadAnalogTask",    128, NULL,  1, NULL);
-    xTaskCreate(TestI2CTask,       (const char *) "TestI2CTask",       128, NULL,  1, NULL);
+    xTaskCreate(TestI2CTask,       (const char *) "TestI2CTask",       200, NULL,  1, NULL);
 
     // Run the OS
     vTaskStartScheduler();

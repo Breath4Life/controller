@@ -2,6 +2,10 @@
 
 #include "sfm3000.h"
 #include "i2c.h"
+#include "timers.h"
+#include "../core/debug.h"
+
+#include "FreeRTOS.h"
 
 
 static const uint8_t i2c_address = 64;
@@ -34,11 +38,6 @@ static uint8_t crc8(const uint8_t data, uint8_t crc)
     return crc;
 }
 
-static int micros()
-{
-    // TODO
-}
-
 static uint16_t get_value()
 {
     i2c_requestFrom(i2c_address, 3); // set read 3 bytes from device with address 0x40
@@ -61,7 +60,15 @@ static uint16_t get_value()
 
 void sfm3000_init()
 {
-     i2c_begin();
+    i2c_begin();
+
+    i2c_beginTransmission(i2c_address);
+    i2c_write(0x10);
+    i2c_write(0x00);
+    i2c_endTransmission(0);
+
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+
     // first measurement might not be valid (according to datasheet)
     // therefore is unused in init function
     unsigned int result = get_value();
@@ -70,7 +77,7 @@ void sfm3000_init()
 
     // take the first measurement to init the
     // integration of the volume
-    uint32_t curr_time = micros();
+    uint32_t curr_time = clock_millis() * 1000;
     result = get_value();
     float flow = ((float)result - offset_sfm3000) / scale_sfm3000;
 
@@ -85,7 +92,7 @@ uint32_t n_non_print = 0;
 
 void sfm3000_poll()
 {
-    uint32_t curr_time = micros();
+    uint32_t curr_time = clock_millis() * 1000;
     uint16_t result = get_value();
     int32_t flow = (((int32_t) result) - offset_sfm3000) * 1000 / scale_sfm3000; // sml/min
 
@@ -109,6 +116,8 @@ void sfm3000_poll()
         air_volume_sfm3000 +=  n_inc;
     }
 
+    debug_print("air_flow:%d  air_volume:%d\r\n", air_flow_sfm3000, air_volume_sfm3000);
+
     // Send data to serial port for acquiring on my computer
     //Serial.println(air_flow_sfm3000);
     //Serial.println(air_volume_sfm3000);
@@ -131,7 +140,7 @@ void sfm3000_reset()
 
     // take the first measurement to init the
     // integration of the volume
-    unsigned long curr_time = micros();
+    unsigned long curr_time = clock_millis() * 1000;
     unsigned int result = get_value();
     float flow = ((float)result - offset_sfm3000) / scale_sfm3000;
 
