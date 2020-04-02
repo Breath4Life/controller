@@ -77,8 +77,8 @@ void twi_init(void)
   twi_inRepStart = false;
   
   // activate internal pullups for twi.
-  dio_write(DIO_PIN_I2C_SDA, 1);
-  dio_write(DIO_PIN_I2C_SCL, 1);
+  dio_write(DIO_PIN_I2C_FLOW_SENSOR_DATA, 1);
+  dio_write(DIO_PIN_I2C_FLOW_SENSOR_CLOCK, 1);
 
   // initialize twi prescaler and bit rate
   cbi(TWSR, TWPS0);
@@ -107,8 +107,8 @@ void twi_disable(void)
 
   // deactivate internal pullups for twi.
 
-  dio_write(DIO_PIN_I2C_SDA, 1);
-  dio_write(DIO_PIN_I2C_SCL, 1);
+  dio_write(DIO_PIN_I2C_FLOW_SENSOR_CLOCK, 1);
+  dio_write(DIO_PIN_I2C_FLOW_SENSOR_DATA, 1);
 
 }
 
