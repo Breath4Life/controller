@@ -1,6 +1,13 @@
 #include "FreeRTOS.h"
 
 /**
+ * @init_debug_print_sem Init a semaphore to protect debug_print().
+ *
+ * Init a semaphore that protects debug_print against concurrent accesses.
+ */
+void init_debug_print_sem();
+
+/**
  * @debug_print Print a debug message on the UART.
  *
  * Print a message to UART0. The message, after formatting, cannot exceed 32 bytes.
