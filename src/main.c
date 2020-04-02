@@ -17,8 +17,13 @@
 #include "hal/uart.h"
 #include "hal/lcd.h"
 
+#include "hal/timers.h"
+
 void initHardware(void)
 {
+
+    init_debug_print_sem();
+
     uart_init();
 
     dio_init(DIO_PIN_MOTOR_UART_TX,           DIO_INPUT);
@@ -72,7 +77,10 @@ void initHardware(void)
     dio_init(DIO_PIN_LCD_D5,                  DIO_OUTPUT);
     dio_init(DIO_PIN_LCD_D6,                  DIO_OUTPUT);
     dio_init(DIO_PIN_LCD_D7,                  DIO_OUTPUT);
-    dio_write(DIO_PIN_LCD_RW,                  DIO_LOW);
+    dio_write(DIO_PIN_LCD_RW,                 DIO_LOW);
+
+    clock_init();
+
 }
 
 int main(void)
@@ -85,9 +93,9 @@ int main(void)
     xTaskCreate(UserInterfaceTask, (const char *) "UserInterfaceTask", 64,  NULL,  8, NULL);
     xTaskCreate(LCDDisplayTask,    (const char *) "LCDDisplayTask",    64,  NULL,  5, NULL);
     xTaskCreate(AlarmsTask,        (const char *) "AlarmsTask",        64,  NULL,  4, NULL);
-    xTaskCreate(LEDTask,           (const char *) "LEDTask",           128, NULL,  1, NULL);
-    xTaskCreate(ReadIOTask,        (const char *) "ReadIOTask",        128, NULL,  1, NULL);
-    xTaskCreate(ReadAnalogTask,    (const char *) "ReadAnalogTask",    128, NULL,  1, NULL);
+    //xTaskCreate(ReadIOTask,        (const char *) "ReadIOTask",        128, NULL,  1, NULL);
+    //xTaskCreate(ReadAnalogTask,    (const char *) "ReadAnalogTask",    128, NULL,  1, NULL);
+    xTaskCreate(SFM3000Task,       (const char *) "SFM3000Task",       200, NULL,  1, NULL);
 
     // Run the OS
     vTaskStartScheduler();

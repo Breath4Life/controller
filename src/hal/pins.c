@@ -55,8 +55,7 @@ struct io_pin_config DIO_PIN_CONFIG[] = {
     {DIO_PIN_ALARM_LED_LPA,           IO_PORTL, 3},
     {DIO_PIN_STEP_COUNTER_TN,         IO_PORTL, 2},
     {DIO_PIN_ALARM_LED_PAUSED,        IO_PORTL, 1},
-    {DIO_PIN_LED_NORMAL_STATE,        IO_PORTL, 0}
-
+    {DIO_PIN_LED_NORMAL_STATE,        IO_PORTL, 0},
 };
 
 // The order of declaration in this array needs to be the same as for aio_pin

@@ -3,10 +3,20 @@
 
 #include "FreeRTOS.h"
 #include "task.h"
+#include "semphr.h"
 
 #include "hal/uart.h"
 #include "hal/io.h"
 #include "hal/pins.h"
+#include "hal/i2c.h"
+#include "hal/sfm3000.h"
+
+
+SemaphoreHandle_t debug_print_semaphore;
+
+void init_debug_print_sem() {
+    debug_print_semaphore = xSemaphoreCreateMutex();
+}
 
 void debug_print(const char *fmt, ...)
 {
@@ -18,47 +28,38 @@ void debug_print(const char *fmt, ...)
     va_end(args);
 
     char *c = buffer;
-    while (*c != '\0')
+    const int timeout_ticks = 100;
+    if (xSemaphoreTake(debug_print_semaphore, timeout_ticks) == pdTRUE)
     {
-        // TODO: put mutex on uart_transmit
-        uart_transmit(*c);
-        c++;
+        while (*c != '\0')
+        {
+            // TODO: put mutex on uart_transmit
+            uart_transmit(*c);
+            c++;
+        }
+        xSemaphoreGive(debug_print_semaphore);
+    }
+    else
+    {
+        // What to do here ?
     }
 }
 
-void LEDTask(void *pvParameters)
+void SFM3000Task(void *pvParameters)
 {
-    unsigned char n = 0;
+    sfm3000_init();
+
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+
 
     while (1)
     {
-        debug_print("LED Task: %d!\r\n", n); // TODO: currently present for debug purposes, to remove later on
-        dio_write(DIO_PIN_DEBUGLED, n & 1); // toggle debug LED
 
-        vTaskDelay(1000 / portTICK_PERIOD_MS); // sleep 1s
-        n++;
-    }
-}
+        TickType_t xLastWakeTime;
+        const TickType_t xFrequency = pdMS_TO_TICKS(40); // which is around 38 ms on scope
 
-void ReadIOTask(void *pvParameters)
-{
-    while (1)
-    {
-        debug_print("Read IO Task: %d!\r\n", dio_read(DIO_PIN_MAIN_POWER_MONITORING)); // for testing to remove later on
+        sfm3000_poll();
 
-        vTaskDelay(1000 / portTICK_PERIOD_MS); // sleep 1s
-    }
-}
-
-
-void ReadAnalogTask(void *pvParameters)
-{
-    while (1)
-    {
-        debug_print("Read Analog Task: %d!\r\n", aio_read(AIO_PIN_TEST_1)); // for testing to remove later on
-        debug_print("Read Analog Task: %d!\r\n", aio_read(AIO_PIN_TEST_2)); // for testing to remove later on
-
-        debug_print("\r\n");
-        vTaskDelay(1000 / portTICK_PERIOD_MS); // sleep 1s
+        vTaskDelayUntil( &xLastWakeTime, xFrequency );
     }
 }
