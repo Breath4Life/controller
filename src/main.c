@@ -77,9 +77,6 @@ void initHardware(void)
     dio_init(DIO_PIN_LCD_D7,                  DIO_OUTPUT);
     dio_write(DIO_PIN_LCD_RW,                 DIO_LOW);
 
-    dio_init(DIO_PIN_I2C_SCL,                 DIO_OUTPUT);
-    dio_init(DIO_PIN_I2C_SDA,                 DIO_OUTPUT);
-
     lcd_initLCD();
 }
 

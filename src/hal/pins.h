@@ -75,10 +75,6 @@ enum dio_pin {
     DIO_PIN_STEP_COUNTER_TN,
     DIO_PIN_ALARM_LED_PAUSED,
     DIO_PIN_LED_NORMAL_STATE,
-
-    DIO_PIN_I2C_SCL,
-    DIO_PIN_I2C_SDA
-
 };
 
 enum aio_pin {
