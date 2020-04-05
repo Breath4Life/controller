@@ -6,6 +6,7 @@
 #include "task.h"
 #include "croutine.h"
 
+#include "core/system.h"
 #include "core/debug.h"
 #include "core/motor_control.h"
 #include "core/display.h"
@@ -16,6 +17,13 @@
 #include "hal/pins.h"
 #include "hal/uart.h"
 #include "hal/lcd.h"
+#include "hal/motor.h"
+
+TaskHandle_t motorControlTaskHandle;
+TaskHandle_t userInterfaceTaskHandle;
+TaskHandle_t lcdDisplayTaskHandle;
+TaskHandle_t alarmsTaskHandle;
+TaskHandle_t sfm3000TaskHandle;
 
 #include "hal/timers.h"
 
@@ -81,6 +89,9 @@ void initHardware(void)
 
     clock_init();
 
+    lcd_initLCD();
+
+    setup_motor();
 }
 
 int main(void)
@@ -89,13 +100,14 @@ int main(void)
 
     // Create the different tasks
 
-    xTaskCreate(MotorControlTask,  (const char *) "MotorControlTask",  256, NULL, 10, NULL);
-    xTaskCreate(UserInterfaceTask, (const char *) "UserInterfaceTask", 64,  NULL,  8, NULL);
-    xTaskCreate(LCDDisplayTask,    (const char *) "LCDDisplayTask",    64,  NULL,  5, NULL);
-    xTaskCreate(AlarmsTask,        (const char *) "AlarmsTask",        64,  NULL,  4, NULL);
+    xTaskCreate(MotorControlTask,  (const char *) "MotorControlTask",  256, NULL, 10, &motorControlTaskHandle);
+    xTaskCreate(UserInterfaceTask, (const char *) "UserInterfaceTask", 64,  NULL,  8, &userInterfaceTaskHandle);
+    xTaskCreate(LCDDisplayTask,    (const char *) "LCDDisplayTask",    64,  NULL,  5, &lcdDisplayTaskHandle);
+    xTaskCreate(AlarmsTask,        (const char *) "AlarmsTask",        64,  NULL,  4, &alarmsTaskHandle);
+    //xTaskCreate(LEDTask,           (const char *) "LEDTask",           128, NULL,  1, NULL);
     //xTaskCreate(ReadIOTask,        (const char *) "ReadIOTask",        128, NULL,  1, NULL);
     //xTaskCreate(ReadAnalogTask,    (const char *) "ReadAnalogTask",    128, NULL,  1, NULL);
-    xTaskCreate(SFM3000Task,       (const char *) "SFM3000Task",       200, NULL,  1, NULL);
+    xTaskCreate(SFM3000Task,       (const char *) "SFM3000Task",       200, NULL,  1, &sfm3000TaskHandle);
 
     // Run the OS
     vTaskStartScheduler();
