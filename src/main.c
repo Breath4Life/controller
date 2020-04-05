@@ -107,7 +107,7 @@ int main(void)
     //xTaskCreate(LEDTask,           (const char *) "LEDTask",           128, NULL,  1, NULL);
     //xTaskCreate(ReadIOTask,        (const char *) "ReadIOTask",        128, NULL,  1, NULL);
     //xTaskCreate(ReadAnalogTask,    (const char *) "ReadAnalogTask",    128, NULL,  1, NULL);
-    xTaskCreate(SFM3000Task,       (const char *) "SFM3000Task",       200, NULL,  1, &sfm3000TaskHandle);
+    //xTaskCreate(SFM3000Task,       (const char *) "SFM3000Task",       200, NULL,  1, &sfm3000TaskHandle);
 
     // Run the OS
     vTaskStartScheduler();

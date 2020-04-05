@@ -48,6 +48,7 @@
 #include "hal/pins.h"
 #include "hal/io.h"
 #include "core/system.h"
+#include "core/debug.h"
 #include "task.h"
 #include "FreeRTOS.h"
 #endif // ARDUINO_RT
@@ -452,6 +453,7 @@ void set_motor_goto_position_accel_exec(uint32_t target_position_abs, const uint
     motor_target_position_rel = target_position_rel;
     motor_position_rel = 0;
 
+    debug_print("To direction %u\r\n", direction);
 #ifdef ARDUINO_RT
     digitalWrite(MOTORCTRL_DRIVE_DIR_PIN, direction);
 #else
