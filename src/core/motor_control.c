@@ -30,7 +30,7 @@ void MotorControlTask(void *pvParameters)
         //TODO: write this function!
         vTaskDelay(100 / portTICK_PERIOD_MS); // sleep 100ms
         debug_print("Start moving +\r\n");
-        set_motor_goto_position(16*200L, 16*200L);
+        set_motor_goto_position(16*200L, 16*20L);
         ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
         while (motor_moving()) {
             vTaskDelay(1000 / portTICK_PERIOD_MS); // sleep 100ms
@@ -39,7 +39,7 @@ void MotorControlTask(void *pvParameters)
         debug_print("Finished moving +\r\n");
         vTaskDelay(100 / portTICK_PERIOD_MS); // sleep 100ms
         debug_print("Start moving -\r\n");
-        set_motor_goto_position(0, 16*200L);
+        set_motor_goto_position(0, 16*40L);
         ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
         while (motor_moving()) {
             vTaskDelay(100 / portTICK_PERIOD_MS); // sleep 100ms
