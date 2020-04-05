@@ -12,6 +12,7 @@
 #include "core/display.h"
 #include "core/ui.h"
 #include "core/alarms.h"
+#include "core/main_task.h"
 
 #include "hal/io.h"
 #include "hal/pins.h"
@@ -19,6 +20,7 @@
 #include "hal/lcd.h"
 #include "hal/motor.h"
 
+TaskHandle_t mainTaskHandle;
 TaskHandle_t motorControlTaskHandle;
 TaskHandle_t userInterfaceTaskHandle;
 TaskHandle_t lcdDisplayTaskHandle;
@@ -31,6 +33,7 @@ void initHardware(void)
 {
 
     init_debug_print_sem();
+
 
     uart_init();
 
@@ -57,19 +60,7 @@ void initHardware(void)
     dio_init(DIO_PIN_I2C_FLOW_SENSOR_DATA,    DIO_OUTPUT);
     dio_init(DIO_PIN_I2C_FLOW_SENSOR_CLOCK,   DIO_OUTPUT);
 
-    dio_init(DIO_PIN_BUTTON_RIGHT,            DIO_INPUT);
-    dio_init(DIO_PIN_BUTTON_LEFT,             DIO_INPUT);
-    dio_init(DIO_PIN_BUTTON_UP,               DIO_INPUT);
-    dio_init(DIO_PIN_BUTTON_DOWN,             DIO_INPUT);
-    dio_init(DIO_PIN_BUTTON_VTIDAL_UP,        DIO_INPUT);
-    dio_init(DIO_PIN_BUTTON_VTIDAL_DOWN,      DIO_INPUT);
-    dio_init(DIO_PIN_BUTTON_FREQ_RESPI_DOWN,  DIO_INPUT);
-    dio_init(DIO_PIN_BUTTON_FREQ_RESPI_UP,    DIO_INPUT);
-
     dio_init(DIO_PIN_AUX_ALARM_GATE_PIN,      DIO_INPUT);
-
-    dio_init(DIO_PIN_BUTTON_ALARM_MUTE,       DIO_INPUT);
-    dio_init(DIO_PIN_BUTTON_STARTSTOP,        DIO_INPUT);
 
     dio_init(DIO_PIN_ALARM_SOUND,             DIO_OUTPUT);
     dio_init(DIO_PIN_ALARM_LED_HPA,           DIO_OUTPUT);
@@ -92,6 +83,8 @@ void initHardware(void)
     lcd_initLCD();
 
     setup_motor();
+
+    initMainTask();
 }
 
 int main(void)
@@ -100,6 +93,7 @@ int main(void)
 
     // Create the different tasks
 
+    xTaskCreate(MainTask,  (const char *) "MainTask",  256, NULL, 12, &mainTaskHandle);
     xTaskCreate(MotorControlTask,  (const char *) "MotorControlTask",  256, NULL, 10, &motorControlTaskHandle);
     xTaskCreate(UserInterfaceTask, (const char *) "UserInterfaceTask", 64,  NULL,  8, &userInterfaceTaskHandle);
     xTaskCreate(LCDDisplayTask,    (const char *) "LCDDisplayTask",    64,  NULL,  5, &lcdDisplayTaskHandle);
