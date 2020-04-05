@@ -8,6 +8,7 @@
 #include "core/main_task.h"
 #include "core/motor_control.h"
 #include "core/utils.h"
+#include "core/display.h"
 
 #include "hal/io.h"
 #include "hal/pins.h"
@@ -19,7 +20,7 @@ ErrorCode_t errorCode;
 uint8_t mute_on;
 TickType_t mute_time;
 
-uint8_t tidal_vol;
+uint8_t tidal_vol; // tens of mL
 uint8_t bpm;
 
 void initMainTask()
@@ -38,9 +39,14 @@ void MainTask(void *pvParameters)
     TickType_t xLastWakeTime = xTaskGetTickCount();
     const TickType_t xFrequency = pdMS_TO_TICKS(50);
 
+    debug_print("before welcome\r\n");
+
     // TODO notify Buzzer task of Welcome
-    vTaskDelayUntil( &xLastWakeTime, pdMS_TO_TICKS(4000));
-    globalState = welcome_wait_cal;
+    vTaskDelayUntil(&xLastWakeTime, WELCOME_MSG_DUR);
+    //globalState = welcome_wait_cal;
+    globalState = stop;
+
+    debug_print("starting main loop\r\n");
 
     while (1) {
         ////////////// 1. READ BUTTONS ///////////
@@ -75,7 +81,7 @@ void MainTask(void *pvParameters)
             globalState = stop;
         }
         ////////////// 7. Settings  & Start/Stop ///////////
-        if (globalState == stop || motorState == run) {
+        if (globalState == stop || motorState == motorRunning) {
             uint8_t updated_setting = 0;
             if (BUTTON_PRESSED(buttons_pressed, button_vtidal_up)) {
                 tidal_vol = MIN(MAX_TIDAL_VOL, tidal_vol + INC_TIDAL_VOL);
@@ -95,7 +101,8 @@ void MainTask(void *pvParameters)
             }
             // TODO other settings
             if (updated_setting) {
-                // TODO notify LCD setting
+                xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PARAM, eSetBits);
+                debug_print("lcd notif sent\r\n");
             }
             if (BUTTON_PRESSED(buttons_pressed, button_startstop)) {
                 if (globalState == stop) {
