@@ -57,3 +57,5 @@ enum dio_pin and struct io_pin_config DIO_PIN_CONFIG[] should stay aligned as th
 
 Do not forget to init your ios in the initHardware() in main.c.
 In the future, we could add the dio_mode into io_pin_conf, so the digital io setup could be done automatically (a loop on DIO_PIN_CONFIG).
+
+1 s = 62 ticks !

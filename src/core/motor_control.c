@@ -8,6 +8,9 @@
 #include "hal/pins.h"
 #include "hal/motor.h"
 #include "core/debug.h"
+#include "core/motor_control.h"
+
+MotorState_t motorState;
 
 void MotorControlTask(void *pvParameters)
 {

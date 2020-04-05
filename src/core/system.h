@@ -36,4 +36,6 @@ typedef enum {
 
 extern ErrorCode_t errorCode;
 
+extern uint8_t mute_on;
+
 #endif // SYSTEM_H_
