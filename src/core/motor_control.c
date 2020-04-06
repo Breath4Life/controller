@@ -11,11 +11,6 @@
 #include "core/motor_control.h"
 #include "hal/limit_switch.h"
 
-void init_motor() {
-    init_limit_switch();
-    setup_motor();
-}
-
 /////////////////////////////////////
 uint32_t TCT;
 uint32_t Ti;
@@ -42,6 +37,7 @@ uint32_t f_exp;
 
 /////////////////////////////////////
 
+
 MotorState_t motorState;
 BreathState_t breathState;
 
@@ -50,14 +46,17 @@ uint32_t notif_recv;
 
 TickType_t previousWakeTime;
 
-void initMotorControlTask(){
+void init_motor() {
+    init_limit_switch();
+    setup_motor();
+
     motorState = motorStopped;
     breathState = startNewCycle;
     homePosition = 0;
 
     // Breathing cycles parameter
-    TCT = 30 * 100; // in ms
-    Ti = 15 * 100; // in ms
+    TCT = 40 * 100; // in ms
+    Ti = 20 * 100; // in ms
     Te = TCT - Ti;
 
     n_steps = 600UL;
@@ -81,6 +80,7 @@ void initMotorControlTask(){
 
 }
 
+
 void MotorControlTask(void *pvParameters)
 {
     while (1)
@@ -93,45 +93,44 @@ void MotorControlTask(void *pvParameters)
                 xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,portMAX_DELAY);
 
                 // if notif == START: update motor state
-                // TODO: check notif value
-                motorState = motorRunning;
-                breathState = startNewCycle;
-                //debug_print("motorStopped \r\n");
+                if (notif_recv & MOTOR_NOTIF_START) {
+                    motorState = motorRunning;
+                    breathState = startNewCycle;
+                }
                 break;
 
             case motorRunning:
                 switch (breathState){
                     case insp:
                         // BOUNDED Wait notification
-                        // TODO: set proper notification handling
-                        //xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(2000));
-                        ulTaskNotifyTake(pdFALSE, portMAX_DELAY); 
+                        xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(3000));
+                        if (notif_recv & MOTOR_NOTIF_MOVEMENT_FINISHED) {
+                            breathState = plateau;
+                            set_motor_goto_position_accel_exec(homePosition+insp_pulses+plateau, f_plateau, 2, 200);
+                        }
 
-                        // Update states regarding the received notification
                         // TODO update state based on the notification value 
-                        breathState = plateau;
-                        //debug_print("to plateau \r\n");
-                        set_motor_goto_position_accel_exec(homePosition+insp_pulses+plateau, f_plateau, 2, 200);
 			break;
 
                     case plateau:
                         // BOUNDED Wait notification
-                        // TODO: set proper notification handling
-                        //xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(2000));
-                        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+                        xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(2000));
 
-                        // Update states regarding the received notification
+                        if (notif_recv & MOTOR_NOTIF_MOVEMENT_FINISHED) {
+                            breathState = exp;
+                            set_motor_goto_position_accel_exec(homePosition, f_exp, 2, 200);
+                        }
+
                         // TODO update state based on the notification value 
-                        breathState = exp;
-                        //debug_print("to exp \r\n");
-                        set_motor_goto_position_accel_exec(homePosition, f_exp, 2, 200);
 			break;  
 
                     case exp:
                         // BOUNDED Wait notification
-                        // TODO: set proper notification handling
-                        //xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(2000));
-                        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+                        xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(3000));
+
+                        if (notif_recv & MOTOR_NOTIF_MOVEMENT_FINISHED) {
+                            breathState = cycleEnd;
+                        }
 
                         // Update states regarding the received notification
                         // TODO update state based on the notification value
@@ -139,6 +138,8 @@ void MotorControlTask(void *pvParameters)
                         breathState = cycleEnd;
                         //debug_print("to cycleEnd \r\n");
 			break;
+
+                    // Add RECALIBRATION step
 
                     case cycleEnd:
                         vTaskDelayUntil(&previousWakeTime,pdMS_TO_TICKS(TCT));

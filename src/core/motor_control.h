@@ -16,6 +16,8 @@
 #define MOTOR_USTEPS 16
 
 typedef enum {
+    motorInit,
+    motorCalibrating,
     motorStopped,
     motorRunning,
 } MotorState_t;
