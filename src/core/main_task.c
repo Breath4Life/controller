@@ -13,15 +13,16 @@
 #include "hal/io.h"
 #include "hal/pins.h"
 
-GlobalState_t globalState;
-AlarmState_t alarmState;
-ErrorCode_t errorCode;
+volatile GlobalState_t globalState;
+volatile AlarmState_t alarmState;
+volatile ErrorCode_t errorCode;
 
-uint8_t mute_on;
+volatile uint8_t mute_on;
 TickType_t mute_time;
 
-uint8_t tidal_vol; // tens of mL
-uint8_t bpm;
+volatile uint8_t tidal_vol; // tens of mL
+volatile uint8_t bpm;
+volatile uint8_t p_max;
 
 void initMainTask()
 {
@@ -29,6 +30,7 @@ void initMainTask()
     alarmState = noAlarm;
     errorCode = noError;
     mute_on = 0;
+    p_max = 38;
     tidal_vol = DEFAULT_TIDAL_VOL;
     bpm = DEFAULT_BPM;
     initButtons();
@@ -128,4 +130,7 @@ void MainTask(void *pvParameters)
     }
 }
 
+uint8_t stoppedOrRunning() {
+    return (globalState == stop || globalState == run);
+}
 

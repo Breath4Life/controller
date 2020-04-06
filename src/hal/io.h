@@ -38,10 +38,24 @@ uint8_t dio_read(uint8_t pin);
 void dio_write(uint8_t pin, uint8_t level);
 
 /**
- * @aio_read Read from an analog input pin.
+ * @aio_read_start Prepare from an analog input pin.
+ *  Starts the ADC.
  *
  * @param pin An analog input pin.
+ */
+void aio_read_start(uint8_t pin);
+
+/**
+ * @aio_ready Test if the analog reading is finished.
+ *
+ * @return Return 1 if the ADC has finished conversion, otherwise 0.
+ */
+uint8_t aio_ready();
+
+/**
+ * @aio_read_result Read the result from the ADC
+ *
  * @return Return the analog reading (0 for 0V - 1023 for 5V)
  */
-uint16_t aio_read(uint8_t pin);
+uint16_t aio_read_result();
 

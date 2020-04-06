@@ -38,8 +38,8 @@ uint32_t f_exp;
 /////////////////////////////////////
 
 
-MotorState_t motorState;
-BreathState_t breathState;
+volatile MotorState_t motorState;
+volatile BreathState_t breathState;
 
 unsigned long homePosition;
 uint32_t notif_recv;

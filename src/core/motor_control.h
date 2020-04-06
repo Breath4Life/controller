@@ -30,8 +30,8 @@ typedef enum {
     startNewCycle
 } BreathState_t;
 
-extern MotorState_t motorState;
-extern BreathState_t breathState;
+extern volatile MotorState_t motorState;
+extern volatile BreathState_t breathState;
 
 void init_motor();
 

@@ -26,20 +26,20 @@ typedef enum {
     critical_failure
 } GlobalState_t;
 
-extern GlobalState_t globalState;
+extern volatile GlobalState_t globalState;
 
 typedef enum {
     noAlarm
 } AlarmState_t;
 
-extern AlarmState_t alarmState;
+extern volatile AlarmState_t alarmState;
 
 typedef enum {
     noError
 } ErrorCode_t;
 
-extern ErrorCode_t errorCode;
+extern volatile ErrorCode_t errorCode;
 
-extern uint8_t mute_on;
+extern volatile uint8_t mute_on;
 
 #endif // SYSTEM_H_
