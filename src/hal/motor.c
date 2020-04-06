@@ -51,6 +51,7 @@
 #include "hal/io.h"
 #include "core/system.h"
 #include "core/debug.h"
+#include "core/motor_control.h"
 #include "task.h"
 #include "FreeRTOS.h"
 #endif // ARDUINO_RT
@@ -469,7 +470,10 @@ ISR(MOTORCTRL_PWM_OVF_IRQ)
   motor_inmotion = 0;
 #ifndef ARDUINO_RT
   BaseType_t higherPriorityTaskWoken;
-  vTaskNotifyGiveFromISR(motorControlTaskHandle, &higherPriorityTaskWoken);
+  xTaskNotifyFromISR(motorControlTaskHandle,
+          MOTOR_NOTIF_MOVEMENT_FINISHED,
+          eSetBits,
+          &higherPriorityTaskWoken);
   if (higherPriorityTaskWoken) {
       taskYIELD();
   }

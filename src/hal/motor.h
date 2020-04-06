@@ -2,8 +2,8 @@
 #define PWM_BOUND_H_
 
 void setup_motor();
-void enable_motor();
-void disable_motor();
+void motor_enable();
+void motor_disable();
 void set_motor_goto_position_accel_exec(
         uint32_t target_position_abs,
         const uint16_t target_speed,
