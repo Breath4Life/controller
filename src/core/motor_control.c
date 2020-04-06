@@ -9,6 +9,12 @@
 #include "hal/motor.h"
 #include "core/debug.h"
 #include "core/motor_control.h"
+#include "hal/limit_switch.h"
+
+void init_motor() {
+    init_limit_switch();
+    setup_motor();
+}
 
 /////////////////////////////////////
 uint32_t TCT;
@@ -151,6 +157,6 @@ void MotorControlTask(void *pvParameters)
         }
 
 
-    }
+   }
 }
 

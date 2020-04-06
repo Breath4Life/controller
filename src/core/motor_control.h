@@ -3,8 +3,8 @@
 
 #include "FreeRTOS.h"
 
-#define MOTOR_NOTIF_SWITCH_UP 0x01
-#define MOTOR_NOTIF_SWITCH_DOWN 0x02
+#define MOTOR_NOTIF_LIM_DOWN 0x01
+#define MOTOR_NOTIF_LIM_UP 0x02
 #define MOTOR_NOTIF_HALT 0x04
 #define MOTOR_NOTIF_MOVEMENT_FINISHED 0x08
 #define MOTOR_NOTIF_START_CALIBRATION 0x10
@@ -31,8 +31,7 @@ typedef enum {
 extern MotorState_t motorState;
 extern BreathState_t breathState;
 
-
-void initMotorControlTask();
+void init_motor();
 
 /**
  * @MotorControlTask Control the motor.
