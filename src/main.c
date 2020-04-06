@@ -18,7 +18,6 @@
 #include "hal/pins.h"
 #include "hal/uart.h"
 #include "hal/lcd.h"
-#include "hal/motor.h"
 
 TaskHandle_t mainTaskHandle;
 TaskHandle_t motorControlTaskHandle;
@@ -52,9 +51,6 @@ void initHardware(void)
     dio_init(DIO_PIN_AUX_POWER_MONITORING,    DIO_INPUT);
     dio_init(DIO_PIN_MAIN_POWER_MONITORING,   DIO_INPUT);
 
-    dio_init(DIO_PIN_LIM_SWITCH_0_MONITORING, DIO_INPUT);
-    dio_init(DIO_PIN_LIM_SWITCH_1_MONITORING, DIO_INPUT);
-
     dio_init(DIO_PIN_DEBUGLED,                DIO_OUTPUT);
 
     dio_init(DIO_PIN_I2C_FLOW_SENSOR_DATA,    DIO_OUTPUT);
@@ -82,7 +78,7 @@ void initHardware(void)
 
     lcd_initLCD();
 
-    setup_motor();
+    init_motor();
 
     initMainTask();
 }

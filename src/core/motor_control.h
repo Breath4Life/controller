@@ -3,6 +3,9 @@
 
 #include "FreeRTOS.h"
 
+#define MOTOR_NOTIF_LIM_DOWN 0x01
+#define MOTOR_NOTIF_LIM_UP 0x02
+
 typedef enum {
     motorStopped,
     motorRunning,
@@ -10,6 +13,7 @@ typedef enum {
 
 extern MotorState_t motorState;
 
+void init_motor();
 
 /**
  * @MotorControlTask Control the motor.
