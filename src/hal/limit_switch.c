@@ -11,6 +11,7 @@
 #include <avr/interrupt.h>
 #include "FreeRTOS.h"
 #include "task.h"
+#include "time.h"
 #include "hal/pins.h"
 #include "hal/io.h"
 #include "core/debug.h"
@@ -22,6 +23,10 @@
 static volatile uint8_t lim_switch0_lvl;
 static volatile uint8_t lim_switch1_lvl;
 
+const uint32_t threshold_time_irq = 2000000;
+static uint32_t deadline_time_irq;
+static uint32_t current_time_irq;
+
 void init_limit_switch() {
     // init pins
     dio_init(DIO_PIN_LIM_SWITCH_0_MONITORING, DIO_INPUT_PULLUP);
@@ -32,6 +37,9 @@ void init_limit_switch() {
     // enable level change interrupt (on PCINT7:0)
     PCMSK0 =  _BV(PCINT5) | _BV(PCINT6);
     PCICR |= _BV(PCIE0);
+    current_time_irq = 0;
+    deadline_time_irq = current_time_irq+ threshold_time_irq; 
+     
 }
 
 
@@ -39,14 +47,21 @@ ISR(PCINT0_vect) {
     uint8_t l0 = dio_read(DIO_PIN_LIM_SWITCH_0_MONITORING);
     uint8_t l1 = dio_read(DIO_PIN_LIM_SWITCH_1_MONITORING);
     BaseType_t higherPriorityTaskWoken = pdFALSE;
-    if (!l0 && lim_switch0_lvl) {
-        xTaskNotifyFromISR(motorControlTaskHandle, MOTOR_NOTIF_LIM_DOWN, eSetBits, &higherPriorityTaskWoken);
+    current_time_irq = time_us();
+    if (l0 && !lim_switch0_lvl) {
+        if((deadline_time_irq-current_time_irq) & 0x80000000){
+            xTaskNotifyFromISR(motorControlTaskHandle, MOTOR_NOTIF_LIM_DOWN, eSetBits, &higherPriorityTaskWoken);
+            deadline_time_irq = current_time_irq + threshold_time_irq;
+        }
 #if DEBUG_LIM_SWITCH
         debug_print("switch0 pressed\r\n");
 #endif // DEBUG_LIM_SWITCH
     }
-    if (!l1 && lim_switch1_lvl) {
-        xTaskNotifyFromISR(motorControlTaskHandle, MOTOR_NOTIF_LIM_UP, eSetBits, &higherPriorityTaskWoken);
+    if (l1 && !lim_switch1_lvl) {
+        if((deadline_time_irq-current_time_irq) & 0x80000000){
+            xTaskNotifyFromISR(motorControlTaskHandle, MOTOR_NOTIF_LIM_UP, eSetBits, &higherPriorityTaskWoken);
+            deadline_time_irq += current_time_irq + threshold_time_irq;
+        }
 #if DEBUG_LIM_SWITCH
         debug_print("switch1 pressed\r\n");
 #endif // DEBUG_LIM_SWITCH

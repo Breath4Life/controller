@@ -52,7 +52,7 @@ uint32_t notif_recv;
 TickType_t previousWakeTime;
 
 // TODO reset proper value! 
-const uint32_t f_home = 4000; // steps/s (not µsteps/s)
+const uint32_t f_home = 100; // steps/s (not µsteps/s)
 
 const int32_t steps_calib_down = 2000;
 const int32_t steps_calib_up = 1000;
@@ -60,6 +60,8 @@ const int32_t steps_calib_end = 60;
 const int32_t steps_caliv_vol = 600;
 
 const uint32_t thresh_calib_vol_mil = 600;
+
+int32_t rem_usteps;
 
 // Threshold for volume calibraiton 
 
@@ -74,6 +76,7 @@ void init_motor() {
     flowState = flowVol;
     currentPosition = 0;
     homePosition = 0;
+    rem_usteps = 0;
 
     // Breathing cycles parameter
     TCT = 40 * 100; // in ms
@@ -127,18 +130,16 @@ void MotorControlTask(void *pvParameters)
                 switch (calibState) {
                     case calibDown:
                         // BOUNDED wait for limit switch down 
-                        n_wait_recv = xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(600000));
+                        n_wait_recv = xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(10000));
                         
                         // Verify deadline
                         if (n_wait_recv){
                             // Check for undesirable notification
                             if (notif_recv & MOTOR_NOTIF_LIM_UP) {
                                 calibState = calibDown;
-                            //} else if(notif_recv & MOTOR_NOTIF_LIM_DOWN) {
-                            // TODO: set the condition above
-                            } else if(notif_recv & MOTOR_NOTIF_MOVEMENT_FINISHED) {
+                            } else if(notif_recv & MOTOR_NOTIF_LIM_DOWN) {
                                 calibState = calibUp;
-                                int32_t rem_usteps = motor_remaining_distance();
+                                rem_usteps = motor_remaining_distance();
                                 currentPosition = currentPosition-rem_usteps-MOTOR_USTEPS*steps_calib_up; 
                                 set_motor_goto_position_accel_exec(currentPosition, f_home, 2, 200);
                                 debug_print("to calib up\r\n");
@@ -153,15 +154,15 @@ void MotorControlTask(void *pvParameters)
                         break;
                     
                     case calibUp:
+                        debug_print("In calibUp\r\n");
                         // BOUNDED wait for limit switch up 
-                        n_wait_recv = xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(300000));
+                        n_wait_recv = xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(10000));
                         
                         // Verify deadline
                         if (n_wait_recv){
+                            debug_print("received notif %d\r\n",notif_recv);
                             // Check for undesirable notification
-                            //if(notif_recv & MOTOR_NOTIF_LIM_DOWN) {
-                            //set the condition above
-                            if(notif_recv & MOTOR_NOTIF_MOVEMENT_FINISHED) {
+                            if(notif_recv & MOTOR_NOTIF_LIM_UP) {
                                 calibState = calibPosEnd;
                                 currentPosition = currentPosition + MOTOR_USTEPS*steps_calib_end;
                                 set_motor_goto_position_accel_exec(currentPosition, f_home, 2, 200);
@@ -178,7 +179,7 @@ void MotorControlTask(void *pvParameters)
 
                     case calibPosEnd:
                         // BOUNDED wait for limit switch up 
-                        n_wait_recv = xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(5000));
+                        n_wait_recv = xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(10000));
                         
                         // Verify deadline
                         if (n_wait_recv){
@@ -191,9 +192,11 @@ void MotorControlTask(void *pvParameters)
                                 set_motor_goto_position_accel_exec(currentPosition, MOTOR_USTEPS*steps_caliv_vol, 2, 200);
                                 debug_print("to flow vol\r\n");
                             } else {
+                                debug_print("pos end ERROR1\r\n");
                                 //TODO Notify MOTOR_ERROR
                             }
                         } else {
+                            debug_print("pos end ERROR1\r\n");
                             // TODO Notify MOTOR_ERROR     
                         }
                         break;

@@ -3,5 +3,4 @@
 
 void init_limit_switch();
 
-
 #endif // LIMIT_SWITCH_H_
