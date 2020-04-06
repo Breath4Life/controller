@@ -56,7 +56,7 @@ void SFM3000Task(void *pvParameters)
     {
 
         TickType_t xLastWakeTime;
-        const TickType_t xFrequency = pdMS_TO_TICKS(40); // which is around 38 ms on scope
+        const TickType_t xFrequency = pdMS_TO_TICKS(200); // which is around 38 ms on scope
 
         sfm3000_poll();
 

@@ -97,12 +97,17 @@ uint8_t i2c_requestFrom5(uint8_t address, uint8_t quantity, uint32_t iaddress, u
     quantity = BUFFER_LENGTH;
   }
   // perform blocking read into buffer
-  uint8_t read = twi_readFrom(address, rxBuffer, quantity, sendStop);
+  while(twi_readFrom_start(address, quantity, sendStop));
+  while(twi_readFrom_finish(rxBuffer, quantity));
   // set rx buffer iterator vars
   rxBufferIndex = 0;
-  rxBufferLength = read;
+  rxBufferLength = quantity;
+  return quantity;
+}
 
-  return read;
+void resetBuffer(uint8_t quantity) {
+  rxBufferIndex = 0;
+  rxBufferLength = quantity;
 }
 
 uint8_t i2c_requestFrom3(uint8_t address, uint8_t quantity, uint8_t sendStop) {
@@ -142,7 +147,11 @@ void i2c_beginTransmission(uint8_t address)
 uint8_t i2c_endTransmission(uint8_t sendStop)
 {
   // transmit buffer (blocking)
-  uint8_t ret = twi_writeTo(txAddress, txBuffer, txBufferLength, 1, sendStop);
+  while(twi_writeTo_start(txAddress, txBuffer, txBufferLength, sendStop));
+  uint8_t ret;
+  do {
+      ret = twi_writeTo_finish(1);
+  } while (ret == 1);
   // reset tx buffer iterator vars
   txBufferIndex = 0;
   txBufferLength = 0;

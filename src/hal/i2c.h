@@ -27,16 +27,17 @@ Modified 2012 by Todd Krein (todd@krein.org) to implement repeated starts
 
 #define BUFFER_LENGTH 32
 
+extern uint8_t rxBuffer[BUFFER_LENGTH];
 
 void i2c_begin(void);
 void i2c_end(void);
 void i2c_setClock(uint32_t);
 void i2c_beginTransmission(uint8_t);
 uint8_t i2c_endTransmission(uint8_t);
-uint8_t i2c_requestFrom(uint8_t, uint8_t);
-uint8_t i2c_requestFrom3(uint8_t, uint8_t, uint8_t);
+void resetBuffer(uint8_t quantity);
 int i2c_write(uint8_t);
 int i2c_available(void);
+uint8_t i2c_requestFrom5(uint8_t address, uint8_t quantity, uint32_t iaddress, uint8_t isize, uint8_t sendStop);
 int i2c_read(void);
 int i2c_peek(void);
 void i2c_flush(void);
