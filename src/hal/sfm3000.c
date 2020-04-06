@@ -2,6 +2,7 @@
 
 #include "sfm3000.h"
 #include "i2c.h"
+#include "twi.h"
 #include "timers.h"
 #include "../core/debug.h"
 
@@ -38,9 +39,53 @@ static uint8_t crc8(const uint8_t data, uint8_t crc)
     return crc;
 }
 
-static uint16_t get_value()
+static enum {
+    read_from_start,
+    read_from_finish,
+} read_state;
+
+volatile uint16_t reading;
+
+static uint8_t upd_value()
 {
-    i2c_requestFrom(i2c_address, 3); // set read 3 bytes from device with address 0x40
+    if (read_state == read_from_start) {
+        if (twi_readFrom_start(i2c_address, 3, 1) == 0) {
+            read_state = read_from_finish;
+        }
+    }
+    if (read_state == read_from_finish) {
+        if (twi_readFrom_finish(rxBuffer, 3) == 0) {
+            read_state = read_from_start;
+            resetBuffer(3);
+
+            uint16_t a = i2c_read(); // received first byte stored here. The variable "uint16_t" can hold 2 bytes, this will be relevant later
+            uint8_t b = i2c_read(); // second received byte stored here
+            uint8_t crc = i2c_read(); // crc value stored here
+
+            uint8_t mycrc = 0xFF; // initialize crc variable
+            mycrc = crc8(a, mycrc); // let first byte through CRC calculation
+            mycrc = crc8(b, mycrc); // and the second byte too
+
+            if (mycrc != crc) { // check if the calculated and the received CRC byte matches
+                debug_print("crc error\r\n");
+                //return 2; // TODO the CRC computation seems broken...
+            }
+            a = (a << 8) | b; // combine the two received bytes to a 16bit integer value
+            // a >>= 2; // remove the two least significant bits
+            //float Flow = (float)a;
+            debug_print("updated reading\r\n");
+            reading = a;
+            return 0;
+        }
+    }
+    return 1;
+}
+
+
+static uint16_t get_value() {
+  while(twi_readFrom_start(i2c_address, 3, 1));
+  while(twi_readFrom_finish(rxBuffer, 3));
+  resetBuffer(3);
     uint16_t a = i2c_read(); // received first byte stored here. The variable "uint16_t" can hold 2 bytes, this will be relevant later
     uint8_t b = i2c_read(); // second received byte stored here
     uint8_t crc = i2c_read(); // crc value stored here
@@ -49,6 +94,7 @@ static uint16_t get_value()
     mycrc = crc8(a, mycrc); // let first byte through CRC calculation
     mycrc = crc8(b, mycrc); // and the second byte too
     if (mycrc != crc) { // check if the calculated and the received CRC byte matches
+        debug_print("crc error2\r\n");
         //Serial.println("Error: wrong CRC"); // TODO
     }
 
@@ -67,24 +113,14 @@ void sfm3000_init()
     i2c_write(0x00);
     i2c_endTransmission(0);
 
-    vTaskDelay(100 / portTICK_PERIOD_MS);
+    //vTaskDelay(100 / portTICK_PERIOD_MS);
+
+    read_state = read_from_start;
 
     // first measurement might not be valid (according to datasheet)
     // therefore is unused in init function
     unsigned int result = get_value();
-
-    air_volume_sfm3000=0;
-
-    // take the first measurement to init the
-    // integration of the volume
-    uint32_t curr_time = clock_millis() * 1000;
-    result = get_value();
-    float flow = ((float)result - offset_sfm3000) / scale_sfm3000;
-
-    // update previous time
-    previous_time_sfm3000 = curr_time;
-    // update current flow in slm
-    air_flow_sfm3000 = flow;
+    upd_value();
 }
 
 uint8_t insp_on = 0;
@@ -92,8 +128,10 @@ uint32_t n_non_print = 0;
 
 void sfm3000_poll()
 {
+    upd_value();
     uint32_t curr_time = clock_millis() * 1000;
-    uint16_t result = get_value();
+    //uint16_t result = get_value();
+    uint16_t result = reading;
     int32_t flow = (((int32_t) result) - offset_sfm3000) * 1000 / scale_sfm3000; // sml/min
 
     // time diff [ms]
@@ -133,19 +171,3 @@ void sfm3000_poll()
     //Serial.println(n_inc);
 }
 
-void sfm3000_reset()
-{
-    // reset volumes 
-    air_volume_sfm3000=0;
-
-    // take the first measurement to init the
-    // integration of the volume
-    unsigned long curr_time = clock_millis() * 1000;
-    unsigned int result = get_value();
-    float flow = ((float)result - offset_sfm3000) / scale_sfm3000;
-
-    // update previous time
-    previous_time_sfm3000 = curr_time;
-    // update current flow in slm
-    air_flow_sfm3000 = flow;
-}

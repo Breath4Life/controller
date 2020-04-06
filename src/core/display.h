@@ -1,11 +1,11 @@
 #include "FreeRTOS.h"
 
-#define WELCOME_MSG1 "welcome1 d    "
-#define WELCOME_MSG2 "welcome2     "
-#define WAIT_CALI_MSG1 "walibration1 "
-#define WAIT_CALI_MSG2 "walibration2 "
-#define CALI_MSG1 "calibration1  "
-#define CALI_MSG2 "calibration2  "
+#define WELCOME_MSG1    "Breath4Life v1.0"
+#define WELCOME_MSG2    "Starting...     "
+#define WAIT_CALI_MSG1  "Press START     "
+#define WAIT_CALI_MSG2  "to calibrate.   "
+#define CALI_MSG1       "Calibrating...  "
+#define CALI_MSG2       "Please wait...  "
 
 #define DISP_NOTIF_ALARM 0x01
 #define DISP_NOTIF_PARAM 0x02
