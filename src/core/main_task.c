@@ -12,17 +12,17 @@
 #include "hal/io.h"
 #include "hal/pins.h"
 
-GlobalState_t globalState;
-AlarmState_t alarmState;
-ErrorCode_t errorCode;
+volatile GlobalState_t globalState;
+volatile AlarmState_t alarmState;
+volatile ErrorCode_t errorCode;
 
-uint8_t mute_on;
+volatile uint8_t mute_on;
 TickType_t mute_time;
 
 uint8_t tidal_vol; // tens of mL
 uint8_t bpm;
 uint8_t ie;
-uint8_t pmax;
+uint8_t p_max;
 uint8_t extra_param;
 
 static void process_alarm(uint32_t notification);
@@ -44,7 +44,7 @@ void initMainTask()
     tidal_vol = DEFAULT_TIDAL_VOL;
     bpm = DEFAULT_BPM;
     ie = DEFAULT_IE;
-    pmax = DEFAULT_PMAX;
+    p_max = DEFAULT_PMAX;
     extra_param = 0;
 
     initButtons();
@@ -146,7 +146,7 @@ void MainTask(void *pvParameters)
                 if(extra_param == 0) {
                     ie = MIN(MAX_IE, ie + INC_IE);
                 } else {
-                    pmax = MIN(MAX_PMAX, pmax + INC_PMAX);
+                    p_max = MIN(MAX_PMAX, p_max + INC_PMAX);
                 }
                 updated_setting = 1;
             }
@@ -154,7 +154,7 @@ void MainTask(void *pvParameters)
                 if(extra_param == 0) {
                     ie = MAX(MIN_IE, ie - INC_IE);
                 } else {
-                    pmax = MAX(MIN_PMAX, pmax - INC_PMAX);
+                    p_max = MAX(MIN_PMAX, p_max - INC_PMAX);
                 }
                 updated_setting = 1;
              }
@@ -294,5 +294,9 @@ void process_alarm(uint32_t notification)
     } else {
         // Nothing to do here, already at highest priority
     }
+}
+
+uint8_t stoppedOrRunning() {
+    return (globalState == stop || globalState == run);
 }
 

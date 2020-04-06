@@ -42,6 +42,8 @@
 //#include "pins_arduino.h"
 #include "twi.h"
 
+#include "core/debug.h"
+
 static volatile uint8_t twi_state;
 static volatile uint8_t twi_slarw;
 static volatile uint8_t twi_sendStop;			// should the transaction end with a stop
@@ -150,18 +152,12 @@ void twi_setFrequency(uint32_t frequency)
  *          sendStop: Boolean indicating whether to send a stop at the end
  * Output   number of bytes read
  */
-uint8_t twi_readFrom(uint8_t address, uint8_t* data, uint8_t length, uint8_t sendStop)
+uint8_t twi_readFrom_start(uint8_t address, uint8_t length, uint8_t sendStop)
 {
-  uint8_t i;
-
-  // ensure data will fit into buffer
-  if(TWI_BUFFER_LENGTH < length){
-    return 0;
-  }
 
   // wait until twi is ready, become master receiver
-  while(TWI_READY != twi_state){
-    continue;
+  if (TWI_READY != twi_state) {
+      return 1;
   }
   twi_state = TWI_MRX;
   twi_sendStop = sendStop;
@@ -191,17 +187,22 @@ uint8_t twi_readFrom(uint8_t address, uint8_t* data, uint8_t length, uint8_t sen
     twi_inRepStart = false;			// remember, we're dealing with an ASYNC ISR
     do {
       TWDR = twi_slarw;
-    } while(TWCR & _BV(TWWC));
+    } while(TWCR & _BV(TWWC)); // should not block (from tests...)
     TWCR = _BV(TWINT) | _BV(TWEA) | _BV(TWEN) | _BV(TWIE);	// enable INTs, but not START
   }
   else
     // send start condition
     TWCR = _BV(TWEN) | _BV(TWIE) | _BV(TWEA) | _BV(TWINT) | _BV(TWSTA);
+  return 0;
+}
 
+
+uint8_t twi_readFrom_finish(uint8_t* data, uint8_t length) {
+    if (TWI_MRX == twi_state) {
+        return 1;
+    }
+  uint8_t i;
   // wait for read operation to complete
-  while(TWI_MRX == twi_state){
-    continue;
-  }
 
   if (twi_masterBufferIndex < length)
     length = twi_masterBufferIndex;
@@ -210,8 +211,7 @@ uint8_t twi_readFrom(uint8_t address, uint8_t* data, uint8_t length, uint8_t sen
   for(i = 0; i < length; ++i){
     data[i] = twi_masterBuffer[i];
   }
-	
-  return length;
+  return 0;
 }
 
 /* 
@@ -229,18 +229,12 @@ uint8_t twi_readFrom(uint8_t address, uint8_t* data, uint8_t length, uint8_t sen
  *          3 .. data send, NACK received
  *          4 .. other twi error (lost bus arbitration, bus error, ..)
  */
-uint8_t twi_writeTo(uint8_t address, uint8_t* data, uint8_t length, uint8_t wait, uint8_t sendStop)
+uint8_t twi_writeTo_start(uint8_t address, uint8_t* data, uint8_t length, uint8_t sendStop)
 {
   uint8_t i;
-
-  // ensure data will fit into buffer
-  if(TWI_BUFFER_LENGTH < length){
-    return 1;
-  }
-
   // wait until twi is ready, become master transmitter
-  while(TWI_READY != twi_state){
-    continue;
+  if(TWI_READY != twi_state){
+      return 1;
   }
   twi_state = TWI_MTX;
   twi_sendStop = sendStop;
@@ -279,10 +273,13 @@ uint8_t twi_writeTo(uint8_t address, uint8_t* data, uint8_t length, uint8_t wait
   else
     // send start condition
     TWCR = _BV(TWINT) | _BV(TWEA) | _BV(TWEN) | _BV(TWIE) | _BV(TWSTA);	// enable INTs
+  return 0;
+}
 
+uint8_t twi_writeTo_finish(uint8_t wait) {
   // wait for write operation to complete
-  while(wait && (TWI_MTX == twi_state)){
-    continue;
+  if (wait && (TWI_MTX == twi_state)){
+      return 1;
   }
   
   if (twi_error == 0xFF)

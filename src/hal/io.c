@@ -114,8 +114,7 @@ void dio_write(uint8_t pin, uint8_t level)
     }
 }
 
-
-uint16_t aio_read(uint8_t pin) {
+void aio_read_start(uint8_t pin) {
 
     const uint8_t refs1 = 0 << 7;
     const uint8_t refs0 = 1 << 6;
@@ -145,7 +144,13 @@ uint16_t aio_read(uint8_t pin) {
     }
 
     ADCSRA |= 1 << ADSC;
+}
 
+uint8_t aio_ready(){
+    return bit_is_set(ADCSRA, ADSC);
+}
+
+uint16_t aio_read_result() {
     // Wait conversion
     while (bit_is_set(ADCSRA, ADSC));
 

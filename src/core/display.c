@@ -87,7 +87,7 @@ static void disp_param() {
     if (extra_param == 0) {
         sprintf(param_buffer, "%2u0 %2u I:E = 1:%1u", tidal_vol, bpm, ie);
     } else {
-        sprintf(param_buffer, "%2u0 %2u Pmax = %2u", tidal_vol, bpm, pmax);
+        sprintf(param_buffer, "%2u0 %2u Pmax = %2u", tidal_vol, bpm, p_max);
     }
     lcd_write_string(param_buffer,2,1,NO_CR_LF);
 }

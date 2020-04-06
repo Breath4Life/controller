@@ -38,18 +38,22 @@ void init_limit_switch() {
 ISR(PCINT0_vect) {
     uint8_t l0 = dio_read(DIO_PIN_LIM_SWITCH_0_MONITORING);
     uint8_t l1 = dio_read(DIO_PIN_LIM_SWITCH_1_MONITORING);
+    BaseType_t higherPriorityTaskWoken = pdFALSE;
     if (!l0 && lim_switch0_lvl) {
-        xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_LIM_DOWN, eSetBits);
+        xTaskNotifyFromISR(motorControlTaskHandle, MOTOR_NOTIF_LIM_DOWN, eSetBits, &higherPriorityTaskWoken);
 #if DEBUG_LIM_SWITCH
         debug_print("switch0 pressed\r\n");
 #endif // DEBUG_LIM_SWITCH
     }
     if (!l1 && lim_switch1_lvl) {
-        xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_LIM_UP, eSetBits);
+        xTaskNotifyFromISR(motorControlTaskHandle, MOTOR_NOTIF_LIM_UP, eSetBits, &higherPriorityTaskWoken);
 #if DEBUG_LIM_SWITCH
         debug_print("switch1 pressed\r\n");
 #endif // DEBUG_LIM_SWITCH
     }
     lim_switch0_lvl = l0;
     lim_switch1_lvl = l1;
+    if (higherPriorityTaskWoken) {
+        taskYIELD();
+    }
 }
