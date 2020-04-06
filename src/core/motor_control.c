@@ -35,23 +35,44 @@ uint32_t f_insp;
 uint32_t f_plateau;
 uint32_t f_exp;
 
-/////////////////////////////////////
+const uint32_t vol_ml = 700;
+
+///////////////////////////////////
 
 
 volatile MotorState_t motorState;
 volatile BreathState_t breathState;
+volatile CalibState_t calibState;
+volatile FlowState_t flowState;
 
-unsigned long homePosition;
+int32_t currentPosition;
+int32_t homePosition;
 uint32_t notif_recv;
 
 TickType_t previousWakeTime;
+
+// TODO reset proper value! 
+const uint32_t f_home = 4000; // steps/s (not µsteps/s)
+
+const int32_t steps_calib_down = 2000;
+const int32_t steps_calib_up = 1000;
+const int32_t steps_calib_end = 60;
+const int32_t steps_caliv_vol = 600;
+
+const uint32_t thresh_calib_vol_mil = 600;
+
+// Threshold for volume calibraiton 
+
 
 void init_motor() {
     init_limit_switch();
     setup_motor();
 
-    motorState = motorStopped;
+    motorState = motorInit;
     breathState = startNewCycle;
+    calibState = calibDown; 
+    flowState = flowVol;
+    currentPosition = 0;
     homePosition = 0;
 
     // Breathing cycles parameter
@@ -85,10 +106,146 @@ void MotorControlTask(void *pvParameters)
 {
     while (1)
     {
+        BaseType_t n_wait_recv;
 
         switch (motorState){
-            case motorStopped:
+            case motorInit:
+                // NON BOUNDED wait for calibrating notification
+                xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,portMAX_DELAY);
+
+                if (notif_recv & MOTOR_NOTIF_START_CALIBRATION) {
+                    motorState = motorCalibrating;
+                    calibState = calibDown;
+                    currentPosition = MOTOR_USTEPS*steps_calib_down;
+                    motor_enable();
+                    set_motor_goto_position_accel_exec(currentPosition, f_home, 2, 200);
+                    debug_print("to calib down\r\n");
+                }
+                break;
+
+            case motorCalibrating:
+                switch (calibState) {
+                    case calibDown:
+                        // BOUNDED wait for limit switch down 
+                        n_wait_recv = xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(600000));
+                        
+                        // Verify deadline
+                        if (n_wait_recv){
+                            // Check for undesirable notification
+                            if (notif_recv & MOTOR_NOTIF_LIM_UP) {
+                                calibState = calibDown;
+                            //} else if(notif_recv & MOTOR_NOTIF_LIM_DOWN) {
+                            // TODO: set the condition above
+                            } else if(notif_recv & MOTOR_NOTIF_MOVEMENT_FINISHED) {
+                                calibState = calibUp;
+                                int32_t rem_usteps = motor_remaining_distance();
+                                currentPosition = currentPosition-rem_usteps-MOTOR_USTEPS*steps_calib_up; 
+                                set_motor_goto_position_accel_exec(currentPosition, f_home, 2, 200);
+                                debug_print("to calib up\r\n");
+                            } else {
+                                debug_print("DOWN calib SEND ERROR1\r\n");
+                                //TODO Notify MOTOR_ERROR
+                            }
+                        } else {
+                            // TODO Notify MOTOR_ERROR     
+                            debug_print("DOWN calib SEND ERROR2\r\n"); 
+                        }
+                        break;
+                    
+                    case calibUp:
+                        // BOUNDED wait for limit switch up 
+                        n_wait_recv = xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(300000));
+                        
+                        // Verify deadline
+                        if (n_wait_recv){
+                            // Check for undesirable notification
+                            //if(notif_recv & MOTOR_NOTIF_LIM_DOWN) {
+                            //set the condition above
+                            if(notif_recv & MOTOR_NOTIF_MOVEMENT_FINISHED) {
+                                calibState = calibPosEnd;
+                                currentPosition = currentPosition + MOTOR_USTEPS*steps_calib_end;
+                                set_motor_goto_position_accel_exec(currentPosition, f_home, 2, 200);
+                                debug_print("to calib pos end\r\n");
+                            } else {
+                                debug_print("UP calib SEND ERROR1\r\n");
+                                //TODO Notify MOTOR_ERROR
+                            }
+                        } else {
+                            debug_print("UP calib SEND ERROR1\r\n");
+                            // TODO Notify MOTOR_ERROR     
+                        }
+                        break;
+
+                    case calibPosEnd:
+                        // BOUNDED wait for limit switch up 
+                        n_wait_recv = xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(5000));
+                        
+                        // Verify deadline
+                        if (n_wait_recv){
+                            // Check for undesirable notification
+                            if(notif_recv & MOTOR_NOTIF_MOVEMENT_FINISHED) {
+                                homePosition = currentPosition;
+                                currentPosition = currentPosition + MOTOR_USTEPS*steps_caliv_vol;
+                                motorState = motorFlowCheck;
+                                flowState = flowVol;
+                                set_motor_goto_position_accel_exec(currentPosition, MOTOR_USTEPS*steps_caliv_vol, 2, 200);
+                                debug_print("to flow vol\r\n");
+                            } else {
+                                //TODO Notify MOTOR_ERROR
+                            }
+                        } else {
+                            // TODO Notify MOTOR_ERROR     
+                        }
+                        break;
+                    }
+                    break;
+
+            case motorFlowCheck: 
+                switch (flowState){
+                    case flowVol:
+                        // BOUNDED wait for limit switch up 
+                        n_wait_recv = xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(5000));
+                        
+                        // Verify deadline
+                        if (n_wait_recv){
+                            // Check for undesirable notification
+                            if(notif_recv & MOTOR_NOTIF_MOVEMENT_FINISHED) {
+                                //TODO add volume check!
+                                flowState = flowVolEnd;
+                                currentPosition = homePosition;
+                                set_motor_goto_position_accel_exec(currentPosition, MOTOR_USTEPS*steps_caliv_vol, 2, 200);
+                                debug_print("to flow vol end\r\n");
+                            } else {
+                                // TODO Notify MOTOR_ERROR
+                            }
+                        } else {
+                            // TODO Notify MOTOR_ERROR     
+                        }
+                        break;
+
+                    case flowVolEnd:
+                        // BOUNDED wait for limit switch up 
+                        n_wait_recv = xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(5000));
+                        
+                        // Verify deadline
+                        if (n_wait_recv){
+                            // Check for undesirable notification
+                            if(notif_recv & MOTOR_NOTIF_MOVEMENT_FINISHED) {
+                                motor_disable();
+                                motorState = motorStopped;
+                                debug_print("END INIT PHASE\r\n");
+                            } else {
+                                // TODO Notify MOTOR_ERROR
+                            }
+                        } else {
+                            // TODO Notify MOTOR_ERROR     
+                        }
+                        break;
+
+                }
+                break;
                 
+            case motorStopped:
                 // Non bounded wait for notif 
                 xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,portMAX_DELAY);
 
