@@ -17,5 +17,6 @@ void tone_start(uint16_t freq)
 
 void tone_stop()
 {
+    // TODO check that result is low-level
     TCCR0A = (1<<WGM01); // WGM01 : CTC mode, COM0A0 : Output toggle OC0A
 }
