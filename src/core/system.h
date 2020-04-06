@@ -8,7 +8,7 @@
 
 #define ALL_NOTIF_BITS 0xFFFFFFFF
 
-#define WELCOME_MSG_DUR pdMS_TO_TICKS(800L)
+#define WELCOME_MSG_DUR pdMS_TO_TICKS(2000L)
 
 extern TaskHandle_t mainTaskHandle;
 extern TaskHandle_t motorControlTaskHandle;
@@ -29,13 +29,22 @@ typedef enum {
 extern GlobalState_t globalState;
 
 typedef enum {
-    noAlarm
+    noAlarm,
+    highPriorityAlarm,
+    mediumPriorityAlarm
 } AlarmState_t;
 
 extern AlarmState_t alarmState;
 
 typedef enum {
-    noError
+    noError,
+    overPressure,
+    noPressure,
+    highPressure,
+    highTemperature,
+    lowPressure,
+    abnVolume,
+    abnFreq
 } ErrorCode_t;
 
 extern ErrorCode_t errorCode;
