@@ -32,7 +32,8 @@ extern volatile GlobalState_t globalState;
 typedef enum {
     noAlarm,
     highPriorityAlarm,
-    mediumPriorityAlarm
+    mediumPriorityAlarm,
+    cricitalPriorityAlarm
 } AlarmState_t;
 
 extern volatile AlarmState_t alarmState;

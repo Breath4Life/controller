@@ -1,5 +1,7 @@
 #include "FreeRTOS.h"
 
+void init_alarm();
+
 /**
  * @AlarmsTask Handle the alarms.
  *
