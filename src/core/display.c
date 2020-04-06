@@ -11,6 +11,7 @@
 #include "core/display.h"
 #include "core/main_task.h"
 #include "core/debug.h"
+#include "core/analog_read.h"
 
 static void disp_alarm();
 static void disp_param();
@@ -18,9 +19,13 @@ static void disp_inst_p();
 static void disp_peak_p();
 static void disp_state();
 
+#define DEBUG_LCD 1
+
 void LCDDisplayTask(void *pvParameters)
 {
-    debug_print("In LCDDisplayTask.\r\n");
+#if DEBUG_LCD
+    debug_print("[LCD] Starting.\r\n");
+#endif
 
     // Wait 100ms (otherwhise welcome message not printed)
     TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -29,7 +34,6 @@ void LCDDisplayTask(void *pvParameters)
     lcd_initLCD();
     lcd_write_string(WELCOME_MSG1, 1, 1, NO_CR_LF);
     lcd_write_string(WELCOME_MSG2, 2, 1, NO_CR_LF);
-    debug_print("Welcome message written.\r\n");
 
     while (1) {
         uint32_t notification;
@@ -39,17 +43,27 @@ void LCDDisplayTask(void *pvParameters)
             disp_alarm();
         }
         if (notification & DISP_NOTIF_PARAM) {
-            debug_print("LCD rcvd notif param.\r\n");
+#if DEBUG_LCD
+            debug_print("[LCD] rcvd notif param.\r\n");
+#endif
             disp_param();
         }
         if (notification & DISP_NOTIF_INST_P) {
+#if DEBUG_LCD
+            debug_print("[LCD] rcvd notif inst p.\r\n");
+#endif
             disp_inst_p();
         }
         if (notification & DISP_NOTIF_PEAK_P) {
+#if DEBUG_LCD
+            debug_print("[LCD] rcvd notif peak p.\r\n");
+#endif
             disp_peak_p();
         }
         if (notification & DISP_NOTIF_STATE) {
-            debug_print("LCD rcvd notif state.\r\n");
+#if DEBUG_LCD
+            debug_print("[LCD] rcvd notif state.\r\n");
+#endif
             disp_state();
         }
 
@@ -94,30 +108,26 @@ static void disp_param() {
 
 char inst_p_buffer[5];
 static void disp_inst_p() {
-    sprintf(inst_p_buffer, "P%2u ", 15);
+    sprintf(inst_p_buffer, "P%2u ", p);
     lcd_write_string(inst_p_buffer, 1, 1, NO_CR_LF);
 }
 
 char peak_p_buffer[6];
 static void disp_peak_p() {
-    sprintf(peak_p_buffer, "PIC%2u", 33);
+    sprintf(peak_p_buffer, "PIC%2u", p_peak);
     lcd_write_string(peak_p_buffer, 1, 5, NO_CR_LF);
 }
 
 static void disp_state() {
     if (globalState == welcome_wait_cal) {
-        debug_print("disp_state(welcome_wait_call)\r\n");
         lcd_write_string(WAIT_CALI_MSG1, 1, 1, NO_CR_LF);
         lcd_write_string(WAIT_CALI_MSG2, 2, 1, NO_CR_LF);
     } else if(globalState == calibration) {
         lcd_write_string(CALI_MSG1, 1, 1, NO_CR_LF);
         lcd_write_string(CALI_MSG2, 2, 1, NO_CR_LF);
-        debug_print("disp_state(calibration)\r\n");
     } else if (globalState == stop) {
         lcd_write_string(" STOP ",1,10,NO_CR_LF);
-        debug_print("disp_state(stop)\r\n");
     } else if (globalState == run) {
         lcd_write_string(" RUN  ",1,10,NO_CR_LF);
-        debug_print("disp_state(run)\r\n");
     }
 }

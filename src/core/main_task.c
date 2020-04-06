@@ -27,7 +27,11 @@ uint8_t extra_param;
 
 static void process_alarm(uint32_t notification);
 
+#define DEBUG_MAIN 1
+
+#if DEBUG_MAIN
 uint8_t test_alarm = 3;
+#endif
 
 void initMainTask()
 {
@@ -166,12 +170,10 @@ void MainTask(void *pvParameters)
 
             if (BUTTON_PRESSED(buttons_pressed, button_startstop)) {
                 if (globalState == stop) {
-                    debug_print("Stop -> run.\r\n");
                     globalState = run;
                     // TODO notify motor start
                     updated_state = 1;
                 } else if (globalState == run) {
-                    debug_print("Run -> stop.\r\n");
                     globalState = stop;
                     updated_state = 1;
                     // TODO notify motor halt
@@ -203,23 +205,23 @@ void MainTask(void *pvParameters)
             }
 
             // TODO test-only, to be removed
-            if (test_alarm == 3) {
-                vTaskDelay(pdMS_TO_TICKS(1000));
-                process_alarm(ALARM_NOTIF_ABN_VOLUME);
-                test_alarm--;
-            }
+            //if (test_alarm == 3) {
+            //    vTaskDelay(pdMS_TO_TICKS(1000));
+            //    process_alarm(ALARM_NOTIF_ABN_VOLUME);
+            //    test_alarm--;
+            //}
 
-            if (test_alarm == 2) {
-                vTaskDelay(pdMS_TO_TICKS(3000));
-                process_alarm(ALARM_NOTIF_OVERPRESSURE);
-                test_alarm--;
-            }
+            //if (test_alarm == 2) {
+            //    vTaskDelay(pdMS_TO_TICKS(3000));
+            //    process_alarm(ALARM_NOTIF_OVERPRESSURE);
+            //    test_alarm--;
+            //}
 
-            if (test_alarm == 1) {
-                vTaskDelay(pdMS_TO_TICKS(3000));
-                process_alarm(ALARM_NOTIF_ABN_FREQ);
-                test_alarm--;
-            }
+            //if (test_alarm == 1) {
+            //    vTaskDelay(pdMS_TO_TICKS(3000));
+            //    process_alarm(ALARM_NOTIF_ABN_FREQ);
+            //    test_alarm--;
+            //}
         }
 
         // 10. Critical failure during calibration
@@ -244,8 +246,11 @@ void MainTask(void *pvParameters)
 
 void process_alarm(uint32_t notification)
 {
+#if DEBUG_MAIN
+    debug_print("[MAIN] ALARM notif: %u.\r\n", notification);
+#endif
     if (alarmState == noAlarm) {
-        debug_print("Rcvd alarm from noAlarm state");
+        debug_print("Rcvd alarm from noAlarm state.\r\n");
         if (notification >= 0x08) {
             debug_print("High priority alarm.\r\n");
             alarmState = highPriorityAlarm;
@@ -260,18 +265,39 @@ void process_alarm(uint32_t notification)
 
         if (notification & ALARM_NOTIF_OVERPRESSURE) {
             errorCode = overPressure;
+#if DEBUG_MAIN
+            debug_print("[MAIN] ALARM: Overpressure.\r\n");
+#endif
         } else if (notification & ALARM_NOTIF_NO_PRESSURE) {
             errorCode = noPressure;
+#if DEBUG_MAIN
+            debug_print("[MAIN] ALARM: No pressure.\r\n");
+#endif
         } else if (notification & ALARM_NOTIF_HIGH_PRESSURE) {
             errorCode = highPressure;
+#if DEBUG_MAIN
+            debug_print("[MAIN] ALARM: High pressure.\r\n");
+#endif
         } else if (notification & ALARM_NOTIF_HIGH_TEMP) {
             errorCode = highTemperature;
+#if DEBUG_MAIN
+            debug_print("[MAIN] ALARM: High temp.\r\n");
+#endif
         } else if (notification & ALARM_NOTIF_LOW_PRESSURE) {
             errorCode = lowPressure;
+#if DEBUG_MAIN
+            debug_print("[MAIN] ALARM: low pressure.\r\n");
+#endif
         } else if (notification & ALARM_NOTIF_ABN_VOLUME) {
             errorCode = abnVolume;
+#if DEBUG_MAIN
+            debug_print("[MAIN] ALARM: volume.\r\n");
+#endif
         } else if (notification & ALARM_NOTIF_ABN_FREQ) {
             errorCode = abnFreq;
+#if DEBUG_MAIN
+            debug_print("[MAIN] ALARM: frequency.\r\n");
+#endif
         }
 
         xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_ALARM, eSetBits);

@@ -14,6 +14,7 @@ extern TaskHandle_t mainTaskHandle;
 extern TaskHandle_t motorControlTaskHandle;
 extern TaskHandle_t userInterfaceTaskHandle;
 extern TaskHandle_t lcdDisplayTaskHandle;
+extern TaskHandle_t analogReadTaskHandle;
 extern TaskHandle_t alarmsTaskHandle;
 extern TaskHandle_t sfm3000TaskHandle;
 

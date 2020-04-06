@@ -12,9 +12,9 @@
 #define MAX_TEMP0 50
 #define MAX_TEMP1 50
 
-extern volatile uint8_t p;
-extern volatile uint8_t p_peak;
-extern volatile uint8_t cycle_p_peak;
+extern volatile int16_t p;
+extern volatile int16_t p_peak;
+extern volatile int16_t cycle_p_peak;
 
 extern volatile uint8_t temp0;
 extern volatile uint8_t temp1;

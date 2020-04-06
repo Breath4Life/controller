@@ -13,6 +13,7 @@
 #include "core/ui.h"
 #include "core/alarms.h"
 #include "core/main_task.h"
+#include "core/analog_read.h"
 
 #include "hal/io.h"
 #include "hal/pins.h"
@@ -23,6 +24,7 @@ TaskHandle_t mainTaskHandle;
 TaskHandle_t motorControlTaskHandle;
 TaskHandle_t userInterfaceTaskHandle;
 TaskHandle_t lcdDisplayTaskHandle;
+TaskHandle_t analogReadTaskHandle;
 TaskHandle_t alarmsTaskHandle;
 TaskHandle_t sfm3000TaskHandle;
 
@@ -96,7 +98,7 @@ int main(void)
     xTaskCreate(AlarmsTask,        (const char *) "AlarmsTask",        64,  NULL,  4, &alarmsTaskHandle);
     //xTaskCreate(LEDTask,           (const char *) "LEDTask",           128, NULL,  1, NULL);
     //xTaskCreate(ReadIOTask,        (const char *) "ReadIOTask",        128, NULL,  1, NULL);
-    //xTaskCreate(ReadAnalogTask,    (const char *) "ReadAnalogTask",    128, NULL,  1, NULL);
+    xTaskCreate(AnalogReadTask,    (const char *) "ReadAnalogTask",    128, NULL,  1, &analogReadTaskHandle);
     //xTaskCreate(SFM3000Task,       (const char *) "SFM3000Task",       200, NULL,  1, &sfm3000TaskHandle);
 
     // Run the OS

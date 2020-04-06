@@ -147,7 +147,7 @@ void aio_read_start(uint8_t pin) {
 }
 
 uint8_t aio_ready(){
-    return bit_is_set(ADCSRA, ADSC);
+    return ~bit_is_set(ADCSRA, ADSC);
 }
 
 uint16_t aio_read_result() {
