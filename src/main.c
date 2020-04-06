@@ -19,6 +19,7 @@
 #include "hal/pins.h"
 #include "hal/uart.h"
 #include "hal/lcd.h"
+#include "hal/time.h"
 
 TaskHandle_t mainTaskHandle;
 TaskHandle_t motorControlTaskHandle;
@@ -28,10 +29,9 @@ TaskHandle_t analogReadTaskHandle;
 TaskHandle_t alarmsTaskHandle;
 TaskHandle_t sfm3000TaskHandle;
 
-#include "hal/timers.h"
-
 void initHardware(void)
 {
+    init_time();
 
     init_debug_print_sem();
 
@@ -76,8 +76,6 @@ void initHardware(void)
     dio_init(DIO_PIN_LCD_D7,                  DIO_OUTPUT);
     dio_write(DIO_PIN_LCD_RW,                 DIO_LOW);
 
-    clock_init();
-
     lcd_initLCD();
 
     init_motor();
@@ -92,10 +90,10 @@ int main(void)
     // Create the different tasks
 
     xTaskCreate(MotorControlTask,  (const char *) "MotorControlTask",  1024, NULL, 10, &motorControlTaskHandle);
-    xTaskCreate(MainTask,  (const char *) "MainTask",  256, NULL, 12, &mainTaskHandle);
-    xTaskCreate(UserInterfaceTask, (const char *) "UserInterfaceTask", 64,  NULL,  8, &userInterfaceTaskHandle);
+    xTaskCreate(MainTask,  (const char *) "MainTask",  512, NULL, 12, &mainTaskHandle);
+    xTaskCreate(UserInterfaceTask, (const char *) "UserInterfaceTask", 128,  NULL,  8, &userInterfaceTaskHandle);
     xTaskCreate(LCDDisplayTask,    (const char *) "LCDDisplayTask",    512,  NULL,  3, &lcdDisplayTaskHandle);
-    xTaskCreate(AlarmsTask,        (const char *) "AlarmsTask",        64,  NULL,  4, &alarmsTaskHandle);
+    xTaskCreate(AlarmsTask,        (const char *) "AlarmsTask",        128,  NULL,  4, &alarmsTaskHandle);
     //xTaskCreate(LEDTask,           (const char *) "LEDTask",           128, NULL,  1, NULL);
     //xTaskCreate(ReadIOTask,        (const char *) "ReadIOTask",        128, NULL,  1, NULL);
     xTaskCreate(AnalogReadTask,    (const char *) "ReadAnalogTask",    128, NULL,  1, &analogReadTaskHandle);

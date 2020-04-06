@@ -9,7 +9,8 @@
 #include "hal/io.h"
 #include "hal/pins.h"
 #include "hal/i2c.h"
-#include "hal/sfm3000.h"
+#include "hal/time.h"
+#include "core/volume.h"
 
 
 SemaphoreHandle_t debug_print_semaphore;
@@ -47,7 +48,7 @@ void debug_print(const char *fmt, ...)
 
 void SFM3000Task(void *pvParameters)
 {
-    sfm3000_init();
+    init_volume();
 
     vTaskDelay(100 / portTICK_PERIOD_MS);
 
@@ -58,7 +59,10 @@ void SFM3000Task(void *pvParameters)
         TickType_t xLastWakeTime;
         const TickType_t xFrequency = pdMS_TO_TICKS(200); // which is around 38 ms on scope
 
-        sfm3000_poll();
+        poll_volume();
+        debug_print("vol: %lu\r\n", volume);
+
+        //debug_print("current time [us] %lu\r\n", time_us());
 
         vTaskDelayUntil( &xLastWakeTime, xFrequency );
     }
