@@ -108,13 +108,13 @@ static void disp_param() {
 
 char inst_p_buffer[5];
 static void disp_inst_p() {
-    sprintf(inst_p_buffer, "P%2u ", p);
+    sprintf(inst_p_buffer, "P%2i ", p);
     lcd_write_string(inst_p_buffer, 1, 1, NO_CR_LF);
 }
 
 char peak_p_buffer[6];
 static void disp_peak_p() {
-    sprintf(peak_p_buffer, "PIC%2u", p_peak);
+    sprintf(peak_p_buffer, "PIC%2i", p_peak);
     lcd_write_string(peak_p_buffer, 1, 5, NO_CR_LF);
 }
 

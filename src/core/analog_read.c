@@ -60,8 +60,6 @@ void AnalogReadTask(void *pvParameters) {
             switch (curr_mes) {
                 case pressure:
                     p = mes2pres(res);
-                    debug_print("res: %u\r\n", res);
-                    debug_print("P: %i\r\n", p);
                     if (stoppedOrRunning()) {
                         if (p > p_max) {
                             xTaskNotify(mainTaskHandle, ALARM_NOTIF_OVERPRESSURE, eSetBits);
@@ -123,12 +121,38 @@ void AnalogReadTask(void *pvParameters) {
 }
 
 static int16_t mes2pres(uint16_t mes) {
-    //static int32_t scale_MPX5010DP = 1110;
-    //static int32_t offset_MPX5010DP = -45320;
+    /*
+     * # Transfer function of MPX5010DP
+     * Vout[V] = Vs * (0.09*p[kPa] + 0.04) with Vs = 5V
+     * -> p[kPa] = (Vout/Vs - 0.04) / 0.09
+     *
+     * ADC resolution is 10 bit: 1 = 4.9mV.
+     * Unit conversion: 1kPa = 101.972mmH2O
+     *
+     * Scale for mmH2O      = 0.0049/5.0/ 0.09 * 101.971    = 1.110351
+     * Offset for mmH2O     = -0.04 / 0.09 * 101.971        = -45.320444
+     * Scale for cmH2O      = scale for mmH2O / 10          = 0.1110351
+     * Offset for cmH2O     = offset for mmH2O / 10         = -4.5320444
+     * Scale for 1/64cmH2O  = scale for cmH2O * 64          = 7.106 ~ 7
+     * Offset for 1/64cmH2O = offset for cmH2O * 64         = -290.050 ~ -290
+     *
+     * Max value in 1/64cmH2O = 1023 * 7 - 290 = 6871
+     * Min value in 1/64cmH2O = 0 * 7 - 290 = -290
+     * -> fits in int16_t
+     *
+     * Value obtained in cmH2O by dividing by 64: >> 6.
+     */
 
-    //int32_t tmp = MAX(scale_MPX5010DP * mes + offset_MPX5010DP, 0);
+    // Offset and scale to obtain pressure in tens of mmH2O
+    static int16_t scale_MPX5010DP = 7;
+    static int16_t offset_MPX5010DP = -290;
 
-    return 25; // (int16_t) tmp / 10000;
+    // FIXME mes in uint16_t, could that cause any problem?
+    int16_t tmp = scale_MPX5010DP * mes + offset_MPX5010DP;
+
+    // FIXME +1 added empirically here by observing that default value is -1...
+    // TODO check scale and offset calculation above
+    return (tmp >> 6) + 1;
 }
 
 static uint8_t mes2temp(uint16_t mes) {
