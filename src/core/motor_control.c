@@ -73,7 +73,7 @@ void init_motor() {
     init_limit_switch();
     setup_motor();
 
-    motorState = motorStopped;
+    motorState = motorInit;
     breathState = startNewCycle;
     calibState = calibDown; 
     flowState = flowVol;

@@ -66,6 +66,7 @@ void MainTask(void *pvParameters)
 #if DEBUG_MAIN
     debug_print("[MAIN] Sent NOTIF_STATE to LCD. \r\n");
 #endif
+    //
 
     while (1) {
         uint8_t updated_state = 0;
@@ -103,13 +104,11 @@ void MainTask(void *pvParameters)
             debug_print("[MAIN] Sent NOTIF_STATE to LCD. \r\n");
 #endif
             updated_state = 1;
-            // TODO notify motor task of calibration
+            xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_START_CALIBRATION, eSetBits);
         }
         // 6. End of calibration
         // TODO: add the other part of the condition when ready
-        else if (globalState == calibration) { //&& motorState == motorStopped) {
-            // TODO remove the next line used to simulate calibration in tests
-            vTaskDelayUntil(&xLastWakeTime, 1 * WELCOME_MSG_DUR);
+        else if ((globalState == calibration) && (motorState == motorStopped)) {
             globalState = stop;
             // Notify LCD with every possible notifications to intialize display
             xTaskNotify(lcdDisplayTaskHandle,
@@ -175,6 +174,8 @@ void MainTask(void *pvParameters)
                     globalState = run;
                     updated_state = 1;
                     // TODO notify motor start
+                    xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_START, eSetBits);
+                    
                 } else if (globalState == run) {
                     globalState = stop;
                     updated_state = 1;
