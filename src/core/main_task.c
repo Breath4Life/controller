@@ -29,9 +29,7 @@ static void process_alarm(uint32_t notification);
 
 #define DEBUG_MAIN 1
 
-#if DEBUG_MAIN
-uint8_t test_alarm = 3;
-#endif
+//uint8_t test_alarm = 3;
 
 void initMainTask()
 {
@@ -65,7 +63,9 @@ void MainTask(void *pvParameters)
     vTaskDelayUntil(&xLastWakeTime, WELCOME_MSG_DUR);
     globalState = welcome_wait_cal;
     xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
-    xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_START_CALIBRATION, eSetBits);
+#if DEBUG_MAIN
+    debug_print("[MAIN] Sent NOTIF_STATE to LCD. \r\n");
+#endif
 
     while (1) {
         uint8_t updated_state = 0;
@@ -73,12 +73,6 @@ void MainTask(void *pvParameters)
 
         // 1. Read buttons
         ButtonsState buttons_pressed = poll_buttons();
-        //debug_print("polling buttons %u\r\n", buttons_pressed);
-        //for (uint8_t i=0; i < N_BUTTONS; i++) {
-        //    if (BUTTON_PRESSED(buttons_pressed, i)) {
-        //        debug_print("Button %s pressed\r\n", buttons_descr[i]);
-        //    }
-        //}
 
         // 2. If the MUTE button was pressed down
         if (BUTTON_PRESSED(buttons_pressed, button_alarm_mute)) {
@@ -95,9 +89,8 @@ void MainTask(void *pvParameters)
             dio_write(DIO_PIN_ALARM_LED_LPA, 0);
             dio_write(DIO_PIN_ALARM_LED_HPA, 0);
             errorCode = noError;
-            // updated_state = 1 so that LCD again displays the state information message
-            // instead of the (now obsolete) alarm message
             updated_state = 1;
+            //xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
             // TODO notify buzzer task of ack
         }
 
@@ -106,6 +99,9 @@ void MainTask(void *pvParameters)
             globalState = calibration;
             // TODO remove next line
             xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
+#if DEBUG_MAIN
+            debug_print("[MAIN] Sent NOTIF_STATE to LCD. \r\n");
+#endif
             updated_state = 1;
             // TODO notify motor task of calibration
         }
@@ -113,12 +109,15 @@ void MainTask(void *pvParameters)
         // TODO: add the other part of the condition when ready
         else if (globalState == calibration) { //&& motorState == motorStopped) {
             // TODO remove the next line used to simulate calibration in tests
-            vTaskDelayUntil(&xLastWakeTime, 2 * WELCOME_MSG_DUR);
+            vTaskDelayUntil(&xLastWakeTime, 1 * WELCOME_MSG_DUR);
             globalState = stop;
             // Notify LCD with every possible notifications to intialize display
             xTaskNotify(lcdDisplayTaskHandle,
                         DISP_NOTIF_STATE | DISP_NOTIF_PARAM | DISP_NOTIF_INST_P | DISP_NOTIF_PEAK_P,
                         eSetBits);
+#if DEBUG_MAIN
+            debug_print("[MAIN] Told LCD calib done. \r\n");
+#endif
         }
         // 7. Settings & Start/Stop
         // TODO: other part of the condition needed?
@@ -165,27 +164,32 @@ void MainTask(void *pvParameters)
              }
 
             if (updated_setting) {
+#if DEBUG_MAIN
+                debug_print("[MAIN] Sending NO_PAR LCD. \r\n");
+#endif
                 xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PARAM, eSetBits);
-                debug_print("lcd notif sent\r\n");
             }
 
             if (BUTTON_PRESSED(buttons_pressed, button_startstop)) {
                 if (globalState == stop) {
                     globalState = run;
-                    
-                    // TODO notify motor start
                     updated_state = 1;
+                    // TODO notify motor start
                 } else if (globalState == run) {
                     globalState = stop;
                     updated_state = 1;
                     // TODO notify motor halt
                 }
+
             }
 
         }
 
-        if (updated_state && errorCode == noError) {
+        if (updated_state == 1 && errorCode == noError) {
             xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
+#if DEBUG_MAIN
+            debug_print("[MAIN] Sent NOTIF_STATE to LCD. \r\n");
+#endif
         }
 
         // 8. Buzzer auto-unmute
@@ -195,7 +199,7 @@ void MainTask(void *pvParameters)
             // TODO notify buzzer task of mute
         }
 
-        // 9. Alarm wait
+        // 9. Alarm wait for run state
         if (globalState == run) {
             uint32_t notification;
             // TODO: determine timeout here
@@ -228,12 +232,12 @@ void MainTask(void *pvParameters)
 
         // 10. Critical failure during calibration
         if (globalState == calibration) {
-            uint32_t notification;
+            uint32_t notification_cf;
             // TODO: determine timeout here
-            BaseType_t notif_recv = xTaskNotifyWait(0x0, ALL_NOTIF_BITS, &notification,
+            BaseType_t notif_recv_cf = xTaskNotifyWait(0x0, ALL_NOTIF_BITS, &notification_cf,
                                                     pdMS_TO_TICKS(50));
 
-            if (notif_recv == pdTRUE) {
+            if (notif_recv_cf == pdTRUE) {
                 // TODO
             }
         }
@@ -252,14 +256,20 @@ void process_alarm(uint32_t notification)
     debug_print("[MAIN] ALARM notif: %u.\r\n", notification);
 #endif
     if (alarmState == noAlarm) {
+#if DEBUG_MAIN
         debug_print("Rcvd alarm from noAlarm state.\r\n");
+#endif
         if (notification >= 0x08) {
+#if DEBUG_MAIN
             debug_print("High priority alarm.\r\n");
+#endif
             alarmState = highPriorityAlarm;
             dio_write(DIO_PIN_LED_NORMAL_STATE, 0);
             dio_write(DIO_PIN_ALARM_LED_HPA, 1);
         } else {
+#if DEBUG_MAIN
             debug_print("Low priority alarm.\r\n");
+#endif
             alarmState = mediumPriorityAlarm;
             dio_write(DIO_PIN_LED_NORMAL_STATE, 0);
             dio_write(DIO_PIN_ALARM_LED_LPA, 1);
@@ -303,6 +313,9 @@ void process_alarm(uint32_t notification)
         }
 
         xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_ALARM, eSetBits);
+#if DEBUG_MAIN
+        debug_print("[MAIN] Sent NOTIF_ALARM to LCD. \r\n");
+#endif
     } else if (alarmState == mediumPriorityAlarm && notification >= 0x08) {
         alarmState = highPriorityAlarm;
         dio_write(DIO_PIN_ALARM_LED_LPA, 0);
@@ -319,6 +332,9 @@ void process_alarm(uint32_t notification)
         }
 
         xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_ALARM, eSetBits);
+#if DEBUG_MAIN
+        debug_print("[MAIN] Sent NOTIF_ALARM to LCD. \r\n");
+#endif
     } else {
         // Nothing to do here, already at highest priority
     }

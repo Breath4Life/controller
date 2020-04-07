@@ -10,6 +10,9 @@
 #include "hal/tone.h"
 #include "hal/time.h"
 #include "core/system.h"
+#include "core/debug.h"
+#include "core/main_task.h"
+#include "core/utils.h"
 
 #define N_TONES_CRIT 5
 #define N_TONES_HIGH 5
@@ -35,7 +38,7 @@ static const uint8_t tones_size[] = { 0, N_TONES_HIGH, N_TONES_MED, N_TONES_CRIT
 static AlarmState_t buzzer_alarm_state;
 static uint8_t muted;
 
-// Doing a pause between two saunds ?
+// Doing a pause between two sounds ?
 static uint8_t pausing;
 
 // Time of the last update
@@ -49,6 +52,8 @@ static uint8_t seq_offset;
 // upper bound on the duration of any alarm beep/pause
 #define MAX_ALARM_DUR (4000L*1000L)
 
+#define DEBUG_ALARM 1
+
 void init_alarm() {
     tone_init();
     buzzer_alarm_state = noAlarm;
@@ -60,9 +65,19 @@ void init_alarm() {
 
 void AlarmsTask(void *pvParameters)
 {
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    const TickType_t xFrequency = pdMS_TO_TICKS(50);
+
+#if DEBUG_ALARM
+    debug_print("[ALARM_TASK] Starting.\r\n");
+#endif
+
     while (1) {
         uint32_t curr_time = time_us();
         if ((buzzer_alarm_state != alarmState) || (muted != mute_on)) {
+#if DEBUG_ALARM
+            debug_print("[ALARM_TASK] New alarm/new mute.\r\n");
+#endif
             tone_stop();
             buzzer_alarm_state = alarmState;
             muted = mute_on;
@@ -72,19 +87,31 @@ void AlarmsTask(void *pvParameters)
             seq_offset = tones_size[buzzer_alarm_state];
         }
         if ((buzzer_alarm_state != noAlarm) && !muted) {
-            if (pausing && (curr_time-last_upd_us) > TONE_PAUSE(buzzer_alarm_state, seq_offset)) {
-                pausing = 0;
-                last_upd_us = curr_time;
-                seq_offset += 1;
-                if (seq_offset >= tones_size[buzzer_alarm_state]) {
-                    seq_offset = 0;
-                }
-                tone_start(tones_freq[buzzer_alarm_state][seq_offset]);
-            } else if ((curr_time-last_upd_us) > TONE_DUR(buzzer_alarm_state, seq_offset)) {
-                pausing = 1;
-                last_upd_us = curr_time;
-                tone_stop();
+            if (pausing) {
+               if (curr_time-last_upd_us > TONE_PAUSE(buzzer_alarm_state, seq_offset)) {
+#if DEBUG_ALARM
+                    debug_print("[ALARM_TASK] Unpausing.\r\n");
+#endif
+                    pausing = 0;
+                    last_upd_us = curr_time;
+                    seq_offset += 1;
+                    if (seq_offset >= tones_size[buzzer_alarm_state]) {
+                        seq_offset = 0;
+                    }
+                    tone_start(tones_freq[buzzer_alarm_state][seq_offset]);
+               }
+            } else {
+               if ((curr_time-last_upd_us) > TONE_DUR(buzzer_alarm_state, seq_offset)) {
+#if DEBUG_ALARM
+                    debug_print("[ALARM_TASK] Pausing.\r\n");
+#endif
+                    pausing = 1;
+                    last_upd_us = curr_time;
+                    tone_stop();
+               }
             }
         }
+
+        vTaskDelayUntil( &xLastWakeTime, xFrequency);
     }
 }
