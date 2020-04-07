@@ -54,7 +54,7 @@ ISR(PCINT0_vect) {
             deadline_time_irq = current_time_irq + threshold_time_irq;
         }
 #if DEBUG_LIM_SWITCH
-        debug_print("switch0 pressed\r\n");
+        debug_print_FromISR("switch0 pressed\r\n");
 #endif // DEBUG_LIM_SWITCH
     }
     if (l1 && !lim_switch1_lvl) {
@@ -63,7 +63,7 @@ ISR(PCINT0_vect) {
             deadline_time_irq += current_time_irq + threshold_time_irq;
         }
 #if DEBUG_LIM_SWITCH
-        debug_print("switch1 pressed\r\n");
+        debug_print_FromISR("switch1 pressed\r\n");
 #endif // DEBUG_LIM_SWITCH
     }
     lim_switch0_lvl = l0;

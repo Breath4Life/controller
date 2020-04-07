@@ -24,7 +24,7 @@ void init_time()
 ISR(TIMER4_OVF_vect)
 {
     timer4_overflow_count += 1;
-    //debug_print("ovf_cnt: %u\r\n", timer4_overflow_count);
+    //debug_print_FromISR("ovf_cnt: %u\r\n", timer4_overflow_count);
 
 }
 

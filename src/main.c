@@ -31,9 +31,6 @@ void initHardware(void)
 {
     init_time();
 
-    init_debug_print_sem();
-
-
     uart_init();
 
     dio_init(DIO_PIN_MOTOR_UART_TX,           DIO_INPUT);
