@@ -54,8 +54,6 @@ void initHardware(void)
 
     dio_init(DIO_PIN_AUX_ALARM_GATE_PIN,      DIO_INPUT);
 
-    dio_init(DIO_PIN_ALARM_SOUND,             DIO_OUTPUT);
-    dio_init(DIO_PIN_ALARM_SOUND_BIS,         DIO_OUTPUT);
     dio_init(DIO_PIN_ALARM_LED_HPA,           DIO_OUTPUT);
     dio_init(DIO_PIN_ALARM_LED_LPA,           DIO_OUTPUT);
     dio_init(DIO_PIN_STEP_COUNTER_TN,         DIO_OUTPUT);
