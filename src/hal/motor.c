@@ -119,7 +119,7 @@ static void setup_pwm_step()
   // pre-scaler: div-256
   // OCR3A fixes the period
   // OCR3B fixes duty cycle
-  TCCR3A = _BV(COM3A0) | _BV(COM3B1) | _BV(COM3B0) | _BV(COM3C1) | _BV(COM3C0) | _BV(WGM30);
+  TCCR3A = _BV(COM3B1) | _BV(COM3B0) | _BV(COM3C1) | _BV(COM3C0) | _BV(WGM30);
   TCCR3B |= _BV(WGM33);
 
   // Start
