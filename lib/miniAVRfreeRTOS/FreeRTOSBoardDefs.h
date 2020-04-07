@@ -40,6 +40,7 @@
 
 #ifndef freeRTOSBoardDefs_h
 #define freeRTOSBoardDefs_h
+#endif
 
 #ifdef __cplusplus
 extern "C" {
