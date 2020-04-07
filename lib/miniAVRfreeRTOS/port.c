@@ -34,14 +34,81 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+#include "time.h"         // Needed for system_tick();
+
+#if defined (portQUAD_RAM) || defined (portMEGA_RAM)
+#include "ext_ram.h"    // Needed for extRAMcheck();
+#endif
+
 /*-----------------------------------------------------------
  * Implementation of functions defined in portable.h for the AVR port.
  *----------------------------------------------------------*/
 
 /* Start tasks with interrupts enabled. */
-#define portFLAGS_INT_ENABLED           ( (StackType_t) 0x80 )
+#define portFLAGS_INT_ENABLED                ( (StackType_t) 0x80 )
 
-#define    portSCHEDULER_ISR               WDT_vect
+#if defined( portUSE_WDTO)
+    #warning "Watchdog Timer used for scheduler."
+    #define    portSCHEDULER_ISR        WDT_vect
+
+#elif defined( portUSE_TIMER0 )
+/* Hardware constants for Timer0. */
+    #warning "Timer0 used for scheduler."
+    #define portSCHEDULER_ISR           TIMER0_COMPA_vect
+    #define portCLEAR_COUNTER_ON_MATCH  ( (uint8_t) _BV(WGM01) )
+    #define portPRESCALE_1024           ( (uint8_t) (_BV(CS02)|_BV(CS00)) )
+    #define portCLOCK_PRESCALER         ( (uint32_t) 1024 )
+    #define portCOMPARE_MATCH_A_INTERRUPT_ENABLE    ( (uint8_t) _BV(OCIE0A) )
+    #define portOCRL                    OCR0A
+    #define portTCCRa                   TCCR0A
+    #define portTCCRb                   TCCR0B
+    #define portTIMSK                   TIMSK0
+    #define portTIFR                    TIFR0
+
+#elif defined( portUSE_TIMER1 )
+/* Hardware constants for Timer1. */
+    #warning "Timer1 used for scheduler."
+    #define    portSCHEDULER_ISR        TIMER1_COMPA_vect
+    #define portCLEAR_COUNTER_ON_MATCH  ( (uint8_t) _BV(WGM12) )
+    #define portPRESCALE_64             ( (uint8_t) (_BV(CS11)|_BV(CS10)) )
+    #define portCLOCK_PRESCALER         ( (uint32_t) 64 )
+    #define portCOMPARE_MATCH_A_INTERRUPT_ENABLE    ( (uint8_t) _BV(OCIE1A) )
+    #define portOCRL                    OCR1AL
+    #define portOCRH                    OCR1AH
+    #define portTCCRa                   TCCR1A
+    #define portTCCRb                   TCCR1B
+    #define portTIMSK                   TIMSK1
+    #define portTIFR                    TIFR1
+
+#elif defined( portUSE_TIMER2 )
+/* Hardware constants for Timer2. */
+    #warning "Timer2 used for scheduler."
+    #define    portSCHEDULER_ISR        TIMER2_COMPA_vect
+    #define portCOMPARE_MATCH_A_INTERRUPT_ENABLE    ( (uint8_t) _BV(OCIE2A) )
+    #define portOCRL                    OCR2A
+    #define portTCCRa                   TCCR2A
+    #define portTCCRb                   TCCR2B
+    #define portTIMSK                   TIMSK2
+    #define portTCNT                    TCNT2
+    #define portTIFR                    TIFR2
+
+#elif defined( portUSE_TIMER3 )
+/* Hardware constants for Timer3. */
+    #warning "Timer3 used for scheduler."
+    #define    portSCHEDULER_ISR        TIMER3_COMPA_vect
+    #define portCLEAR_COUNTER_ON_MATCH  ( (uint8_t) _BV(WGM32) )
+    #define portPRESCALE_64             ( (uint8_t) (_BV(CS31)|_BV(CS30)) )
+    #define portCLOCK_PRESCALER         ( (uint32_t) 64 )
+    #define portCOMPARE_MATCH_A_INTERRUPT_ENABLE    ( (uint8_t) _BV(OCIE3A) )
+    #define portOCRL                    OCR3AL
+    #define portOCRH                    OCR3AH
+    #define portTCCRa                   TCCR3A
+    #define portTCCRb                   TCCR3B
+    #define portTIMSK                   TIMSK3
+    #define portTIFR                    TIFR3
+
+#endif
+
 
 /*-----------------------------------------------------------*/
 
@@ -50,11 +117,26 @@ any details of its type. */
 typedef void TCB_t;
 extern volatile TCB_t * volatile pxCurrentTCB;
 
+/* actual number of ticks per second, after configuration. Not for RTC, which has 1 tick/second. */
+TickType_t portTickRateHz;
+
+/* remaining ticks in each second, decremented to enable the system_tick. Not for RTC, which has 1 tick/second. */
+volatile TickType_t ticksRemainingInSec;
+
 /*-----------------------------------------------------------*/
 /*
- * Perform hardware setup to enable ticks from Watchdog Timer.
+ * Perform hardware setup to enable ticks from timer compare match A.
  */
 static void prvSetupTimerInterrupt( void );
+
+
+#if defined(portUSE_TIMER2_RTC) && !defined(portUSE_TIMER2)
+/*
+ * Perform hardware setup to enable 1 second sys_ticks() from RTC Timer2.
+ */
+static void prvSetupRTCInterrupt( void );
+
+#endif
 
 /*-----------------------------------------------------------*/
 
@@ -285,6 +367,13 @@ StackType_t *pxPortInitialiseStack( StackType_t *pxTopOfStack, TaskFunction_t px
 {
 uint16_t usAddress;
 
+#if defined (portQUAD_RAM) || defined (portMEGA_RAM)
+    // This function just here to ensure the library is included.
+    // Can go anywhere, as it is just to ensure that the .init3 code is included
+    extRAMcheck(); // This function just returns XMCRA. SRE is set if extended RAM enabled.
+#warning "Ext RAM Enabled."
+#endif
+
     /* Place a few bytes of known values on the bottom of the stack.
     This is just useful for debugging. */
 
@@ -429,6 +518,17 @@ uint16_t usAddress;
 
 BaseType_t xPortStartScheduler( void )
 {
+
+#if defined(DEBUG_PING)
+        DDRD |= _BV(DDD7);        // set the debugging ping
+        PORTD &= ~_BV(PORTD7);
+#endif
+
+#if defined( portUSE_TIMER2_RTC ) && !defined( portUSE_TIMER2 )
+    /* Setup the timer hardware to generate the RTC sys_tick(), at 1 sec intervals. */
+    prvSetupRTCInterrupt();
+#endif
+
     /* Setup the relevant timer hardware to generate the tick. */
     prvSetupTimerInterrupt();
 
@@ -449,7 +549,23 @@ void vPortEndScheduler( void )
     /* It is unlikely that the AVR port will get stopped.  If required simply
     disable the tick interrupt here. */
 
-    wdt_disable();    // disable Watchdog Timer
+#if defined (portUSE_WDTO)
+        wdt_disable();                                          // disable Watchdog Timer
+
+#elif defined( portUSE_TIMER0 )
+        portTIMSK &= ~( _BV(OCIE0B)|_BV(OCIE0A)|_BV(TOIE0) );   // disable all Timer0 interrupts
+
+#elif defined( portUSE_TIMER1 )
+        portTIMSK &= ~( _BV(OCIE1B)|_BV(OCIE1A)|_BV(TOIE1) );   // disable all Timer1 interrupts
+
+#elif defined( portUSE_TIMER2 )
+        portTIMSK &= ~( _BV(OCIE2B)|_BV(OCIE2A)|_BV(TOIE2) );   // disable all Timer2 interrupts
+        ASSR = 0x00;                                            // set Timer/Counter2 to be off
+
+#elif defined( portUSE_TIMER3 )
+        portTIMSK &= ~( _BV(OCIE3B)|_BV(OCIE3A)|_BV(TOIE3) );   // disable all Timer3 interrupts
+
+#endif
 }
 /*-----------------------------------------------------------*/
 
@@ -481,10 +597,29 @@ void vPortYieldFromTick( void )
 
     sleep_reset();        //     reset the sleep_mode() faster than sleep_disable();
 
+#if defined(DEBUG_PING)
+    // start mark - check for start of interrupt - for debugging only
+    PORTD |=  _BV(PORTD7);                // Ping IO line.
+#endif
+
+#if !defined(portUSE_TIMER2_RTC)
+    if (--ticksRemainingInSec == 0)
+    {
+        system_tick();
+        ticksRemainingInSec = portTickRateHz;
+    }
+#endif
+
     if( xTaskIncrementTick() != pdFALSE )
     {
         vTaskSwitchContext();
+
     }
+
+#if defined(DEBUG_PING)
+    // end mark - check for end of interrupt - for debugging only
+    PORTD &= ~_BV(PORTD7);
+#endif
 
     portRESTORE_CONTEXT();
 
@@ -492,15 +627,194 @@ void vPortYieldFromTick( void )
 }
 /*-----------------------------------------------------------*/
 
+#if defined(portUSE_WDTO)
+
 //initialize watchdog
 void prvSetupTimerInterrupt( void )
 {
     //reset watchdog
     wdt_reset();
 
+     /* actual port tick rate in Hz, calculated */
+    portTickRateHz = configTICK_RATE_HZ;
+    /* initialise first second of ticks */
+    ticksRemainingInSec = portTickRateHz;
+
     //set up WDT Interrupt (rather than the WDT Reset).
     wdt_interrupt_enable( portUSE_WDTO );
 }
+
+#elif defined (portUSE_TIMER0) || defined (portUSE_TIMER1) || defined (portUSE_TIMER3)
+/*
+ * Setup timer 0 or 1 or 3 compare match A to generate a tick interrupt.
+ */
+static void prvSetupTimerInterrupt( void )
+{
+uint32_t ulCompareMatch;
+#ifdef portOCRH
+uint8_t ucHighByte;
+#endif
+uint8_t ucLowByte;
+
+    /* Using 8bit Timer0 or 16bit Timer1 or Timer3 to generate the tick. Correct fuses must be
+    selected for the configCPU_CLOCK_HZ clock.*/
+
+    // ulCompareMatch 40,000 = 20,000,000 / 500; 20MHz
+    // ulCompareMatch 110,592 = 22,118,400 / 200; 22.1184 MHz
+    ulCompareMatch = configCPU_CLOCK_HZ / configTICK_RATE_HZ;
+
+    /* We only have 8 or 16 bits so have to scale 64 or 256 to get our required tick rate. */
+    //ulCompareMatch = 625 /= portCLOCK_PRESCALER; 20MHz with 64 prescale
+    //ulCompareMatch = 108 /= portCLOCK_PRESCALER; 22.1184 MHz with 1024 prescale
+    ulCompareMatch /= portCLOCK_PRESCALER;
+
+     /* actual port tick rate in Hz, calculated */
+    portTickRateHz = (TickType_t) ((uint32_t) configCPU_CLOCK_HZ / ( portCLOCK_PRESCALER * ulCompareMatch ));
+    /* initialise first second of ticks */
+    ticksRemainingInSec = portTickRateHz;
+
+    /* Adjust for correct value. */
+    ulCompareMatch -= ( uint32_t ) 1;
+
+    /* Setup compare match value for compare match A.  Interrupts are disabled
+    before this is called so we need not worry here. */
+    ucLowByte = ( uint8_t ) ( ulCompareMatch & ( uint32_t ) 0xff );
+
+    //  OCR3AH = ucHighByte;
+    //  OCR3AL = ucLowByte;
+
+    // the HiByte is only needed, if a 16 Bit counter is being utilized
+#ifdef portOCRH
+    ulCompareMatch >>= 8;
+    ucHighByte = ( uint8_t ) ( ulCompareMatch & ( uint32_t) 0xff );
+    portOCRH = ucHighByte;
+#endif
+
+    portOCRL = ucLowByte;
+
+#if defined( portUSE_TIMER0 )
+   /* Setup clock source and compare match behaviour. Assuming 328p (no Timer3) */
+   portTCCRa = portCLEAR_COUNTER_ON_MATCH;
+   portTCCRb = portPRESCALE_1024;
+
+#elif defined( portUSE_TIMER1 )
+    /* Setup clock source and compare match behaviour. Assuming 328p (with Timer1) */
+    ucLowByte = portCLEAR_COUNTER_ON_MATCH | portPRESCALE_64;
+    portTCCRb = ucLowByte;
+
+#elif defined( portUSE_TIMER3 )
+    /* Setup clock source and compare match behaviour. Assuming  640 / 1280 /1281 / 1284p / 2560 / 2561 (with Timer3) */
+    ucLowByte = portCLEAR_COUNTER_ON_MATCH | portPRESCALE_64;
+    portTCCRb = ucLowByte;
+#endif
+
+    /* Enable the interrupt - this is okay as interrupt are currently globally disabled. */
+    ucLowByte = portTIMSK;
+    ucLowByte |= portCOMPARE_MATCH_A_INTERRUPT_ENABLE;
+    portTIMSK = ucLowByte;
+
+}
+
+#elif defined(portUSE_TIMER2)
+/*
+ * Setup Crystal-controlled timer2 compare match A to generate a tick interrupt.
+ */
+
+static void prvSetupTimerInterrupt( void )
+{
+    uint16_t usCompareMatch;
+
+    /* Using 8bit Timer2 to generate the tick.  A 32.768 KHz crystal
+     * must be attached to the appropriate pins.  We then adjust the number
+     * to a power of two so we can get EXACT seconds for the Real Time clock.
+     */
+
+    usCompareMatch = (uint16_t) ((uint32_t) 32768) / configTICK_RATE_HZ;
+
+    if ( usCompareMatch > 192 )
+    {
+        usCompareMatch = 256;
+    }
+    else
+    {
+        for (uint8_t i = 7; i >= 1; --i)
+        {
+            if ( usCompareMatch & ((uint16_t)1 << i) )
+            {
+                /* found the power - now let's see if we round up or down */
+                if ( usCompareMatch & ((uint16_t)1 << (i-1)) )
+                {
+                    usCompareMatch = ((uint16_t)1 << (i+1));
+                }
+                else
+                {
+                    usCompareMatch = ((uint16_t)1 << i);
+                }
+                break;
+            }
+        }
+    }
+
+    /* actual port tick rate in Hz, calculated */
+    portTickRateHz = (TickType_t) ((uint32_t) 32768 / usCompareMatch );
+    /* initialise first second of ticks */
+    ticksRemainingInSec = portTickRateHz;
+
+    /* Adjust for correct value. */
+    usCompareMatch -= ( uint16_t ) 1;
+
+    portTIMSK &= ~( _BV(OCIE2B)|_BV(OCIE2A)|_BV(TOIE2) );       // disable all Timer2 interrupts
+    portTIFR |=  _BV(OCF2B)|_BV(OCF2A)|_BV(TOV2);               // clear all pending interrupts
+    ASSR = _BV(AS2);                                            // set Timer/Counter2 to be asynchronous from the CPU clock
+                                                                // with a second external clock (32,768kHz) driving it.
+    portTCNT  = 0x00;                                           // zero out the counter
+    portTCCRa = _BV(WGM21);                                     // mode CTC (clear on counter match)
+    portTCCRb = _BV(CS20);                                      // divide timer clock by 1 (No prescaling)
+    portOCRL  = usCompareMatch;                                 // set the counter
+
+    while( ASSR & (_BV(TCN2UB)|_BV(OCR2AUB)|_BV(TCR2AUB)));     // Wait until Timer2 update complete
+
+    /* Enable the interrupt - this is okay as interrupts are currently globally disabled. */
+    portTIMSK |= portCOMPARE_MATCH_A_INTERRUPT_ENABLE;          // interrupt on Timer2 compare match
+
+}
+#endif
+
+
+#if defined(portUSE_TIMER2_RTC) && !defined(portUSE_TIMER2)
+/*
+ * Setup Crystal-controlled timer2 compare match A to generate a tick interrupt.
+ */
+    #warning "Timer2 used for RTC. This is a 1 second clock."
+
+static void prvSetupRTCInterrupt( void )
+{
+
+    /* Using 8bit Timer2 to generate the tick.
+     * A 32.768 KHz crystal must be attached to the appropriate pins.
+     * We then adjust the scale factor and counter to roll over at the top
+     * so we can get EXACT seconds for the Real Time clock.
+     */
+
+    TIMSK2 &= ~( _BV(OCIE2B)|_BV(OCIE2A)|_BV(TOIE2) );          // disable all Timer2 interrupts
+    TIFR2 |=  _BV(OCF2B)|_BV(OCF2A)|_BV(TOV2);                  // clear all pending interrupts
+    ASSR = _BV(AS2);                                            // set Timer/Counter2 to be asynchronous from the CPU clock
+                                                                // with a second external clock (32,768kHz) driving it.
+    TCNT2  = 0x00;                                              // zero out the counter
+    TCCR2A = 0x00;                                              // Normal mode
+    TCCR2B = _BV(CS22) | _BV(CS20);                             // divide timer clock by 128 so counter will roll over at MAX
+
+    while( ASSR & (_BV(TCN2UB)|_BV(OCR2AUB)|_BV(TCR2AUB)));     // Wait until Timer2 update complete
+
+    /* Enable the interrupt - this is okay as interrupts are currently globally disabled. */
+    TIMSK2 |= _BV(TOIE2);                                       // When the TOIE2 bit is written to one, the interrupt is enabled
+}
+
+#elif defined(portUSE_TIMER2_RTC) && defined(portUSE_TIMER2)
+    #warning "Trying to configure Timer 2 for both sys_tick() and xTaskIncrementTick()."
+
+#endif
+
 
 /*-----------------------------------------------------------*/
 
@@ -514,8 +828,8 @@ void prvSetupTimerInterrupt( void )
      * use ISR_NOBLOCK where there is an important timer running, that should preempt the scheduler.
      *
      */
-//  ISR(portSCHEDULER_ISR, ISR_NAKED) __attribute__ ((hot, flatten));
-    ISR(portSCHEDULER_ISR, ISR_NAKED ISR_NOBLOCK) __attribute__ ((hot, flatten));
+    ISR(portSCHEDULER_ISR, ISR_NAKED) __attribute__ ((hot, flatten));
+//  ISR(portSCHEDULER_ISR, ISR_NAKED ISR_NOBLOCK) __attribute__ ((hot, flatten));
     ISR(portSCHEDULER_ISR)
     {
         vPortYieldFromTick();
@@ -530,11 +844,38 @@ void prvSetupTimerInterrupt( void )
      *
      * use ISR_NOBLOCK where there is an important timer running, that should preempt the scheduler.
      */
-//  ISR(portSCHEDULER_ISR) __attribute__ ((hot, flatten));
-    ISR(portSCHEDULER_ISR, ISR_NOBLOCK) __attribute__ ((hot, flatten));
+    ISR(portSCHEDULER_ISR) __attribute__ ((hot, flatten));
+//  ISR(portSCHEDULER_ISR, ISR_NOBLOCK) __attribute__ ((hot, flatten));
     ISR(portSCHEDULER_ISR)
     {
+#if !defined(portUSE_TIMER2_RTC)
+        if (--ticksRemainingInSec == 0)
+        {
+            system_tick();
+            ticksRemainingInSec = portTickRateHz;
+        }
+#endif
         xTaskIncrementTick();
     }
 
 #endif // configUSE_PREEMPTION
+
+
+
+#if defined (portUSE_TIMER2_RTC) && !defined(portUSE_TIMER2)
+    /*
+     * Tick ISR for the RTC.  All this does is increment the RTC tick count, once per second.
+     * Use ISR_NOBLOCK where there is an important timer running, that should preempt the RTC.
+     * As long as it completes within one second, then there is no issue.
+     *
+     * use ISR_NOBLOCK where there is an important timer running, that should preempt the scheduler.
+     */
+//  ISR(TIMER2_OVF_vect, ISR_NAKED ISR_NOBLOCK ) __attribute__ ((hot, flatten));
+    ISR(TIMER2_OVF_vect, ISR_NAKED ) __attribute__ ((hot, flatten));
+    ISR(TIMER2_OVF_vect)
+    {
+        system_tick();
+        reti();
+    }
+
+#endif
