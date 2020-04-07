@@ -25,48 +25,6 @@ static const int32_t scale_sfm3000 = 120;
 static uint8_t crc8(const uint8_t data, uint8_t crc);
 static int32_t reading2flow(uint16_t reading);
 
-
-/*
-// air flow is given in slm (standard liter per minute)
-static int32_t air_flow_sfm3000 = 0;
-
-// total air volume so far in sl
-static int32_t air_volume_sfm3000 = 0;
-
-// time of previous measurement
-static uint32_t previous_time_sfm3000 = 0;
-uint8_t insp_on = 0;
-uint32_t n_non_print = 0;
-uint8_t sfm3000_poll()
-{
-    upd_flow();
-    uint32_t curr_time = time_us();
-
-    // time diff [ms]
-    int32_t delta = (curr_time - previous_time_sfm3000)/1000;
-    air_flow_sfm3000 = flow;
-    previous_time_sfm3000 = curr_time;
-
-    if (flow > 3000L) {
-        insp_on = 1;
-    } else if (flow < -3000L) {
-        insp_on = 0;
-    }
-
-    if (!insp_on) {
-        air_volume_sfm3000 = 0;
-    } else {
-        // update total volumes using rectangle method (volume in [ml])
-        int32_t inc = delta*flow;
-        int32_t n_inc = inc / (60*1000L);
-        air_volume_sfm3000 +=  n_inc;
-    }
-
-    debug_print("air_flow:%d  air_volume:%d\r\n", air_flow_sfm3000, air_volume_sfm3000);
-    return 0;
-}
-*/
-
 static enum {
     read_from_start,
     read_from_finish,

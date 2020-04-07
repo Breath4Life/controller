@@ -21,7 +21,7 @@ static void disp_inst_p();
 static void disp_peak_p();
 static void disp_state();
 
-#define DEBUG_LCD 1
+#define DEBUG_LCD 0
 
 uint32_t muted_switch_time = 0;
 uint8_t muted_msg_on = 0;
@@ -72,7 +72,7 @@ void LCDDisplayTask(void *pvParameters)
             }
         }
 
-        // TODO handle switching display text for alarm off , etc.
+        // FIXME: max wait has been changed to implement alternate mute/state/alarm display
         BaseType_t notif_recv = xTaskNotifyWait(0x0, ALL_NOTIF_BITS, &notification, pdMS_TO_TICKS(1000));
         if (notification & DISP_NOTIF_ALARM) {
 #if DEBUG_LCD

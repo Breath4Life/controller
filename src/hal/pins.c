@@ -11,8 +11,7 @@ struct io_pin_config DIO_PIN_CONFIG[] = {
     {DIO_PIN_MOTOR_STEP,              IO_PORTE, 4},
     {DIO_PIN_MOTOR_STEP_BIS,          IO_PORTE, 5},
     {DIO_PIN_MOTOR_ENABLE,            IO_PORTJ, 1},
-    {DIO_PIN_MOTOR_DIRECTION,         IO_PORTG, 5},
-    {DIO_PIN_MOTOR_PDN,               IO_PORTE, 3},
+    {DIO_PIN_MOTOR_DIRECTION,         IO_PORTE, 3},
     {DIO_PIN_MOTOR_SPRD,              IO_PORTH, 3},
     {DIO_PIN_MOTOR_INDEX,             IO_PORTH, 4},
     {DIO_PIN_MOTOR_DIAG,              IO_PORTH, 5},
@@ -52,6 +51,7 @@ struct io_pin_config DIO_PIN_CONFIG[] = {
     {DIO_PIN_BUTTON_STARTSTOP,        IO_PORTG, 2},
 
     {DIO_PIN_ALARM_SOUND,             IO_PORTB, 7},
+    {DIO_PIN_ALARM_SOUND_BIS,         IO_PORTG, 5},
     {DIO_PIN_ALARM_LED_HPA,           IO_PORTL, 4},
     {DIO_PIN_ALARM_LED_LPA,           IO_PORTL, 3},
     {DIO_PIN_STEP_COUNTER_TN,         IO_PORTL, 2},

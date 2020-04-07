@@ -31,9 +31,6 @@ void initHardware(void)
 {
     init_time();
 
-    init_debug_print_sem();
-
-
     uart_init();
 
     dio_init(DIO_PIN_MOTOR_UART_TX,           DIO_INPUT);
@@ -43,7 +40,6 @@ void initHardware(void)
     dio_init(DIO_PIN_MOTOR_STEP_BIS,          DIO_OUTPUT);
     dio_init(DIO_PIN_MOTOR_ENABLE,            DIO_OUTPUT);
     dio_init(DIO_PIN_MOTOR_DIRECTION,         DIO_OUTPUT);
-    dio_init(DIO_PIN_MOTOR_PDN,               DIO_OUTPUT);
     dio_init(DIO_PIN_MOTOR_SPRD,              DIO_OUTPUT);
     dio_init(DIO_PIN_MOTOR_INDEX,             DIO_OUTPUT);
     dio_init(DIO_PIN_MOTOR_DIAG,              DIO_OUTPUT);
@@ -59,6 +55,7 @@ void initHardware(void)
     dio_init(DIO_PIN_AUX_ALARM_GATE_PIN,      DIO_INPUT);
 
     dio_init(DIO_PIN_ALARM_SOUND,             DIO_OUTPUT);
+    dio_init(DIO_PIN_ALARM_SOUND_BIS,         DIO_OUTPUT);
     dio_init(DIO_PIN_ALARM_LED_HPA,           DIO_OUTPUT);
     dio_init(DIO_PIN_ALARM_LED_LPA,           DIO_OUTPUT);
     dio_init(DIO_PIN_STEP_COUNTER_TN,         DIO_OUTPUT);
