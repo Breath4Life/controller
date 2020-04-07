@@ -20,11 +20,11 @@ volatile int16_t p;
 volatile int16_t p_peak;
 volatile int16_t cycle_p_peak;
 
-volatile uint8_t temp0;
-volatile uint8_t temp1;
+volatile int16_t temp0;
+volatile int16_t temp1;
 
 static int16_t mes2pres(uint16_t mes);
-static uint8_t mes2temp(uint16_t mes);
+static int16_t mes2temp(uint16_t mes);
 
 static enum {
     pressure,
@@ -61,7 +61,7 @@ void AnalogReadTask(void *pvParameters) {
                 case pressure:
                     p = mes2pres(res);
                     if (stoppedOrRunning()) {
-                        //xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_INST_P, eSetBits);
+                        xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_INST_P, eSetBits);
                      }
 
                     // FIXME: was stoppedOrRunning before. Doesn't make sense in stop state right?
@@ -151,7 +151,6 @@ static int16_t mes2pres(uint16_t mes) {
      * Value obtained in cmH2O by dividing by 64: >> 6.
      */
 
-    // Offset and scale to obtain pressure in tens of mmH2O
     static int16_t scale_MPX5010DP = 7;
     static int16_t offset_MPX5010DP = -290;
 
@@ -163,7 +162,34 @@ static int16_t mes2pres(uint16_t mes) {
     return (tmp >> 6) + 1;
 }
 
-static uint8_t mes2temp(uint16_t mes) {
-    // TODO
-    return 12;
+static int16_t mes2temp(uint16_t mes) {
+    /*
+     * # Transfer function of LMT87LP
+     * See http://www.ti.com/lit/ds/symlink/lmt87.pdf, page 10)
+     *
+     * V - V1 = (V2 - V1) / (T2 - T1) * (T - T1)
+     * with voltage in mV and temperature in °C.
+     * -> T = (V - V1)/(V2 - V1) * (T2 - T1) + T1
+     *
+     * Choosing an operating range of 0 - 150°C, voltage ranges from
+     * 2633mV to 538mV
+     * T1 = 0   , V1 = 2633mV (537)
+     * T2 = 150 , V2 = 538mV (110)
+     *
+     * Scale for °C         = (T2 - T1)/(V2 - V1)               = -150/427
+     * Offset for °C        = -V1 * (T2 - T1)/(V2 - V1) + T1    = 80550/427
+     *
+     * Max value = 188.642
+     * Min value = -170.726
+     * -> fits in int16_t
+     *
+     */
+
+    // FIXME: this is super dirty but I'm tired, fix that
+    int32_t tmp = (-150 * ((int32_t) mes) + 80550)/427;
+#if DEBUG_ANALOG_READ
+    debug_print("[ANALOG-READ] T: %i.\r\n", tmp);
+#endif
+
+    return (int16_t) tmp;
 }

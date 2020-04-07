@@ -7,6 +7,7 @@
 #include "hal/io.h"
 #include "hal/pins.h"
 #include "hal/lcd.h"
+#include "hal/time.h"
 #include "core/system.h"
 #include "core/display.h"
 #include "core/main_task.h"
@@ -14,12 +15,16 @@
 #include "core/analog_read.h"
 
 static void disp_alarm();
+static void disp_muted();
 static void disp_param();
 static void disp_inst_p();
 static void disp_peak_p();
 static void disp_state();
 
-#define DEBUG_LCD 1
+#define DEBUG_LCD 0
+
+uint32_t muted_switch_time = 0;
+uint8_t muted_msg_on = 0;
 
 void LCDDisplayTask(void *pvParameters)
 {
@@ -35,11 +40,40 @@ void LCDDisplayTask(void *pvParameters)
     lcd_write_string(WELCOME_MSG1, 1, 1, NO_CR_LF);
     lcd_write_string(WELCOME_MSG2, 2, 1, NO_CR_LF);
 
+
     while (1) {
         uint32_t notification;
-        // TODO handle switching display text for alarm off , etc.
-        BaseType_t notif_recv = xTaskNotifyWait(0x0, ALL_NOTIF_BITS, &notification, portMAX_DELAY);
-        debug_print("[LCD] rcvd notif\r\n");
+        uint32_t curr_time = time_us();
+
+        // Display "Muted" and the current state/alarm alternatively for 2 seconds if mute_on
+        if (mute_on) {
+            if (curr_time - muted_switch_time > 2000000L) {
+                if (!muted_msg_on) {
+                    disp_muted();
+                } else {
+                    if (alarmState == noAlarm) {
+                        disp_state();
+                    } else {
+                        disp_alarm();
+                    }
+                }
+
+                muted_msg_on = !muted_msg_on;
+                muted_switch_time = curr_time;
+            }
+        } else {
+            if (muted_msg_on) {
+                muted_msg_on = !muted_msg_on;
+                if (alarmState == noAlarm) {
+                    disp_state();
+                } else {
+                    disp_alarm();
+                }
+            }
+        }
+
+        // FIXME: max wait has been changed to implement alternate mute/state/alarm display
+        BaseType_t notif_recv = xTaskNotifyWait(0x0, ALL_NOTIF_BITS, &notification, pdMS_TO_TICKS(1000));
         if (notification & DISP_NOTIF_ALARM) {
 #if DEBUG_LCD
             debug_print("[LCD] rcvd notif ALARM.\r\n");
@@ -54,7 +88,7 @@ void LCDDisplayTask(void *pvParameters)
         }
         if (notification & DISP_NOTIF_INST_P) {
 #if DEBUG_LCD
-//            debug_print("[LCD] rcvd notif inst p.\r\n");
+            debug_print("[LCD] rcvd notif inst p.\r\n");
 #endif
             disp_inst_p();
         }
@@ -70,6 +104,8 @@ void LCDDisplayTask(void *pvParameters)
 #endif
             disp_state();
         }
+
+
         lcd_refreshLCD();
     }
 }
@@ -104,6 +140,13 @@ static void disp_alarm() {
     }
 
     lcd_write_string(alarm_buffer, 1, 10, NO_CR_LF);
+}
+
+static void disp_muted() {
+    char buffer[9];
+
+    sprintf(buffer, " MUTED ");
+    lcd_write_string(buffer, 1, 10, NO_CR_LF);
 }
 
 char param_buffer[17];
