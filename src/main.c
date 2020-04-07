@@ -81,6 +81,8 @@ void initHardware(void)
     init_motor();
 
     initMainTask();
+
+    init_alarm();
 }
 
 int main(void)

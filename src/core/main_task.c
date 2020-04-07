@@ -65,6 +65,7 @@ void MainTask(void *pvParameters)
     vTaskDelayUntil(&xLastWakeTime, WELCOME_MSG_DUR);
     globalState = welcome_wait_cal;
     xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
+    xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_START_CALIBRATION, eSetBits);
 
     while (1) {
         uint8_t updated_state = 0;
@@ -171,6 +172,7 @@ void MainTask(void *pvParameters)
             if (BUTTON_PRESSED(buttons_pressed, button_startstop)) {
                 if (globalState == stop) {
                     globalState = run;
+                    
                     // TODO notify motor start
                     updated_state = 1;
                 } else if (globalState == run) {

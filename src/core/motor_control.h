@@ -12,7 +12,7 @@
 #define MOTOR_NOTIF_EMERGENCY_STOP 0x40
 #define MOTOR_NOTIF_OVER_PRESSURE 0x80
 
-#define MOTOR_FULL_BITS 0xffffffff
+#define MOTOR_FULL_BITS 0xFFFFFFFF
 #define MOTOR_USTEPS 16
 
 typedef enum {
