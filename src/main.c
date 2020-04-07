@@ -10,7 +10,6 @@
 #include "core/debug.h"
 #include "core/motor_control.h"
 #include "core/display.h"
-#include "core/ui.h"
 #include "core/alarms.h"
 #include "core/main_task.h"
 #include "core/analog_read.h"
@@ -32,9 +31,6 @@ TaskHandle_t sfm3000TaskHandle;
 void initHardware(void)
 {
     init_time();
-
-    init_debug_print_sem();
-
 
     uart_init();
 
@@ -93,7 +89,7 @@ int main(void)
 
     xTaskCreate(MotorControlTask,  (const char *) "MotorControlTask",  1024, NULL, 10, &motorControlTaskHandle);
     xTaskCreate(MainTask,  (const char *) "MainTask",  512, NULL, 12, &mainTaskHandle);
-    xTaskCreate(UserInterfaceTask, (const char *) "UserInterfaceTask", 128,  NULL,  8, &userInterfaceTaskHandle);
+    //xTaskCreate(UserInterfaceTask, (const char *) "UserInterfaceTask", 128,  NULL,  8, &userInterfaceTaskHandle);
     xTaskCreate(LCDDisplayTask,    (const char *) "LCDDisplayTask",    512,  NULL,  3, &lcdDisplayTaskHandle);
     xTaskCreate(AlarmsTask,        (const char *) "AlarmsTask",        128,  NULL,  4, &alarmsTaskHandle);
     //xTaskCreate(LEDTask,           (const char *) "LEDTask",           128, NULL,  1, NULL);

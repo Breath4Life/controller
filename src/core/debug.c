@@ -1,9 +1,11 @@
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
+
+#include <avr/interrupt.h>
 
 #include "FreeRTOS.h"
 #include "task.h"
-#include "semphr.h"
 
 #include "hal/uart.h"
 #include "hal/io.h"
@@ -13,10 +15,16 @@
 #include "core/volume.h"
 
 
-SemaphoreHandle_t debug_print_semaphore;
+void debug_print_fromISR(const char *fmt, ...)
+{
+    char buffer[32];
 
-void init_debug_print_sem() {
-    debug_print_semaphore = xSemaphoreCreateMutex();
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(buffer, sizeof(buffer), fmt, args);
+    va_end(args);
+
+    uart_transmit(buffer);
 }
 
 void debug_print(const char *fmt, ...)
@@ -28,22 +36,9 @@ void debug_print(const char *fmt, ...)
     vsnprintf(buffer, sizeof(buffer), fmt, args);
     va_end(args);
 
-    char *c = buffer;
-    const int timeout_ticks = 100;
-    if (xSemaphoreTake(debug_print_semaphore, timeout_ticks) == pdTRUE)
-    {
-        while (*c != '\0')
-        {
-            // TODO: put mutex on uart_transmit
-            uart_transmit(*c);
-            c++;
-        }
-        xSemaphoreGive(debug_print_semaphore);
-    }
-    else
-    {
-        // What to do here ?
-    }
+    cli();
+    uart_transmit(buffer);
+    sei();
 }
 
 void SFM3000Task(void *pvParameters)

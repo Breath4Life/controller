@@ -220,18 +220,18 @@ static void irq_step_count_clbk()
 {
 #if MOTOR_DBG
     uint32_t i;
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print("In IRQ callback.\r\n");
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print("============\r\n");
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print("motor_position_rel:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print(" %i\r\n", motor_position_rel);
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print("motor_target_position_rel:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print(" %i\r\n", motor_target_position_rel);
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print("motor_target_pwm_freq:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print(" %i\r\n", motor_target_pwm_freq);
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print("motor_increment_pwm_freq:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print(" %i\r\n", motor_increment_pwm_freq);
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print("motor_current_pwm_freq:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print(" %i\r\n", motor_current_pwm_freq);
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print("motor_step_cnt_incr_curr:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print(" %i\r\n", motor_step_cnt_incr_curr);
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print("motor_step_cnt_accel_incr_base:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print(" %i\r\n", motor_step_cnt_accel_incr_base);
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print("motor_step_cnt_accel_incr_sum:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print(" %i\r\n", motor_step_cnt_accel_incr_sum);
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print("motor_step_cnt_accel_incr_last:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print(" %i\r\n", motor_step_cnt_accel_incr_last);
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print("============\r\n");
+    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("In IRQ callback.\r\n");
+    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("============\r\n");
+    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("motor_position_rel:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", motor_position_rel);
+    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("motor_target_position_rel:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", motor_target_position_rel);
+    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("motor_target_pwm_freq:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", motor_target_pwm_freq);
+    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("motor_increment_pwm_freq:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", motor_increment_pwm_freq);
+    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("motor_current_pwm_freq:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", motor_current_pwm_freq);
+    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("motor_step_cnt_incr_curr:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", motor_step_cnt_incr_curr);
+    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("motor_step_cnt_accel_incr_base:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", motor_step_cnt_accel_incr_base);
+    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("motor_step_cnt_accel_incr_sum:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", motor_step_cnt_accel_incr_sum);
+    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("motor_step_cnt_accel_incr_last:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", motor_step_cnt_accel_incr_last);
+    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("============\r\n");
 #endif // MOTOR_DBG
   int32_t remaining_distance;
   int32_t target_position_rel = motor_target_position_rel;
@@ -244,22 +244,22 @@ static void irq_step_count_clbk()
   motor_position_rel = position_rel;
 
 #if MOTOR_DBG
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print("remaining_distance:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print(" %i\r\n", remaining_distance);
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print("target_position_rel:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print(" %i\r\n", target_position_rel);
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print("position_rel:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print(" %i\r\n", position_rel);
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print("motor_position_rel:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print(" %i\r\n", motor_position_rel);
-  debug_print("============\r\n");
+    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("remaining_distance:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", remaining_distance);
+    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("target_position_rel:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", target_position_rel);
+    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("position_rel:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", position_rel);
+    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("motor_position_rel:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", motor_position_rel);
+  debug_print_FromISR("============\r\n");
 #endif // MOTOR_DBG
 
   // CASE: movement finished
   if (position_rel >= target_position_rel)
   {
 #if MOTOR_DBG
-    debug_print("Movement finished.\r\n");
+    debug_print_FromISR("Movement finished.\r\n");
 #endif // MOTOR_DBG
     stop_pwm_step();
 #if MOTOR_DBG
-    debug_print("Motor stopped.\r\n");
+    debug_print_FromISR("Motor stopped.\r\n");
 #endif // MOTOR_DBG
     // Update absolute position with final relative one
     if (motor_direction == MOTORCTRL_DIR_FORWARD)
@@ -284,10 +284,10 @@ static void irq_step_count_clbk()
     if ((position_rel < target_position_rel/2) && (motor_current_pwm_freq < motor_target_pwm_freq))
     {
 #if MOTOR_DBG
-      debug_print("ACCELERATING.\r\n");
-      debug_print("position_rel: %u \t", position_rel);
-      debug_print("remaining_distance: %u \t", remaining_distance);
-      debug_print("motor_current_pwm_freq: %u \t", motor_current_pwm_freq);
+      debug_print_FromISR("ACCELERATING.\r\n");
+      debug_print_FromISR("position_rel: %u \t", position_rel);
+      debug_print_FromISR("remaining_distance: %u \t", remaining_distance);
+      debug_print_FromISR("motor_current_pwm_freq: %u \t", motor_current_pwm_freq);
 #endif // MOTOR_DBG
       // PWM
       new_pwm_freq = motor_current_pwm_freq + motor_increment_pwm_freq;
@@ -295,7 +295,7 @@ static void irq_step_count_clbk()
       new_step_cnt_value = motor_step_cnt_accel_incr_last + motor_step_cnt_accel_incr_base;
       if (new_pwm_freq >= motor_target_pwm_freq) {
 #if MOTOR_DBG
-          debug_print("\nAccelerating too fast.\n");
+          debug_print_FromISR("\nAccelerating too fast.\n");
 #endif // MOTOR_DBG
           // Reaching max speed
           motor_pwm_freq_accel_last = motor_current_pwm_freq;
@@ -306,7 +306,7 @@ static void irq_step_count_clbk()
           new_pwm_freq = motor_target_pwm_freq;
       } else if (position_rel + new_step_cnt_value >= target_position_rel/2) {
 #if MOTOR_DBG
-          debug_print("\nAccelerating too far.\n");
+          debug_print_FromISR("\nAccelerating too far.\n");
 #endif // MOTOR_DBG
           // Reaching middle of trip
           motor_pwm_freq_accel_last = motor_current_pwm_freq;
@@ -320,27 +320,27 @@ static void irq_step_count_clbk()
       }
 
 #if MOTOR_DBG
-      debug_print("new_pwm_freq: %u \r\n", new_pwm_freq);
-      debug_print("new_pwm_freq2: %u \r\n", new_pwm_freq);
+      debug_print_FromISR("new_pwm_freq: %u \r\n", new_pwm_freq);
+      debug_print_FromISR("new_pwm_freq2: %u \r\n", new_pwm_freq);
 #endif // MOTOR_DBG
       set_freq_pwm_step(new_pwm_freq);
 #if MOTOR_DBG
-      debug_print("new_pwm_freq3: %u \r\n", new_pwm_freq);
+      debug_print_FromISR("new_pwm_freq3: %u \r\n", new_pwm_freq);
 #endif // MOTOR_DBG
       motor_current_pwm_freq = new_pwm_freq;
 
       motor_step_cnt_accel_incr_sum = position_rel;
 #if MOTOR_DBG
-      debug_print("mt_stp_cnt_ac_inc_last: %u\r\n", motor_step_cnt_accel_incr_last);
+      debug_print_FromISR("mt_stp_cnt_ac_inc_last: %u\r\n", motor_step_cnt_accel_incr_last);
 #endif // MOTOR_DBG
     }
     // Deceleration
     else if ((position_rel >= target_position_rel/2) && (remaining_distance <= motor_step_cnt_accel_incr_sum))
     {
 #if MOTOR_DBG
-      debug_print("DECELERATING.\r\n");
-      debug_print("remaining_distance: %u \t", remaining_distance);
-      debug_print("motor_current_pwm_freq: %u \t", motor_current_pwm_freq);
+      debug_print_FromISR("DECELERATING.\r\n");
+      debug_print_FromISR("remaining_distance: %u \t", remaining_distance);
+      debug_print_FromISR("motor_current_pwm_freq: %u \t", motor_current_pwm_freq);
 #endif // MOTOR_DBG
       // PWM
       if (motor_current_pwm_freq > motor_pwm_freq_accel_last) {
@@ -355,7 +355,7 @@ static void irq_step_count_clbk()
       // Avoid potential rounding issues. Never reaches zero!
       new_pwm_freq = MAX(new_pwm_freq, motor_increment_pwm_freq);
 #if MOTOR_DBG
-      debug_print("new_pwm_freq: %u\r\n", new_pwm_freq);
+      debug_print_FromISR("new_pwm_freq: %u\r\n", new_pwm_freq);
 #endif // MOTOR_DBG
       set_freq_pwm_step(new_pwm_freq);
       motor_current_pwm_freq = new_pwm_freq;
@@ -369,9 +369,9 @@ static void irq_step_count_clbk()
     else
     {
 #if MOTOR_DBG
-      debug_print("CRUISE SPEED.\r\n");
-      //debug_print("motor_step_cnt_accel_incr_sum: %u \t", motor_step_cnt_accel_incr_sum);
-      debug_print("remaining_distance: %u \t", remaining_distance);
+      debug_print_FromISR("CRUISE SPEED.\r\n");
+      //debug_print_FromISR("motor_step_cnt_accel_incr_sum: %u \t", motor_step_cnt_accel_incr_sum);
+      debug_print_FromISR("remaining_distance: %u \t", remaining_distance);
 #endif // MOTOR_DBG
       // Distance to go to decelerating point
       // motor_step_cnt_accel_incr_sum represents number of steps for accelerating ramp
@@ -379,14 +379,14 @@ static void irq_step_count_clbk()
       new_step_cnt_value = remaining_distance - motor_step_cnt_accel_incr_sum;
       new_step_cnt_value = MIN(new_step_cnt_value, COUNTER_STEP_MAX);
 #if MOTOR_DBG
-      debug_print("CRUISE SPEED.\r\n");
-      debug_print("new_step_cnt_value: %u\r\n", new_step_cnt_value);
+      debug_print_FromISR("CRUISE SPEED.\r\n");
+      debug_print_FromISR("new_step_cnt_value: %u\r\n", new_step_cnt_value);
 #endif // MOTOR_DBG
     }
 
     // Go to next position
 #if MOTOR_DBG
-    debug_print("new_step_cnt_value: %u\r\n", new_step_cnt_value);
+    debug_print_FromISR("new_step_cnt_value: %u\r\n", new_step_cnt_value);
 #endif // MOTOR_DBG
     set_threshold_cnt5((uint16_t) new_step_cnt_value);
   }
@@ -422,15 +422,15 @@ static unsigned int convert_freq2period_pwm_step(const unsigned int freq)
 static void set_freq_pwm_step(const unsigned int freq)
 {
 #if MOTOR_DBG
-      debug_print("set_freq_pwm_step: %u \r\n", freq);
+      debug_print_FromISR("set_freq_pwm_step: %u \r\n", freq);
 #endif // MOTOR_DBG
   unsigned int timer_period = convert_freq2period_pwm_step(freq);
 #if MOTOR_DBG
-      debug_print("timer period: %u \r\n", timer_period);
+      debug_print_FromISR("timer period: %u \r\n", timer_period);
 #endif // MOTOR_DBG
   set_period_pwm_step(timer_period);
 #if MOTOR_DBG
-      debug_print("set_pwm_freq final\r\n");
+      debug_print_FromISR("set_pwm_freq final\r\n");
 #endif // MOTOR_DBG
 }
 
@@ -454,7 +454,7 @@ static void stop_pwm_step()
   // Start counter
   TCCR3B |= MOTORCTRL_PWM_RUN_VALUE;
 #if MOTOR_DBG
-    debug_print("Stop pwm final.\r\n");
+    debug_print_FromISR("Stop pwm final.\r\n");
 #endif // MOTOR_DBG
 }
 
@@ -462,7 +462,7 @@ static void stop_pwm_step()
 ISR(MOTORCTRL_PWM_OVF_IRQ)
 {
 #if MOTOR_DBG
-    debug_print("PWM ISR.\r\n");
+    debug_print_FromISR("PWM ISR.\r\n");
 #endif // MOTOR_DBG
   // Disable overflow interrupt
   TIMSK3 &= ~ MOTORCTRL_PWM_OVF_IRQ_CFG;
@@ -478,7 +478,7 @@ ISR(MOTORCTRL_PWM_OVF_IRQ)
       taskYIELD();
   }
 #if MOTOR_DBG
-    debug_print("notified control.\r\n");
+    debug_print_FromISR("notified control.\r\n");
 #endif // MOTOR_DBG
   // should do a portYIELD_FROM_ISR(higherPriorityTaskWoken), but is not available in port
 #endif // ARDUINO_RT
