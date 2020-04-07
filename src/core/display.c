@@ -39,7 +39,11 @@ void LCDDisplayTask(void *pvParameters)
         uint32_t notification;
         // TODO handle switching display text for alarm off , etc.
         BaseType_t notif_recv = xTaskNotifyWait(0x0, ALL_NOTIF_BITS, &notification, portMAX_DELAY);
+        debug_print("[LCD] rcvd notif\r\n");
         if (notification & DISP_NOTIF_ALARM) {
+#if DEBUG_LCD
+            debug_print("[LCD] rcvd notif ALARM.\r\n");
+#endif
             disp_alarm();
         }
         if (notification & DISP_NOTIF_PARAM) {
@@ -50,7 +54,7 @@ void LCDDisplayTask(void *pvParameters)
         }
         if (notification & DISP_NOTIF_INST_P) {
 #if DEBUG_LCD
-            debug_print("[LCD] rcvd notif inst p.\r\n");
+//            debug_print("[LCD] rcvd notif inst p.\r\n");
 #endif
             disp_inst_p();
         }
@@ -66,7 +70,6 @@ void LCDDisplayTask(void *pvParameters)
 #endif
             disp_state();
         }
-
         lcd_refreshLCD();
     }
 }
@@ -76,19 +79,26 @@ static void disp_alarm() {
 
     switch(errorCode) {
         case overPressure:
-            sprintf(alarm_buffer, " MXPSR "); break;
+            sprintf(alarm_buffer, " MXPSR ");
+            break;
         case noPressure:
-            sprintf(alarm_buffer, " NOPSR "); break;
+            sprintf(alarm_buffer, " NOPSR ");
+            break;
         case highPressure:
-            sprintf(alarm_buffer, " HOPSR "); break;
+            sprintf(alarm_buffer, " HOPSR ");
+            break;
         case highTemperature:
-            sprintf(alarm_buffer, " MXTPM "); break;
+            sprintf(alarm_buffer, " MXTPM ");
+            break;
         case lowPressure:
-            sprintf(alarm_buffer, " LOPSR "); break;
+            sprintf(alarm_buffer, " LOPSR ");
+            break;
         case abnVolume:
-            sprintf(alarm_buffer, " TIDALV"); break;
+            sprintf(alarm_buffer, " TIDALV");
+            break;
         case abnFreq:
-            sprintf(alarm_buffer, " RESPR "); break;
+            sprintf(alarm_buffer, " RESPR ");
+            break;
         default:
             sprintf(alarm_buffer, " ALARM ");
     }

@@ -52,7 +52,7 @@ void AnalogReadTask(void *pvParameters) {
     TickType_t xLastWakeTime = xTaskGetTickCount();
 #if DEBUG_ANALOG_READ
     debug_print("[ANALOG-READ] Starting.\r\n");
-#endif //DEBUG_ANALOG_READ
+#endif
 
     while (1) {
         if (aio_ready()) {
@@ -61,23 +61,32 @@ void AnalogReadTask(void *pvParameters) {
                 case pressure:
                     p = mes2pres(res);
                     if (stoppedOrRunning()) {
+                        //xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_INST_P, eSetBits);
+                     }
+
+                    // FIXME: was stoppedOrRunning before. Doesn't make sense in stop state right?
+                    if (globalState == run) {
                         if (p > p_max) {
                             xTaskNotify(mainTaskHandle, ALARM_NOTIF_OVERPRESSURE, eSetBits);
-                            xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_OVER_PRESSURE, eSetBits);
+                            //xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_OVER_PRESSURE, eSetBits);
                         }
 
-                        xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_INST_P, eSetBits);
 
                         if (breathState == insp && p > cycle_p_peak) {
                             cycle_p_peak = p;
                         }
 
-                        if (p < NO_PRESSURE_THRESHOLD) {
+                        // FIXME: added errorCode != noPressure, makes sense?
+                        if (p < NO_PRESSURE_THRESHOLD && errorCode != noPressure) {
                             // TODO: only in insp ?
                             xTaskNotify(mainTaskHandle, ALARM_NOTIF_NO_PRESSURE, eSetBits);
-                        }
 
-                        if (p < LOW_PRESSURE_THRESHOLD) {
+#if DEBUG_ANALOG_READ
+                            debug_print("[ANALOG-READ] NOPSR notif to MAIN.\r\n");
+#endif
+                        }
+                        // FIXME: added errorCode != lowPressure, makes sense?
+                        else if (p < LOW_PRESSURE_THRESHOLD && errorCode != lowPressure) {
                             // TODO: only in insp ?
                             xTaskNotify(mainTaskHandle, ALARM_NOTIF_LOW_PRESSURE, eSetBits);
                         }
@@ -91,7 +100,7 @@ void AnalogReadTask(void *pvParameters) {
                     if (globalState == calibration) {
                         if (p > CALIBRATION_MAX_P) {
                             // FIXME: same notification to the motor for patient connected and overpressure?
-                            xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_OVER_PRESSURE, eSetBits);
+                            //xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_OVER_PRESSURE, eSetBits);
                             xTaskNotify(mainTaskHandle, ALARM_NOTIF_PATIENT_CONNECTED, eSetBits);
                         }
                     }
@@ -106,7 +115,6 @@ void AnalogReadTask(void *pvParameters) {
                     break;
                 case temperature1:
                     temp1 = mes2temp(res);
-                    debug_print("[ANALOG_READ] Temp1: %u\r\n", temp1);
                     if (temp1 > MAX_TEMP1) {
                         xTaskNotify(mainTaskHandle, ALARM_NOTIF_HIGH_TEMP, eSetBits);
                     }
