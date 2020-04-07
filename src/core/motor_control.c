@@ -54,6 +54,7 @@ uint32_t notif_recv;
 uint32_t posOffset;
 
 TickType_t previousWakeTime;
+uint32_t ticksTctTime;
 
 // TODO reset proper value! 
 const uint32_t f_home = 50; // steps/s (not µsteps/s)
@@ -64,8 +65,6 @@ const int32_t steps_calib_end = 60;
 const int32_t steps_caliv_vol = 600;
 
 const uint32_t thresh_calib_vol_mil = 600;
-
-uint32_t rem_usteps;
 
 // Threshold for volume calibraiton 
 
@@ -81,13 +80,14 @@ void init_motor() {
     currentPosition = 0;
     targetPosition = 0;
     homePosition = 0;
-    rem_usteps = 0;
     posOffset = 0;
 
     // Breathing cycles parameter
     TCT = 40 * 100; // in ms
     Ti = 20 * 100; // in ms
     Te = TCT - Ti;
+
+    ticksTctTime = pdMS_TO_TICKS(TCT);
 
     n_steps = 600;
     tot_pulses = n_steps * MOTOR_USTEPS;  
@@ -98,7 +98,7 @@ void init_motor() {
 
     T_tot_plateau = Ti / 10;
     T_tot_Ti = Ti - T_tot_plateau;
-    T_tot_Te = Te / 2;
+    T_tot_Te = 750;
 
     tmp_f_insp = insp_pulses * 1000;
     tmp_f_plateau = plateau_pulses * 1000;
@@ -317,6 +317,8 @@ void MotorControlTask(void *pvParameters)
                     debug_print("TCT %u \r\n",TCT);
                     debug_print("Ti %u \r\n",Ti);
                     debug_print("tot_pulses %u \r\n",tot_pulses);
+                    debug_print("plat pulses %u \r\n",plateau_pulses);
+                    debug_print("Ti pulses %u \r\n",insp_pulses);
                     debug_print("TtotTi %u \r\n",T_tot_Ti);
                     debug_print("TtotTe %u \r\n",T_tot_Te);
                     debug_print("f_insp %u \r\n",f_insp);
@@ -332,7 +334,7 @@ void MotorControlTask(void *pvParameters)
                         xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(3000));
                         if (notif_recv & MOTOR_NOTIF_MOVEMENT_FINISHED) {
                             breathState = plateau;
-                            targetPosition = homePosition + MOTOR_USTEPS*(insp_pulses + plateau_pulses); 
+                            targetPosition = homePosition + insp_pulses + plateau_pulses; 
                             set_motor_goto_position_accel_exec(targetPosition, f_plateau, 2, 200);
 #if DEBUG_MOTOR
                         debug_print("to plateau \r\n");
@@ -376,7 +378,7 @@ void MotorControlTask(void *pvParameters)
                     // Add RECALIBRATION step
 
                     case cycleEnd:
-                        vTaskDelayUntil(&previousWakeTime,pdMS_TO_TICKS(TCT));
+                        vTaskDelayUntil(&previousWakeTime,ticksTctTime);
                         breathState = startNewCycle;
 #if DEBUG_MOTOR
                         debug_print("to Start new cycle \r\n");
@@ -387,7 +389,7 @@ void MotorControlTask(void *pvParameters)
                         motor_enable();
                         breathState = insp;
                         previousWakeTime = xTaskGetTickCount();
-                        targetPosition = homePosition + MOTOR_USTEPS*insp_pulses;
+                        targetPosition = homePosition + insp_pulses;
                         set_motor_goto_position_accel_exec(targetPosition, f_insp, 2, 200); 
 #if DEBUG_MOTOR
                         debug_print("Ti pulses used %u \r\n",targetPosition);
