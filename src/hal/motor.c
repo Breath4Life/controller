@@ -17,7 +17,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #define MOTOR_DBG 0
-
+#define DEBUG_MOTOR 0
 
 #include <stdint.h>
 #include <limits.h>
@@ -257,7 +257,7 @@ static void irq_step_count_clbk()
 #if MOTOR_DBG
     debug_print("Movement finished.\r\n");
 #endif // MOTOR_DBG
-    stop_pwm_step();
+    stop_pwm_step(1);
 #if MOTOR_DBG
     debug_print("Motor stopped.\r\n");
 #endif // MOTOR_DBG
@@ -435,7 +435,7 @@ static void set_freq_pwm_step(const unsigned int freq)
 }
 
 // Maximum input freq is MOTORCTRL_PWM_FREQ_DIV_FACTOR/2
-static void stop_pwm_step()
+static void stop_pwm_step(uint32_t enable_interrupt)
 {
   // 3 is the minimum period for the timer
   // setting OCR3B = OCR3A guarantees 0 output
@@ -449,8 +449,10 @@ static void stop_pwm_step()
   OCR3C = 3;
   OCR3A = 3;
   // Enable overflow interrupt (end of operations)
-  TIFR3 |= _BV(TOV3); // Clear pending interrupt flag (if any)
-  TIMSK3 |= MOTORCTRL_PWM_OVF_IRQ_CFG;
+  if (enable_interrupt != 0) {
+    TIFR3 |= _BV(TOV3); // Clear pending interrupt flag (if any)
+    TIMSK3 |= MOTORCTRL_PWM_OVF_IRQ_CFG;
+  }
   // Start counter
   TCCR3B |= MOTORCTRL_PWM_RUN_VALUE;
 #if MOTOR_DBG
@@ -506,19 +508,31 @@ uint8_t motor_moving() {
     return motor_inmotion;
 }
 
-int32_t motor_remaining_distance() {
+uint32_t motor_current_position() {
   cli();//stop interrupts
-  int32_t curr_pos = motor_position_abs;
-  int32_t curr_pos_offset = get_cnt5();
+  uint32_t curr_pos = motor_position_abs;
+  uint32_t curr_pos_offset = get_cnt5();
   uint8_t cur_direction = motor_direction;
   sei();//allow interrupts
-  if (cur_direction == MOTORCTRL_DIR_FORWARD) {
-      curr_pos += curr_pos_offset;
-  } else {
-      curr_pos -= curr_pos_offset;
+  if(motor_inmotion) {
+      if (cur_direction == MOTORCTRL_DIR_FORWARD) {
+          curr_pos += curr_pos_offset;
+      } else {
+          curr_pos -= curr_pos_offset;
+      }
   }
   return curr_pos;
 }
+
+uint32_t motor_remaining_distance(){
+  uint32_t m_curr_pos_abs = motor_current_position();
+  if (m_curr_pos_abs > motor_target_position_abs) { 
+      return m_curr_pos_abs - motor_target_position_abs;  
+  } else {
+      return motor_target_position_abs - m_curr_pos_abs; 
+  }
+}
+
 
 void motor_enable()
 {
@@ -557,6 +571,9 @@ void set_motor_goto_position_accel_exec(
     target_position_rel = target_position_abs - motor_position_abs;
     if (target_position_rel >= 0)
     {
+#if DEBUG_MOTOR
+      debug_print("Forward %lu \r\n",motor_position_abs);
+#endif
       direction = MOTORCTRL_DIR_FORWARD;
       if (target_position_rel == 1) // Special case: counter config is problematic in that case
       {
@@ -566,6 +583,9 @@ void set_motor_goto_position_accel_exec(
     }
     else
     {
+#if DEBUG_MOTOR
+      debug_print("Backward %lu \r\n",motor_position_abs);
+#endif
       direction = MOTORCTRL_DIR_BACKWARD;
       target_position_rel = -target_position_rel;
       if (target_position_rel == 1) // Special case: counter config is problematic in that case
@@ -654,6 +674,41 @@ void set_motor_goto_position_accel_exec(
   }
 }
 
+// Used to manually set the absolute position of the motor
+// Dirty Hack to handle negative target position
+// TODO: clean
+void set_motor_current_position_value(long new_abs_position){
+    motor_position_abs = new_abs_position;
+}
+
+// Used when the motor need to be stopped before it ends 
+// its movement
+// TODO: dirty, clean
+void motor_anticipated_stop(){
+#if DEBUG_MOTOR
+    debug_print("ANT STATES: %lu %lu \r\n",motor_position_abs,motor_position_abs + get_cnt5());
+#endif
+
+    // stop PWM stepper
+    stop_pwm_step(0);
+    
+    // set stop state
+    motor_inmotion = 0;
+
+    // Update states
+    if (motor_direction == MOTORCTRL_DIR_FORWARD)
+    {
+      motor_position_abs += get_cnt5();
+    }
+    else
+    {
+      motor_position_abs -= get_cnt5();
+    }
+
+#if DEBUG_MOTOR
+    debug_print("motor ANTICIPATED STOP \r\n");
+#endif
+}
 
 void set_motor_goto_position(uint32_t target_position_abs, const uint16_t target_speed)
 {
