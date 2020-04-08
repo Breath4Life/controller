@@ -369,7 +369,14 @@ void MotorControlTask(void *pvParameters)
                             targetPosition = homePosition + insp_pulses + plateau_pulses; 
                             set_motor_goto_position_accel_exec(targetPosition, f_plateau, 2, 200);
 #if DEBUG_MOTOR
-                        debug_print("to plateau \r\n");
+                            debug_print("to plateau \r\n");
+#endif
+                        } else if (notif_recv & MOTOR_NOTIF_HALT) {
+                            motor_anticipated_stop();
+                            motor_disable();
+                            motorState = motorInit;
+#if DEBUG_MOTOR
+                            debug_print("to motor INIT \r\n");
 #endif
                         }
                         // TODO update state based on the notification value 
@@ -384,7 +391,14 @@ void MotorControlTask(void *pvParameters)
                             targetPosition = homePosition;
                             set_motor_goto_position_accel_exec(targetPosition, f_exp, 2, 200);
 #if DEBUG_MOTOR
-                        debug_print("to exp \r\n");
+                            debug_print("to exp \r\n");
+#endif
+                        } else if (notif_recv & MOTOR_NOTIF_HALT) {
+                            motor_anticipated_stop();
+                            motor_disable();
+                            motorState = motorInit;
+#if DEBUG_MOTOR
+                            debug_print("to motor INIT \r\n");
 #endif
                         }
 
@@ -399,7 +413,14 @@ void MotorControlTask(void *pvParameters)
                             breathState = cycleEnd;
                             motor_disable();
 #if DEBUG_MOTOR
-                        debug_print("to wait cycle end \r\n");
+                            debug_print("to wait cycle end \r\n");
+#endif
+                        } else if (notif_recv & MOTOR_NOTIF_HALT) {
+                            motor_anticipated_stop();
+                            motor_disable();
+                            motorState = motorInit;
+#if DEBUG_MOTOR
+                            debug_print("to motor INIT \r\n");
 #endif
                         }
 
