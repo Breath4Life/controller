@@ -5,6 +5,7 @@
 #include "task.h"
 
 #include "hal/io.h"
+#include "core/main_task.h"
 #include "hal/pins.h"
 #include "hal/motor.h"
 #include "core/debug.h"
@@ -70,26 +71,21 @@ const uint32_t thresh_calib_vol_mil = 600;
 // 0 replaces the whole task by an empty loop for testing purposes
 #define MOTOR_ACTIVE 1
 
-void init_motor() {
-    init_limit_switch();
-    setup_motor();
+uint32_t vol2steps(uint8_t  tidal_vol){
+    return 10*tidal_vol;
+} 
 
-    motorState = motorInit;
-    breathState = startNewCycle;
-    calibState = calibDown; 
-    currentPosition = 0;
-    targetPosition = 0;
-    homePosition = 0;
-    posOffset = 0;
+void compute_config(){
 
     // Breathing cycles parameter
-    TCT = 30 * 100; // in ms
-    Ti = 15 * 100; // in ms
+    TCT = (60000L / bpm); // in ms
+    // TODO check for each possibilities
+    Ti = (TCT/(1+ie)); // in ms
     Te = TCT - Ti;
 
     ticksTctTime = pdMS_TO_TICKS(TCT);
 
-    n_steps = 600;
+    n_steps = vol2steps(tidal_vol);
     tot_pulses = n_steps * MOTOR_USTEPS;  
 
     plateau_pulses = tot_pulses/20;
@@ -106,8 +102,29 @@ void init_motor() {
 
     f_insp = tmp_f_insp / T_tot_Ti;
     f_plateau = tmp_f_plateau / T_tot_plateau;
-    f_exp = tmp_f_exp / T_tot_Te;  
+    f_exp = tmp_f_exp / T_tot_Te;
 
+    debug_print("ie %u \r\n",ie);
+    debug_print("bpm %u \r\n",bpm);
+    debug_print("TCT %u \r\n",TCT);
+    debug_print("Ti %u \r\n",Ti);
+    debug_print("nsteps %u \r\n",n_steps);
+}
+
+void init_motor() {
+    init_limit_switch();
+    setup_motor();
+
+    motorState = motorInit;
+    breathState = startNewCycle;
+    calibState = calibDown; 
+    currentPosition = 0;
+    targetPosition = 0;
+    homePosition = 0;
+    posOffset = 0;
+
+    // Setup config  
+    compute_config();
 }
 
 
@@ -442,6 +459,7 @@ void MotorControlTask(void *pvParameters)
                         break;
         
                     case startNewCycle:
+                        compute_config();
                         motor_enable();
                         breathState = insp;
                         previousWakeTime = xTaskGetTickCount();
