@@ -13,7 +13,7 @@
 #define MOTOR_NOTIF_OVER_PRESSURE 0x80
 
 #define MOTOR_FULL_BITS 0xFFFFFFFF
-#define MOTOR_USTEPS 16
+#define MOTOR_USTEPS 1
 
 typedef enum {
     motorInit,

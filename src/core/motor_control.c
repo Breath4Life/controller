@@ -60,7 +60,7 @@ const uint32_t f_home = 50; // steps/s (not µsteps/s)
 
 const int32_t steps_calib_down = 2000;
 const int32_t steps_calib_up = 1000;
-const int32_t steps_calib_end = 60;
+const int32_t steps_calib_end = 80;
 const int32_t steps_caliv_vol = 600;
 
 const uint32_t thresh_calib_vol_mil = 600;
@@ -83,8 +83,8 @@ void init_motor() {
     posOffset = 0;
 
     // Breathing cycles parameter
-    TCT = 40 * 100; // in ms
-    Ti = 20 * 100; // in ms
+    TCT = 30 * 100; // in ms
+    Ti = 15 * 100; // in ms
     Te = TCT - Ti;
 
     ticksTctTime = pdMS_TO_TICKS(TCT);
@@ -457,23 +457,31 @@ void MotorControlTask(void *pvParameters)
 
                     case stopping:
                         // BOUNDED wait for limit switch up 
-                        n_wait_recv = xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(5000));
+                        if(motor_moving()){
+                            n_wait_recv = xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(5000));
 
-                        // Verify deadline
-                        if (n_wait_recv){
-                            // Check for undesirable notification
-                            if(notif_recv & MOTOR_NOTIF_MOVEMENT_FINISHED) {
-                                //TODO add volume check!
-                                motorState = motorStopped;
-                                motor_disable();
+                            // Verify deadline
+                            if (n_wait_recv){
+                                // Check for undesirable notification
+                                if(notif_recv & MOTOR_NOTIF_MOVEMENT_FINISHED) {
+                                    //TODO add volume check!
+                                    motor_disable();
+                                    motorState = motorStopped;
 #if DEBUG_MOTOR
-                                debug_print("to motor stopped\r\n");
+                                    debug_print("to motor stopped\r\n");
 #endif
+                                } else {
+                                    // TODO Notify MOTOR_ERROR
+                                }
                             } else {
-                                // TODO Notify MOTOR_ERROR
+                                // TODO Notify MOTOR_ERROR     
                             }
                         } else {
-                            // TODO Notify MOTOR_ERROR     
+                            motor_disable();
+                            motorState = motorStopped;
+#if DEBUG_MOTOR
+                            debug_print("to motor stopped\r\n");
+#endif
                         }
                         break;
                 }
