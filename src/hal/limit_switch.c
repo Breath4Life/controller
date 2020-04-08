@@ -20,8 +20,8 @@
 
 #define DEBUG_LIM_SWITCH 0
 
-static volatile uint8_t lim_switch0_lvl;
-static volatile uint8_t lim_switch1_lvl;
+static volatile uint8_t lim_switch_down_lvl;
+static volatile uint8_t lim_switch_up_lvl;
 
 const uint32_t threshold_time_irq = 2000000;
 static uint32_t deadline_time_irq;
@@ -29,13 +29,13 @@ static uint32_t current_time_irq;
 
 void init_limit_switch() {
     // init pins
-    dio_init(DIO_PIN_LIM_SWITCH_0_MONITORING, DIO_INPUT_PULLUP);
-    dio_init(DIO_PIN_LIM_SWITCH_1_MONITORING, DIO_INPUT_PULLUP);
+    dio_init(DIO_PIN_LIM_SWITCH_DOWN_MONITORING, DIO_INPUT_PULLUP);
+    dio_init(DIO_PIN_LIM_SWITCH_UP_MONITORING, DIO_INPUT_PULLUP);
     // current levels
-    lim_switch0_lvl = dio_read(DIO_PIN_LIM_SWITCH_0_MONITORING);
-    lim_switch1_lvl = dio_read(DIO_PIN_LIM_SWITCH_1_MONITORING);
+    lim_switch_down_lvl = dio_read(DIO_PIN_LIM_SWITCH_DOWN_MONITORING);
+    lim_switch_up_lvl = dio_read(DIO_PIN_LIM_SWITCH_UP_MONITORING);
     // enable level change interrupt (on PCINT7:0)
-    PCMSK0 =  _BV(PCINT5) | _BV(PCINT6);
+    PCMSK0 =  _BV(PCINT0) | _BV(PCINT1);
     PCICR |= _BV(PCIE0);
     current_time_irq = 0;
     deadline_time_irq = current_time_irq+ threshold_time_irq; 
@@ -44,11 +44,11 @@ void init_limit_switch() {
 
 
 ISR(PCINT0_vect) {
-    uint8_t l0 = dio_read(DIO_PIN_LIM_SWITCH_0_MONITORING);
-    uint8_t l1 = dio_read(DIO_PIN_LIM_SWITCH_1_MONITORING);
+    uint8_t l_down = dio_read(DIO_PIN_LIM_SWITCH_DOWN_MONITORING);
+    uint8_t l_up = dio_read(DIO_PIN_LIM_SWITCH_UP_MONITORING);
     BaseType_t higherPriorityTaskWoken = pdFALSE;
     current_time_irq = time_us();
-    if (l0 && !lim_switch0_lvl) {
+    if (l_down && !lim_switch_down_lvl) {
         if((deadline_time_irq-current_time_irq) & 0x80000000){
             xTaskNotifyFromISR(motorControlTaskHandle, MOTOR_NOTIF_LIM_DOWN, eSetBits, &higherPriorityTaskWoken);
             deadline_time_irq = current_time_irq + threshold_time_irq;
@@ -57,7 +57,7 @@ ISR(PCINT0_vect) {
         debug_print_FromISR("switch0 pressed\r\n");
 #endif // DEBUG_LIM_SWITCH
     }
-    if (l1 && !lim_switch1_lvl) {
+    if (l_up && !lim_switch_up_lvl) {
         if((deadline_time_irq-current_time_irq) & 0x80000000){
             xTaskNotifyFromISR(motorControlTaskHandle, MOTOR_NOTIF_LIM_UP, eSetBits, &higherPriorityTaskWoken);
             deadline_time_irq += current_time_irq + threshold_time_irq;
@@ -66,8 +66,8 @@ ISR(PCINT0_vect) {
         debug_print_FromISR("switch1 pressed\r\n");
 #endif // DEBUG_LIM_SWITCH
     }
-    lim_switch0_lvl = l0;
-    lim_switch1_lvl = l1;
+    lim_switch_down_lvl = l_down;
+    lim_switch_down_lvl = l_up;
     if (higherPriorityTaskWoken) {
         taskYIELD();
     }
