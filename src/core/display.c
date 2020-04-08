@@ -46,7 +46,7 @@ void LCDDisplayTask(void *pvParameters)
         uint32_t curr_time = time_us();
 
         // Display "Muted" and the current state/alarm alternatively for 2 seconds if mute_on
-        if (mute_on) {
+        if (mute_on && (globalState == stop || globalState == run)) {
             if (curr_time - muted_switch_time > 2000000L) {
                 if (!muted_msg_on) {
                     disp_muted();
@@ -74,12 +74,6 @@ void LCDDisplayTask(void *pvParameters)
 
         // FIXME: max wait has been changed to implement alternate mute/state/alarm display
         BaseType_t notif_recv = xTaskNotifyWait(0x0, ALL_NOTIF_BITS, &notification, pdMS_TO_TICKS(1000));
-        if (notification & DISP_NOTIF_ALARM) {
-#if DEBUG_LCD
-            debug_print("[LCD] rcvd notif ALARM.\r\n");
-#endif
-            disp_alarm();
-        }
         if (notification & DISP_NOTIF_PARAM) {
 #if DEBUG_LCD
             debug_print("[LCD] rcvd notif param.\r\n");
@@ -88,7 +82,7 @@ void LCDDisplayTask(void *pvParameters)
         }
         if (notification & DISP_NOTIF_INST_P) {
 #if DEBUG_LCD
-            debug_print("[LCD] rcvd notif inst p.\r\n");
+            //debug_print("[LCD] rcvd notif inst p.\r\n");
 #endif
             disp_inst_p();
         }
@@ -103,6 +97,12 @@ void LCDDisplayTask(void *pvParameters)
             debug_print("[LCD] rcvd notif state.\r\n");
 #endif
             disp_state();
+        }
+        if (notification & DISP_NOTIF_ALARM) {
+#if DEBUG_LCD
+            debug_print("[LCD] rcvd notif ALARM.\r\n");
+#endif
+            disp_alarm();
         }
 
 
