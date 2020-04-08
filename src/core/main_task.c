@@ -28,8 +28,7 @@ uint8_t extra_param;
 static void process_alarm(uint32_t notification);
 
 #define DEBUG_MAIN 1
-
-//uint8_t test_alarm = 3;
+#define MOTOR_ACTIVE 0
 
 void initMainTask()
 {
@@ -57,16 +56,12 @@ void MainTask(void *pvParameters)
     TickType_t xLastWakeTime = xTaskGetTickCount();
     const TickType_t xFrequency = pdMS_TO_TICKS(50);
 
-    debug_print("[MainTask] Starting.\r\n");
+    debug_print("[MAIN] Starting.\r\n");
 
     // TODO notify Buzzer task of Welcome
     vTaskDelayUntil(&xLastWakeTime, WELCOME_MSG_DUR);
     globalState = welcome_wait_cal;
     xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
-#if DEBUG_MAIN
-    debug_print("[MAIN] Sent NOTIF_STATE to LCD. \r\n");
-#endif
-    //
 
     while (1) {
         uint8_t updated_state = 0;
@@ -91,24 +86,25 @@ void MainTask(void *pvParameters)
             dio_write(DIO_PIN_ALARM_LED_HPA, 0);
             errorCode = noError;
             updated_state = 1;
-            //xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
             // TODO notify buzzer task of ack
         }
 
         // 5. Welcome wait calibration
         if (globalState == welcome_wait_cal && BUTTON_PRESSED(buttons_pressed, button_startstop)) {
             globalState = calibration;
-            // TODO remove next line
-            xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
-#if DEBUG_MAIN
-            debug_print("[MAIN] Sent NOTIF_STATE to LCD. \r\n");
-#endif
             updated_state = 1;
+#if MOTOR_ACTIVE
             xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_START_CALIBRATION, eSetBits);
+#endif
         }
         // 6. End of calibration
-        // TODO: add the other part of the condition when ready
+#if MOTOR_ACTIVE
         else if ((globalState == calibration) && (motorState == motorStopped)) {
+#else
+        else if ((globalState == calibration)) { // && (motorState == motorStopped)) {
+            // Simulate calibration delay
+            vTaskDelayUntil(&xLastWakeTime, WELCOME_MSG_DUR);
+#endif
             globalState = stop;
             // Notify LCD with every possible notifications to intialize display
             xTaskNotify(lcdDisplayTaskHandle,
@@ -169,19 +165,28 @@ void MainTask(void *pvParameters)
                 xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PARAM, eSetBits);
             }
 
-            if (BUTTON_PRESSED(buttons_pressed, button_startstop)) {
-                if (globalState == stop) {
-                    globalState = run;
-                    updated_state = 1;
-                    // TODO notify motor start
-                    xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_START, eSetBits);
-                    
-                } else if (globalState == run) {
-                    globalState = stop;
-                    updated_state = 1;
-                    // TODO notify motor halt
-                }
 
+        }
+
+        if (BUTTON_PRESSED(buttons_pressed, button_startstop)) {
+            if (globalState == stop) {
+                globalState = run;
+                updated_state = 1;
+#if MOTOR_ACTIVE
+                xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_START, eSetBits);
+#endif
+            } else if (globalState == run) {
+                globalState = stop;
+                updated_state = 1;
+#if MOTOR_ACTIVE
+                xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_HALT, eSetBits);
+#endif
+            } else if (globalState == calibration) {
+                globalState = welcome_wait_cal;
+                updated_state = 1;
+#if MOTOR_ACTIVE
+                xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_HALT, eSetBits);
+#endif
             }
 
         }
@@ -210,25 +215,6 @@ void MainTask(void *pvParameters)
             if (notif_recv == pdTRUE) {
                 process_alarm(notification);
             }
-
-            // TODO test-only, to be removed
-            //if (test_alarm == 3) {
-            //    vTaskDelay(pdMS_TO_TICKS(1000));
-            //    process_alarm(ALARM_NOTIF_ABN_VOLUME);
-            //    test_alarm--;
-            //}
-
-            //if (test_alarm == 2) {
-            //    vTaskDelay(pdMS_TO_TICKS(3000));
-            //    process_alarm(ALARM_NOTIF_OVERPRESSURE);
-            //    test_alarm--;
-            //}
-
-            //if (test_alarm == 1) {
-            //    vTaskDelay(pdMS_TO_TICKS(3000));
-            //    process_alarm(ALARM_NOTIF_ABN_FREQ);
-            //    test_alarm--;
-            //}
         }
 
         // 10. Critical failure during calibration
@@ -253,9 +239,6 @@ void MainTask(void *pvParameters)
 
 void process_alarm(uint32_t notification)
 {
-#if DEBUG_MAIN
-    debug_print("[MAIN] ALARM notif: %u.\r\n", notification);
-#endif
     if (alarmState == noAlarm) {
 #if DEBUG_MAIN
         debug_print("Rcvd alarm from noAlarm state.\r\n");
