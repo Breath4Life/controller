@@ -47,7 +47,8 @@ typedef enum {
     abnVolume,
     abnFreq,
     patientConnected,
-    incorrectFlow
+    incorrectFlow,
+    auxPower
 } ErrorCode_t;
 
 extern volatile ErrorCode_t errorCode;

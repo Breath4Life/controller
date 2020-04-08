@@ -141,6 +141,13 @@ static void disp_alarm() {
         case abnFreq:
             sprintf(alarm_buffer, " RESPR ");
             break;
+        case auxPower:
+            sprintf(alarm_buffer, " AUXPWR");
+            break;
+        case noError:
+            // FIXME: should never happen if above code well design
+            disp_state();
+            break;
         default:
             sprintf(alarm_buffer, " ALARM ");
     }
@@ -189,8 +196,8 @@ static void disp_state() {
         lcd_write_string(CALI_MSG1, 1, 1, NO_CR_LF);
         lcd_write_string(CALI_MSG2, 2, 1, NO_CR_LF);
     } else if (globalState == stop) {
-        lcd_write_string(" STOP ",1,10,NO_CR_LF);
+        lcd_write_string(" STOP  ",1,10,NO_CR_LF);
     } else if (globalState == run) {
-        lcd_write_string(" RUN  ",1,10,NO_CR_LF);
+        lcd_write_string(" RUN   ",1,10,NO_CR_LF);
     }
 }

@@ -326,7 +326,7 @@ void MainTask(void *pvParameters)
 #if DEBUG_MAIN
                 debug_print("[MAIN] run rcvd notif.\r\n");
 #endif
-                process_alarm(notification);
+                //process_alarm(notification);
             }
         }
 
@@ -335,6 +335,8 @@ void MainTask(void *pvParameters)
          * notifications (if any)
          */
         if (globalState == calibration) {
+            // TODO: to be removed, testing purposes only
+            notif_recv = pdFALSE;
             if (notif_recv == pdTRUE) {
 #if DEBUG_MAIN
                 debug_print("[MAIN] calib rcvd notif.\r\n");
@@ -347,7 +349,7 @@ void MainTask(void *pvParameters)
          * 11. Check BATTERY_LOW signal
          */
         if (error_power_aux()) {
-            process_critical_failure(NOTIF_POWER_AUX);
+            process_alarm(ALARM_NOTIF_POWER_AUX);
         }
 
         /*
@@ -373,7 +375,7 @@ void MainTask(void *pvParameters)
 void process_alarm(uint32_t notification)
 {
     if (alarmState == noAlarm) {
-        if (notification >= 0x08) {
+        if (notification >= 0x10) {
 #if DEBUG_MAIN
             debug_print("[MAIN] noAlarm -> HPA.\r\n");
 #endif
@@ -424,13 +426,19 @@ void process_alarm(uint32_t notification)
 #if DEBUG_MAIN
             debug_print("[MAIN] Rcvd ABNFREQ.\r\n");
 #endif
+        } else if (notification & ALARM_NOTIF_POWER_AUX) {
+            errorCode = auxPower;
+#if DEBUG_MAIN
+            debug_print("[MAIN] Rcvd AUXPWR.\r\n");
+#endif
         }
+        // TODO: errorCode?
 
         xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_ALARM, eSetBits);
 #if DEBUG_MAIN
         debug_print("[MAIN] NOT_ALARM -> LCD.\r\n");
 #endif
-    } else if (alarmState == mediumPriorityAlarm && notification >= 0x08) {
+    } else if (alarmState == mediumPriorityAlarm && notification >= 0x10) {
 #if DEBUG_MAIN
         debug_print("[MAIN] MPA -> HPA.\r\n");
 #endif
@@ -488,11 +496,6 @@ void process_critical_failure(uint32_t notification) {
         debug_print("[MAIN] INCOR_FLOW. \r\n");
 #endif
         errorCode = incorrectFlow;
-    } else if (notification & NOTIF_POWER_AUX) {
-#if DEBUG_MAIN
-        debug_print("[MAIN] POWER_AUX. \r\n");
-#endif
-        // TODO: errorCode?
     } else if (notification & NOTIF_POWER_MAIN) {
 #if DEBUG_MAIN
         debug_print("[MAIN] POWER_MAIN. \r\n");
