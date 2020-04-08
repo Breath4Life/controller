@@ -188,7 +188,7 @@ static int16_t mes2temp(uint16_t mes) {
     // FIXME: this is super dirty but I'm tired, fix that
     int32_t tmp = (-150 * ((int32_t) mes) + 80550)/427;
 #if DEBUG_ANALOG_READ
-    debug_print("[ANALOG-READ] T: %i.\r\n", tmp);
+//    debug_print("[ANALOG-READ] T: %i.\r\n", tmp);
 #endif
 
     return (int16_t) tmp;
