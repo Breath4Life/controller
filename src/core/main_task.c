@@ -29,8 +29,12 @@ uint8_t extra_param;
 static void process_alarm(uint32_t notification);
 static void process_critical_failure(uint32_t notification);
 
-#define DEBUG_MAIN 1
-#define SIM_MOTOR 1
+#define DEBUG_MAIN 1            // debug print
+#define SIM_MOTOR 1             // "simulate" motor to debug the rest
+#define ALARM_CHECK 0           // active/deactivate alarm check for debug
+#define CRI_FAIL_CHECK 0        // active/deactivate crit fail check during calib for debug
+#define POWER_AUX_CHECK 0       // active/deactivate power aux check for debug
+#define POWER_MAIN_CHECK 0      // active/deactivate power main check for debug
 
 void initMainTask()
 {
@@ -326,7 +330,9 @@ void MainTask(void *pvParameters)
 #if DEBUG_MAIN
                 debug_print("[MAIN] run rcvd notif.\r\n");
 #endif
-                //process_alarm(notification);
+#if ALARM_CHECK
+                process_alarm(notification);
+#endif
             }
         }
 
@@ -335,13 +341,13 @@ void MainTask(void *pvParameters)
          * notifications (if any)
          */
         if (globalState == calibration) {
-            // TODO: to be removed, testing purposes only
-            notif_recv = pdFALSE;
             if (notif_recv == pdTRUE) {
 #if DEBUG_MAIN
                 debug_print("[MAIN] calib rcvd notif.\r\n");
 #endif
+#if CRI_FAIL_CHECK
                 process_critical_failure(notification);
+#endif
             }
         }
 
@@ -349,14 +355,18 @@ void MainTask(void *pvParameters)
          * 11. Check BATTERY_LOW signal
          */
         if (error_power_aux()) {
+#if POWER_AUX_CHECK
             process_alarm(ALARM_NOTIF_POWER_AUX);
+#endif
         }
 
         /*
          * 12. Check POWER_FAIL signal
          */
         if (error_power_main()) {
+#if POWER_MAIN_CHECK
             process_critical_failure(NOTIF_POWER_MAIN);
+#endif
         }
 
         /*
