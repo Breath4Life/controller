@@ -20,7 +20,6 @@ typedef enum {
     motorCalibrating,
     motorStopped,
     motorRunning,
-    motorStopping
 } MotorState_t;
 
 typedef enum {
@@ -36,7 +35,8 @@ typedef enum {
     plateau,
     exp,
     cycleEnd,
-    startNewCycle
+    startNewCycle,
+    stopping
 } BreathState_t;
 
 extern volatile MotorState_t motorState;

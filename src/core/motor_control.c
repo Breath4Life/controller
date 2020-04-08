@@ -373,10 +373,11 @@ void MotorControlTask(void *pvParameters)
 #endif
                         } else if (notif_recv & MOTOR_NOTIF_HALT) {
                             motor_anticipated_stop();
-                            motor_disable();
-                            motorState = motorInit;
+                            breathState = stopping;
+                            targetPosition = homePosition;
+                            set_motor_goto_position_accel_exec(targetPosition, f_exp, 2, 200);
 #if DEBUG_MOTOR
-                            debug_print("to motor INIT \r\n");
+                            debug_print("to motor STOPPING \r\n");
 #endif
                         }
                         // TODO update state based on the notification value 
@@ -395,10 +396,11 @@ void MotorControlTask(void *pvParameters)
 #endif
                         } else if (notif_recv & MOTOR_NOTIF_HALT) {
                             motor_anticipated_stop();
-                            motor_disable();
-                            motorState = motorInit;
+                            breathState = stopping;
+                            targetPosition = homePosition;
+                            set_motor_goto_position_accel_exec(targetPosition, f_exp, 2, 200);
 #if DEBUG_MOTOR
-                            debug_print("to motor INIT \r\n");
+                            debug_print("to motor STOPPING \r\n");
 #endif
                         }
 
@@ -417,10 +419,11 @@ void MotorControlTask(void *pvParameters)
 #endif
                         } else if (notif_recv & MOTOR_NOTIF_HALT) {
                             motor_anticipated_stop();
-                            motor_disable();
-                            motorState = motorInit;
+                            breathState = stopping;
+                            targetPosition = homePosition;
+                            set_motor_goto_position_accel_exec(targetPosition, f_exp, 2, 200);
 #if DEBUG_MOTOR
-                            debug_print("to motor INIT \r\n");
+                            debug_print("to motor STOPPING \r\n");
 #endif
                         }
 
@@ -450,28 +453,29 @@ void MotorControlTask(void *pvParameters)
                         debug_print("to insp \r\n");
 #endif
                         break;
-                }
-                break;
+                
 
-            case motorStopping:
-                // BOUNDED wait for limit switch up 
-                n_wait_recv = xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(5000));
-                        
-                // Verify deadline
-                if (n_wait_recv){
-                    // Check for undesirable notification
-                    if(notif_recv & MOTOR_NOTIF_MOVEMENT_FINISHED) {
-                        //TODO add volume check!
-                        motorState = motorStopped;
-                        motor_disable();
+                    case stopping:
+                        // BOUNDED wait for limit switch up 
+                        n_wait_recv = xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(5000));
+
+                        // Verify deadline
+                        if (n_wait_recv){
+                            // Check for undesirable notification
+                            if(notif_recv & MOTOR_NOTIF_MOVEMENT_FINISHED) {
+                                //TODO add volume check!
+                                motorState = motorStopped;
+                                motor_disable();
 #if DEBUG_MOTOR
-                        debug_print("to motor stopped\r\n");
+                                debug_print("to motor stopped\r\n");
 #endif
-                    } else {
-                        // TODO Notify MOTOR_ERROR
-                    }
-                } else {
-                    // TODO Notify MOTOR_ERROR     
+                            } else {
+                                // TODO Notify MOTOR_ERROR
+                            }
+                        } else {
+                            // TODO Notify MOTOR_ERROR     
+                        }
+                        break;
                 }
                 break;
 
