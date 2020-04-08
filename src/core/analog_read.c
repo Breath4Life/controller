@@ -93,16 +93,16 @@ void AnalogReadTask(void *pvParameters) {
                         }
 
                         if (breathState == plateau && cycle_p_peak > 0) {
-                                p_peak = cycle_p_peak;
-                                cycle_p_peak = 0;
-                                xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PEAK_P, eSetBits);
+                            p_peak = cycle_p_peak;
+                            cycle_p_peak = 0;
+                            xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PEAK_P, eSetBits);
                         }
                     }
                     if (globalState == calibration) {
                         if (p > CALIBRATION_MAX_P) {
                             // FIXME: same notification to the motor for patient connected and overpressure?
                             //xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_OVER_PRESSURE, eSetBits);
-                            xTaskNotify(mainTaskHandle, ALARM_NOTIF_PATIENT_CONNECTED, eSetBits);
+                            xTaskNotify(mainTaskHandle, NOTIF_PATIENT_CONNECTED, eSetBits);
                         }
                     }
                     curr_mes = temperature0;

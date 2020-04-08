@@ -40,7 +40,8 @@
 #define ALARM_NOTIF_HIGH_PRESSURE 0x20
 #define ALARM_NOTIF_HIGH_TEMP 0x40
 
-#define ALARM_NOTIF_PATIENT_CONNECTED 0x80
+#define NOTIF_PATIENT_CONNECTED 0x80
+#define NOTIF_INCORRECT_FLOW 0x100
 
 // in tens of ml
 extern uint8_t tidal_vol;

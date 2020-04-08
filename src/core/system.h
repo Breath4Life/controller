@@ -32,7 +32,7 @@ typedef enum {
     noAlarm,
     highPriorityAlarm,
     mediumPriorityAlarm,
-    cricitalPriorityAlarm
+    criticalPriorityAlarm
 } AlarmState_t;
 
 extern volatile AlarmState_t alarmState;
@@ -45,7 +45,9 @@ typedef enum {
     highTemperature,
     lowPressure,
     abnVolume,
-    abnFreq
+    abnFreq,
+    patientConnected,
+    incorrectFlow
 } ErrorCode_t;
 
 extern volatile ErrorCode_t errorCode;

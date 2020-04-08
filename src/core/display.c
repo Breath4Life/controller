@@ -74,37 +74,43 @@ void LCDDisplayTask(void *pvParameters)
 
         // FIXME: max wait has been changed to implement alternate mute/state/alarm display
         BaseType_t notif_recv = xTaskNotifyWait(0x0, ALL_NOTIF_BITS, &notification, pdMS_TO_TICKS(1000));
-        if (notification & DISP_NOTIF_PARAM) {
+        if (notif_recv == pdTRUE) {
+            if (notification & DISP_NOTIF_PARAM) {
 #if DEBUG_LCD
-            debug_print("[LCD] rcvd notif param.\r\n");
+                debug_print("[LCD] rcvd notif param.\r\n");
 #endif
-            disp_param();
-        }
-        if (notification & DISP_NOTIF_INST_P) {
+                disp_param();
+            }
+            if (notification & DISP_NOTIF_INST_P) {
 #if DEBUG_LCD
-            //debug_print("[LCD] rcvd notif inst p.\r\n");
+                debug_print("[LCD] rcvd notif inst p.\r\n");
 #endif
-            disp_inst_p();
-        }
-        if (notification & DISP_NOTIF_PEAK_P) {
+                disp_inst_p();
+            }
+            if (notification & DISP_NOTIF_PEAK_P) {
 #if DEBUG_LCD
-            debug_print("[LCD] rcvd notif peak p.\r\n");
+                debug_print("[LCD] rcvd notif peak p.\r\n");
 #endif
-            disp_peak_p();
-        }
-        if (notification & DISP_NOTIF_STATE && alarmState == noAlarm) {
+                disp_peak_p();
+            }
+            if (notification & DISP_NOTIF_STATE) {
 #if DEBUG_LCD
-            debug_print("[LCD] rcvd notif state.\r\n");
+                debug_print("[LCD] rcvd notif state.\r\n");
 #endif
-            disp_state();
-        }
-        if (notification & DISP_NOTIF_ALARM) {
+                // Only write the state info if either
+                // - there is no pending alarm (otherwhise alarm info is overwritten)
+                // - globalState is critical_failure
+                if (alarmState == noAlarm || globalState == critical_failure) {
+                    disp_state();
+                }
+            }
+            if (notification & DISP_NOTIF_ALARM) {
 #if DEBUG_LCD
-            debug_print("[LCD] rcvd notif ALARM.\r\n");
+                debug_print("[LCD] rcvd notif ALARM.\r\n");
 #endif
-            disp_alarm();
+                disp_alarm();
+            }
         }
-
 
         lcd_refreshLCD();
     }
@@ -172,7 +178,11 @@ static void disp_peak_p() {
 }
 
 static void disp_state() {
-    if (globalState == welcome_wait_cal) {
+    if (globalState == critical_failure) {
+        debug_print("[LCD] rcvd crit_fail.\r\n");
+        lcd_write_string(CRITICAL_FAILURE_MSG1, 1, 1, NO_CR_LF);
+        lcd_write_string(CRITICAL_FAILURE_MSG2, 2, 1, NO_CR_LF);
+    } else if (globalState == welcome_wait_cal) {
         lcd_write_string(WAIT_CALI_MSG1, 1, 1, NO_CR_LF);
         lcd_write_string(WAIT_CALI_MSG2, 2, 1, NO_CR_LF);
     } else if(globalState == calibration) {

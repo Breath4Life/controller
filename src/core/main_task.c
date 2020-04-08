@@ -26,6 +26,7 @@ uint8_t p_max;
 uint8_t extra_param;
 
 static void process_alarm(uint32_t notification);
+static void process_critical_failure(uint32_t notification);
 
 #define DEBUG_MAIN 1
 #define SIM_MOTOR 1
@@ -89,6 +90,17 @@ void MainTask(void *pvParameters)
 #endif
 
     while (1) {
+        /*
+         * 0. If globalState is critical failure, full restart required, do nothing.
+         */
+        if (globalState == critical_failure) {
+#if DEBUG_MAIN
+            debug_print("[MAIN] critically failed.\r\n");
+#endif
+            vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1000));
+            continue;
+        }
+
         updated_state = 0;
         updated_setting = 0;
 
@@ -311,7 +323,7 @@ void MainTask(void *pvParameters)
         if (globalState == run) {
             if (notif_recv == pdTRUE) {
 #if DEBUG_MAIN
-                debug_print("[MAIN] Rcvd notif.\r\n");
+                debug_print("[MAIN] run rcvd notif.\r\n");
 #endif
                 process_alarm(notification);
             }
@@ -321,6 +333,15 @@ void MainTask(void *pvParameters)
          * 10. If globalState is calibration, process received critical failure
          * notifications (if any)
          */
+        if (globalState == calibration) {
+            if (notif_recv == pdTRUE) {
+#if DEBUG_MAIN
+                debug_print("[MAIN] calib rcvd notif.\r\n");
+#endif
+                process_critical_failure(notification);
+            }
+        }
+
 
         // TODO
 
@@ -446,6 +467,35 @@ void process_alarm(uint32_t notification)
     } else {
         // Nothing to do here, already at highest priority
     }
+}
+
+void process_critical_failure(uint32_t notification) {
+    globalState = critical_failure;
+#if DEBUG_MAIN
+    debug_print("[MAIN] -> critical_failure.\r\n");
+#endif
+    alarmState = criticalPriorityAlarm;
+    dio_write(DIO_PIN_LED_NORMAL_STATE, 0);
+    dio_write(DIO_PIN_ALARM_LED_HPA, 1);
+
+    if (notification & NOTIF_PATIENT_CONNECTED) {
+#if DEBUG_MAIN
+        debug_print("[MAIN] PAT_CONNECTED. \r\n");
+        errorCode = patientConnected;
+#endif
+    } else if (notification & NOTIF_INCORRECT_FLOW) {
+#if DEBUG_MAIN
+        debug_print("[MAIN] INCOR_FLOW. \r\n");
+        errorCode = incorrectFlow;
+#endif
+    } else {
+        // TODO: other notifications?
+    }
+
+    xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
+#if DEBUG_MAIN
+    debug_print("[MAIN] NOT_STATE -> LCD. \r\n");
+#endif
 }
 
 uint8_t stoppedOrRunning() {
