@@ -83,7 +83,7 @@ int main(void)
     initHardware();
 
     // Create the different tasks
-    //xTaskCreate(MotorControlTask,  (const char *) "MotorControlTask",  1024, NULL, 10, &motorControlTaskHandle);
+    xTaskCreate(MotorControlTask,  (const char *) "MotorControlTask",  1024, NULL, 10, &motorControlTaskHandle);
     xTaskCreate(MainTask,  (const char *) "MainTask",  512, NULL, 12, &mainTaskHandle);
     xTaskCreate(LCDDisplayTask,    (const char *) "LCDDisplayTask",    512,  NULL,  3, &lcdDisplayTaskHandle);
     xTaskCreate(AlarmsTask,        (const char *) "AlarmsTask",        128,  NULL,  4, &alarmsTaskHandle);

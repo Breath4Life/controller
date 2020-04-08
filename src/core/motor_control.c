@@ -68,6 +68,8 @@ const uint32_t thresh_calib_vol_mil = 600;
 
 // Threshold for volume calibraiton 
 
+// 0 replaces the whole task by an empty loop for testing purposes
+#define MOTOR_ACTIVE 0
 
 void init_motor() {
     init_limit_switch();
@@ -115,6 +117,7 @@ void MotorControlTask(void *pvParameters)
 {
     while (1)
     {
+#if MOTOR_ACTIVE
         BaseType_t n_wait_recv;
 
         switch (motorState){
@@ -401,8 +404,9 @@ void MotorControlTask(void *pvParameters)
 
                 break;
         }
-
-
+#else
+    vTaskDelay(pdMS_TO_TICKS(100));
+#endif
    }
 }
 

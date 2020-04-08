@@ -18,6 +18,8 @@ volatile ErrorCode_t errorCode;
 
 volatile uint8_t mute_on;
 TickType_t mute_time;
+// TODO: remove, used to simulate calibration
+TickType_t start_calib;
 
 uint8_t tidal_vol; // tens of mL
 uint8_t bpm;
@@ -28,7 +30,6 @@ uint8_t extra_param;
 static void process_alarm(uint32_t notification);
 
 #define DEBUG_MAIN 1
-#define MOTOR_ACTIVE 0
 
 void initMainTask()
 {
@@ -92,19 +93,16 @@ void MainTask(void *pvParameters)
         // 5. Welcome wait calibration
         if (globalState == welcome_wait_cal && BUTTON_PRESSED(buttons_pressed, button_startstop)) {
             globalState = calibration;
+            // TODO remove, used to simulate calibration
+            start_calib = xTaskGetTickCount();
+
             updated_state = 1;
-#if MOTOR_ACTIVE
             xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_START_CALIBRATION, eSetBits);
-#endif
         }
         // 6. Calibration state
         else if ((globalState == calibration)) {
-            // Simulate calibration delay
-            vTaskDelayUntil(&xLastWakeTime, 2*WELCOME_MSG_DUR);
-
-#if MOTOR_ACTIVE
-            if (motorState == motorStopped) {
-#endif
+            // FIXME: to be replaced by motorState == motorStopped condition, used to simulate calibration delay
+            if (xTaskGetTickCount() - start_calib > 2*WELCOME_MSG_DUR) { //motorState == motorStopped) {
                 globalState = stop;
                 // Notify LCD with every possible notifications to intialize display
                 xTaskNotify(lcdDisplayTaskHandle,
@@ -114,17 +112,15 @@ void MainTask(void *pvParameters)
 #if DEBUG_MAIN
                 debug_print("[MAIN] Told LCD calib done. \r\n");
 #endif
-
-#if MOTOR_ACTIVE
             }
-#endif
+
             // If START/STOP button pressed during calibration
-            if (BUTTON_PRESSED(buttons_pressed, button_startstop) && motorState == motorRunning) {
-                globalState == welcome_wait_cal;
+            // TODO: add motorState condition currently commented
+            if (BUTTON_PRESSED(buttons_pressed, button_startstop)) {// && motorState == motorRunning) {
+                debug_print("[MAIN] Calibration stopped.\r\n");
+                globalState = welcome_wait_cal;
                 updated_state = 1;
-#if MOTOR_ACTIVE
                 xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_HALT, eSetBits);
-#endif
             }
         }
         // 7. Settings & Start/Stop
@@ -182,15 +178,11 @@ void MainTask(void *pvParameters)
                 if (globalState == stop) {
                     globalState = run;
                     updated_state = 1;
-#if MOTOR_ACTIVE
                     xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_START, eSetBits);
-#endif
                 } else if (globalState == run) {
                     globalState = stop;
                     updated_state = 1;
-#if MOTOR_ACTIVE
                     xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_HALT, eSetBits);
-#endif
                 }
             }
         }
