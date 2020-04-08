@@ -24,8 +24,7 @@ static volatile uint8_t lim_switch_down_lvl;
 static volatile uint8_t lim_switch_up_lvl;
 
 const uint32_t threshold_time_irq = 2000000;
-static uint32_t deadline_time_irq;
-static uint32_t current_time_irq;
+static uint32_t last_start_bouncing = 0;
 
 void init_limit_switch() {
     // init pins
@@ -37,9 +36,6 @@ void init_limit_switch() {
     // enable level change interrupt (on PCINT7:0)
     PCMSK0 =  _BV(PCINT0) | _BV(PCINT1);
     PCICR |= _BV(PCIE0);
-    current_time_irq = 0;
-    deadline_time_irq = current_time_irq+ threshold_time_irq; 
-     
 }
 
 
@@ -47,24 +43,21 @@ ISR(PCINT0_vect) {
     uint8_t l_down = dio_read(DIO_PIN_LIM_SWITCH_DOWN_MONITORING);
     uint8_t l_up = dio_read(DIO_PIN_LIM_SWITCH_UP_MONITORING);
     BaseType_t higherPriorityTaskWoken = pdFALSE;
-    current_time_irq = time_us();
-    if (l_down && !lim_switch_down_lvl) {
-        if((deadline_time_irq-current_time_irq) & 0x80000000){
+    uint32_t current_time_irq = time_us();
+    if (current_time_irq - last_start_bouncing > threshold_time_irq) {
+        if (l_down && !lim_switch_down_lvl) {
             xTaskNotifyFromISR(motorControlTaskHandle, MOTOR_NOTIF_LIM_DOWN, eSetBits, &higherPriorityTaskWoken);
-            deadline_time_irq = current_time_irq + threshold_time_irq;
-        }
 #if DEBUG_LIM_SWITCH
-        debug_print_FromISR("switch0 pressed\r\n");
+            debug_print_FromISR("switch0 pressed\r\n");
 #endif // DEBUG_LIM_SWITCH
-    }
-    if (l_up && !lim_switch_up_lvl) {
-        if((deadline_time_irq-current_time_irq) & 0x80000000){
+        }
+        if (l_up && !lim_switch_up_lvl) {
             xTaskNotifyFromISR(motorControlTaskHandle, MOTOR_NOTIF_LIM_UP, eSetBits, &higherPriorityTaskWoken);
-            deadline_time_irq += current_time_irq + threshold_time_irq;
-        }
 #if DEBUG_LIM_SWITCH
-        debug_print_FromISR("switch1 pressed\r\n");
+            debug_print_FromISR("switch1 pressed\r\n");
 #endif // DEBUG_LIM_SWITCH
+        }
+        last_start_bouncing = current_time_irq;
     }
     lim_switch_down_lvl = l_down;
     lim_switch_down_lvl = l_up;
