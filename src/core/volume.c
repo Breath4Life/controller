@@ -1,4 +1,3 @@
-
 #include <stdint.h>
 #include <avr/interrupt.h>
 #include "core/volume.h"
@@ -22,12 +21,12 @@ uint8_t poll_volume() {
         uint32_t curr_time = time_us();
         // TODO divisions by powers of 2 ideally...
         int32_t t_delta = (curr_time - last_poll_time)/1000;
-         int32_t volume_inc = flow * t_delta / 1000;
-         cli();
-         volume += volume_inc;
-         last_poll_time = curr_time;
-         sei();
-         return 0;
+        int32_t volume_inc = flow * t_delta / 1000;
+        cli();
+        volume += volume_inc;
+        last_poll_time = curr_time;
+        sei();
+        return 0;
     } else {
         return 1;
     }
