@@ -69,14 +69,14 @@ void AlarmsTask(void *pvParameters)
     const TickType_t xFrequency = pdMS_TO_TICKS(50);
 
 #if DEBUG_ALARM
-    debug_print("[ALARM_TASK] Starting.\r\n");
+    debug_print("[ALARM] Starting.\r\n");
 #endif
 
     while (1) {
         uint32_t curr_time = time_us();
         if ((buzzer_alarm_state != alarmState) || (muted != mute_on)) {
 #if DEBUG_ALARM
-            debug_print("[ALARM_TASK] New alarm/new mute.\r\n");
+            debug_print("[ALARM] New alarm/mute.\r\n");
 #endif
             tone_stop();
             buzzer_alarm_state = alarmState;
@@ -90,7 +90,7 @@ void AlarmsTask(void *pvParameters)
             if (pausing) {
                if (curr_time-last_upd_us > TONE_PAUSE(buzzer_alarm_state, seq_offset)) {
 #if DEBUG_ALARM
-                    debug_print("[ALARM_TASK] Unpausing.\r\n");
+                    debug_print("[ALARM] Unpausing.\r\n");
 #endif
                     pausing = 0;
                     last_upd_us = curr_time;
@@ -103,7 +103,7 @@ void AlarmsTask(void *pvParameters)
             } else {
                if ((curr_time-last_upd_us) > TONE_DUR(buzzer_alarm_state, seq_offset)) {
 #if DEBUG_ALARM
-                    debug_print("[ALARM_TASK] Pausing.\r\n");
+                    debug_print("[ALARM] Pausing.\r\n");
 #endif
                     pausing = 1;
                     last_upd_us = curr_time;
