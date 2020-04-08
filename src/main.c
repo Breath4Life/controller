@@ -13,6 +13,7 @@
 #include "core/alarms.h"
 #include "core/main_task.h"
 #include "core/analog_read.h"
+#include "core/volume.h"
 
 #include "hal/io.h"
 #include "hal/pins.h"
@@ -76,6 +77,9 @@ void initHardware(void)
     init_alarm();
 
     init_power_monitoring();
+
+    // FIXME: should that be here?
+    init_volume();
 }
 
 int main(void)

@@ -376,7 +376,13 @@ void MainTask(void *pvParameters)
         // TODO
 
         /*
-         * 14. Bounded wait for notification (10ms)
+         * 14. Poll volume sensing.
+         */
+        // FIXME: smth to do with the return value? No a priori.
+        poll_volume();
+
+        /*
+         * 15. Bounded wait for notification (10ms)
          */
         notif_recv = xTaskNotifyWait(0x0, ALL_NOTIF_BITS, &notification, pdMS_TO_TICKS(10));
     }
