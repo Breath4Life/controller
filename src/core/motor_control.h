@@ -21,6 +21,7 @@ typedef enum {
     motorFlowCheck,
     motorStopped,
     motorRunning,
+    motorStopping
 } MotorState_t;
 
 typedef enum {

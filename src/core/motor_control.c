@@ -166,6 +166,13 @@ void MotorControlTask(void *pvParameters)
 #if DEBUG_MOTOR
                                 debug_print("to calib up\r\n");
 #endif
+                            } else if (notif_recv & MOTOR_NOTIF_HALT){
+                                motor_anticipated_stop();
+                                motor_disable();
+                                motorState = motorInit;
+#if DEBUG_MOTOR
+                                debug_print("to motor INIT \r\n");
+#endif
                             } else {
 #if DEBUG_MOTOR
                                 debug_print("DOWN calib SEND ERROR1\r\n");
@@ -207,6 +214,13 @@ void MotorControlTask(void *pvParameters)
 #if DEBUG_MOTOR
                                 debug_print("to calib pos end\r\n");
 #endif
+                            } else if (notif_recv & MOTOR_NOTIF_HALT){
+                                motor_anticipated_stop();
+                                motor_disable();
+                                motorState = motorInit;
+#if DEBUG_MOTOR
+                                debug_print("to motor INIT \r\n");
+#endif
                             } else {
 #if DEBUG_MOTOR
                                 debug_print("UP calib SEND ERROR1\r\n");
@@ -238,6 +252,13 @@ void MotorControlTask(void *pvParameters)
                                 set_motor_goto_position_accel_exec(targetPosition, MOTOR_USTEPS*steps_caliv_vol, 2, 200);
 #if DEBUG_MOTOR
                                 debug_print("to flow vol\r\n");
+#endif
+                            } else if (notif_recv & MOTOR_NOTIF_HALT){
+                                motor_anticipated_stop();
+                                motor_disable();
+                                motorState = motorInit;
+#if DEBUG_MOTOR
+                                debug_print("to motor INIT \r\n");
 #endif
                             } else {
 #if DEBUG_MOTOR
@@ -273,6 +294,13 @@ void MotorControlTask(void *pvParameters)
 #if DEBUG_MOTOR
                                 debug_print("to flow vol end\r\n");
 #endif
+                            } else if (notif_recv & MOTOR_NOTIF_HALT){
+                                motor_anticipated_stop();
+                                motor_disable();
+                                motorState = motorInit;
+#if DEBUG_MOTOR
+                                debug_print("to motor INIT \r\n");
+#endif
                             } else {
                                 // TODO Notify MOTOR_ERROR
                             }
@@ -293,6 +321,13 @@ void MotorControlTask(void *pvParameters)
                                 motorState = motorStopped;
 #if DEBUG_MOTOR
                                 debug_print("END INIT PHASE\r\n");
+#endif
+                            } else if (notif_recv & MOTOR_NOTIF_HALT){
+                                motor_anticipated_stop();
+                                motor_disable();
+                                motorState = motorInit;
+#if DEBUG_MOTOR
+                                debug_print("to motor INIT \r\n");
 #endif
                             } else {
                                 // TODO Notify MOTOR_ERROR
@@ -398,8 +433,30 @@ void MotorControlTask(void *pvParameters)
 #endif
                         break;
                 }
-
                 break;
+
+            case motorStopping:
+                // BOUNDED wait for limit switch up 
+                n_wait_recv = xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(5000));
+                        
+                // Verify deadline
+                if (n_wait_recv){
+                    // Check for undesirable notification
+                    if(notif_recv & MOTOR_NOTIF_MOVEMENT_FINISHED) {
+                        //TODO add volume check!
+                        motorState = motorStopped;
+                        motor_disable();
+#if DEBUG_MOTOR
+                        debug_print("to motor stopped\r\n");
+#endif
+                    } else {
+                        // TODO Notify MOTOR_ERROR
+                    }
+                } else {
+                    // TODO Notify MOTOR_ERROR     
+                }
+                break;
+
         }
 
 
