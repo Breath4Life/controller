@@ -11,6 +11,7 @@
 
 #include "hal/io.h"
 #include "hal/pins.h"
+#include "hal/power_monitoring.h"
 
 volatile GlobalState_t globalState;
 volatile AlarmState_t alarmState;

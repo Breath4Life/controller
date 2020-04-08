@@ -19,6 +19,7 @@
 #include "hal/uart.h"
 #include "hal/lcd.h"
 #include "hal/time.h"
+#include "hal/power_monitoring.h"
 
 TaskHandle_t mainTaskHandle;
 TaskHandle_t motorControlTaskHandle;
@@ -43,9 +44,6 @@ void initHardware(void)
     dio_init(DIO_PIN_MOTOR_SPRD,              DIO_OUTPUT);
     dio_init(DIO_PIN_MOTOR_INDEX,             DIO_OUTPUT);
     dio_init(DIO_PIN_MOTOR_DIAG,              DIO_OUTPUT);
-
-    dio_init(DIO_PIN_AUX_POWER_MONITORING,    DIO_INPUT);
-    dio_init(DIO_PIN_MAIN_POWER_MONITORING,   DIO_INPUT);
 
     dio_init(DIO_PIN_DEBUGLED,                DIO_OUTPUT);
 
@@ -76,6 +74,8 @@ void initHardware(void)
     initMainTask();
 
     init_alarm();
+
+    init_power_monitoring();
 }
 
 int main(void)
