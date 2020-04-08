@@ -66,9 +66,10 @@ void AnalogReadTask(void *pvParameters) {
 
                     // FIXME: was stoppedOrRunning before. Doesn't make sense in stop state right?
                     if (globalState == run) {
-                        if (p > p_max) {
+                        // FIXME: added errorCode != overPressure, makes sense?
+                        if (p > p_max && errorCode != overPressure) {
                             xTaskNotify(mainTaskHandle, ALARM_NOTIF_OVERPRESSURE, eSetBits);
-                            //xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_OVER_PRESSURE, eSetBits);
+                            xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_OVER_PRESSURE, eSetBits);
                         }
 
 
@@ -108,14 +109,16 @@ void AnalogReadTask(void *pvParameters) {
                     break;
                 case temperature0:
                     temp0 = mes2temp(res);
-                    if (temp0 > MAX_TEMP0) {
+                    // FIXME: added errorCode != highTemperature, makes sense?
+                    if (temp0 > MAX_TEMP0 && errorCode != highTemperature) {
                         xTaskNotify(mainTaskHandle, ALARM_NOTIF_HIGH_TEMP, eSetBits);
                     }
                     curr_mes = temperature1;
                     break;
                 case temperature1:
                     temp1 = mes2temp(res);
-                    if (temp1 > MAX_TEMP1) {
+                    // FIXME: added errorCode != highTemperature, makes sense?
+                    if (temp1 > MAX_TEMP1 && errorCode != highTemperature) {
                         xTaskNotify(mainTaskHandle, ALARM_NOTIF_HIGH_TEMP, eSetBits);
                     }
                     curr_mes = pressure;
