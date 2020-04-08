@@ -5,6 +5,7 @@
 #include "task.h"
 
 #include "hal/io.h"
+#include "core/main_task.h"
 #include "hal/pins.h"
 #include "hal/motor.h"
 #include "core/debug.h"
@@ -60,8 +61,8 @@ const uint32_t f_home = 50; // steps/s (not µsteps/s)
 
 const int32_t steps_calib_down = 2000;
 const int32_t steps_calib_up = 1000;
-const int32_t steps_calib_end = 60;
-const int32_t steps_caliv_vol = 600;
+const int32_t steps_calib_end = 10;
+const int32_t steps_caliv_vol = 550;
 
 const uint32_t thresh_calib_vol_mil = 600;
 
@@ -69,6 +70,50 @@ const uint32_t thresh_calib_vol_mil = 600;
 
 // 0 replaces the whole task by an empty loop for testing purposes
 #define MOTOR_ACTIVE 1
+
+uint32_t vol2steps(uint8_t  tidal_vol){
+    return 10*tidal_vol;
+} 
+
+void compute_config(){
+
+    // Breathing cycles parameter
+    TCT = (60000L / bpm); // in ms
+    // TODO check for each possibilities
+    Ti = (TCT/(1+ie)); // in ms
+    Te = TCT - Ti;
+
+    ticksTctTime = pdMS_TO_TICKS(TCT);
+
+    n_steps = vol2steps(tidal_vol);
+    tot_pulses = n_steps * MOTOR_USTEPS;  
+
+    plateau_pulses = MOTOR_USTEPS*5; //tot_pulses/20;
+    insp_pulses = tot_pulses - plateau_pulses;
+    exp_pulses = tot_pulses;
+
+    T_tot_plateau = Ti / 5;
+    T_tot_Ti = Ti - T_tot_plateau;
+    T_tot_Te = 750;
+
+    tmp_f_insp = insp_pulses * 1000;
+    tmp_f_plateau = plateau_pulses * 1000;
+    tmp_f_exp = tot_pulses * 1000;
+
+    f_insp = tmp_f_insp / T_tot_Ti;
+    f_plateau = tmp_f_plateau / T_tot_plateau;
+    f_exp = tmp_f_exp / T_tot_Te;
+
+#if DEBUG_MOTOR     
+    debug_print("ie %u \r\n",ie);
+    debug_print("bpm %u \r\n",bpm);
+    debug_print("TCT %u \r\n",TCT);
+    debug_print("Ti %u \r\n",Ti);
+    debug_print("nsteps %u \r\n",n_steps);
+    debug_print("pulse_lateau %u \r\n",plateau_pulses);
+    debug_print("Ttot plate %u \r\n",T_tot_plateau);
+#endif
+}
 
 void init_motor() {
     init_limit_switch();
@@ -82,32 +127,8 @@ void init_motor() {
     homePosition = 0;
     posOffset = 0;
 
-    // Breathing cycles parameter
-    TCT = 40 * 100; // in ms
-    Ti = 20 * 100; // in ms
-    Te = TCT - Ti;
-
-    ticksTctTime = pdMS_TO_TICKS(TCT);
-
-    n_steps = 600;
-    tot_pulses = n_steps * MOTOR_USTEPS;  
-
-    plateau_pulses = tot_pulses/20;
-    insp_pulses = tot_pulses - plateau_pulses;
-    exp_pulses = tot_pulses;
-
-    T_tot_plateau = Ti / 10;
-    T_tot_Ti = Ti - T_tot_plateau;
-    T_tot_Te = 750;
-
-    tmp_f_insp = insp_pulses * 1000;
-    tmp_f_plateau = plateau_pulses * 1000;
-    tmp_f_exp = tot_pulses * 1000;
-
-    f_insp = tmp_f_insp / T_tot_Ti;
-    f_plateau = tmp_f_plateau / T_tot_plateau;
-    f_exp = tmp_f_exp / T_tot_Te;  
-
+    // Setup config  
+    compute_config();
 }
 
 
@@ -367,7 +388,7 @@ void MotorControlTask(void *pvParameters)
                         if (notif_recv & MOTOR_NOTIF_MOVEMENT_FINISHED) {
                             breathState = plateau;
                             targetPosition = homePosition + insp_pulses + plateau_pulses; 
-                            set_motor_goto_position_accel_exec(targetPosition, f_plateau, 2, 200);
+                            set_motor_goto_position(targetPosition, f_plateau);
 #if DEBUG_MOTOR
                             debug_print("to plateau \r\n");
 #endif
@@ -442,6 +463,7 @@ void MotorControlTask(void *pvParameters)
                         break;
         
                     case startNewCycle:
+                        compute_config();
                         motor_enable();
                         breathState = insp;
                         previousWakeTime = xTaskGetTickCount();
@@ -457,23 +479,31 @@ void MotorControlTask(void *pvParameters)
 
                     case stopping:
                         // BOUNDED wait for limit switch up 
-                        n_wait_recv = xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(5000));
+                        if(motor_moving()){
+                            n_wait_recv = xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(5000));
 
-                        // Verify deadline
-                        if (n_wait_recv){
-                            // Check for undesirable notification
-                            if(notif_recv & MOTOR_NOTIF_MOVEMENT_FINISHED) {
-                                //TODO add volume check!
-                                motorState = motorStopped;
-                                motor_disable();
+                            // Verify deadline
+                            if (n_wait_recv){
+                                // Check for undesirable notification
+                                if(notif_recv & MOTOR_NOTIF_MOVEMENT_FINISHED) {
+                                    //TODO add volume check!
+                                    motor_disable();
+                                    motorState = motorStopped;
 #if DEBUG_MOTOR
-                                debug_print("to motor stopped\r\n");
+                                    debug_print("to motor stopped\r\n");
 #endif
+                                } else {
+                                    // TODO Notify MOTOR_ERROR
+                                }
                             } else {
-                                // TODO Notify MOTOR_ERROR
+                                // TODO Notify MOTOR_ERROR     
                             }
                         } else {
-                            // TODO Notify MOTOR_ERROR     
+                            motor_disable();
+                            motorState = motorStopped;
+#if DEBUG_MOTOR
+                            debug_print("to motor stopped\r\n");
+#endif
                         }
                         break;
                 }

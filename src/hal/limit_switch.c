@@ -23,7 +23,7 @@
 static volatile uint8_t lim_switch_down_lvl;
 static volatile uint8_t lim_switch_up_lvl;
 
-const uint32_t threshold_time_irq = 2000000;
+const uint32_t threshold_time_irq = 10000;
 static uint32_t last_start_bouncing = 0;
 
 void init_limit_switch() {
