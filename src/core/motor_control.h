@@ -18,7 +18,6 @@
 typedef enum {
     motorInit,
     motorCalibrating,
-    motorFlowCheck,
     motorStopped,
     motorRunning,
     motorStopping
@@ -28,12 +27,9 @@ typedef enum {
     calibDown,
     calibUp,
     calibPosEnd,
+    calibVol,
+    calibVolEnd
 } CalibState_t;
-
-typedef enum {
-    flowVol,
-    flowVolEnd
-} FlowState_t;
 
 typedef enum {
     insp,
@@ -46,7 +42,6 @@ typedef enum {
 extern volatile MotorState_t motorState;
 extern volatile CalibState_t calibState;
 extern volatile BreathState_t breathState;
-extern volatile FlowState_t flowState;
 
 void init_motor();
 

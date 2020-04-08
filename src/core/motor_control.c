@@ -45,7 +45,6 @@ const uint32_t vol_ml = 700;
 volatile MotorState_t motorState;
 volatile BreathState_t breathState;
 volatile CalibState_t calibState;
-volatile FlowState_t flowState;
 
 uint32_t currentPosition;
 uint32_t targetPosition;
@@ -69,7 +68,7 @@ const uint32_t thresh_calib_vol_mil = 600;
 // Threshold for volume calibraiton 
 
 // 0 replaces the whole task by an empty loop for testing purposes
-#define MOTOR_ACTIVE 0
+#define MOTOR_ACTIVE 1
 
 void init_motor() {
     init_limit_switch();
@@ -78,7 +77,6 @@ void init_motor() {
     motorState = motorInit;
     breathState = startNewCycle;
     calibState = calibDown; 
-    flowState = flowVol;
     currentPosition = 0;
     targetPosition = 0;
     homePosition = 0;
@@ -250,8 +248,7 @@ void MotorControlTask(void *pvParameters)
                                 posOffset = MOTOR_USTEPS*steps_caliv_vol;
 
                                 targetPosition = homePosition + posOffset;
-                                motorState = motorFlowCheck;
-                                flowState = flowVol;
+                                calibState = calibVol;
                                 set_motor_goto_position_accel_exec(targetPosition, MOTOR_USTEPS*steps_caliv_vol, 2, 200);
 #if DEBUG_MOTOR
                                 debug_print("to flow vol\r\n");
@@ -277,12 +274,9 @@ void MotorControlTask(void *pvParameters)
                             // TODO Notify MOTOR_ERROR     
                         }
                         break;
-                    }
-                    break;
+                    
 
-            case motorFlowCheck: 
-                switch (flowState){
-                    case flowVol:
+                    case calibVol:
                         // BOUNDED wait for limit switch up 
                         n_wait_recv = xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(5000));
                         
@@ -291,7 +285,7 @@ void MotorControlTask(void *pvParameters)
                             // Check for undesirable notification
                             if(notif_recv & MOTOR_NOTIF_MOVEMENT_FINISHED) {
                                 //TODO add volume check!
-                                flowState = flowVolEnd;
+                                calibState = calibVolEnd;
                                 targetPosition = homePosition;
                                 set_motor_goto_position_accel_exec(targetPosition, MOTOR_USTEPS*steps_caliv_vol, 2, 200);
 #if DEBUG_MOTOR
@@ -312,7 +306,7 @@ void MotorControlTask(void *pvParameters)
                         }
                         break;
 
-                    case flowVolEnd:
+                    case calibVolEnd:
                         // BOUNDED wait for limit switch up 
                         n_wait_recv = xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(5000));
                         
