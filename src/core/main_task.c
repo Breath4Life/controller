@@ -343,20 +343,19 @@ void MainTask(void *pvParameters)
             }
         }
 
-
-        // TODO
-
         /*
          * 11. Check BATTERY_LOW signal
          */
-
-        // TODO
+        if (error_power_aux()) {
+            process_critical_failure(NOTIF_POWER_AUX);
+        }
 
         /*
          * 12. Check POWER_FAIL signal
          */
-
-        // TODO
+        if (error_power_main()) {
+            process_critical_failure(NOTIF_POWER_MAIN);
+        }
 
         /*
          * 13. EEPROM total operating writing
@@ -482,15 +481,23 @@ void process_critical_failure(uint32_t notification) {
     if (notification & NOTIF_PATIENT_CONNECTED) {
 #if DEBUG_MAIN
         debug_print("[MAIN] PAT_CONNECTED. \r\n");
-        errorCode = patientConnected;
 #endif
+        errorCode = patientConnected;
     } else if (notification & NOTIF_INCORRECT_FLOW) {
 #if DEBUG_MAIN
         debug_print("[MAIN] INCOR_FLOW. \r\n");
-        errorCode = incorrectFlow;
 #endif
-    } else {
-        // TODO: other notifications?
+        errorCode = incorrectFlow;
+    } else if (notification & NOTIF_POWER_AUX) {
+#if DEBUG_MAIN
+        debug_print("[MAIN] POWER_AUX. \r\n");
+#endif
+        // TODO: errorCode?
+    } else if (notification & NOTIF_POWER_MAIN) {
+#if DEBUG_MAIN
+        debug_print("[MAIN] POWER_MAIN. \r\n");
+#endif
+        // TODO: errorCode?
     }
 
     xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);

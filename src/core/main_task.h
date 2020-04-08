@@ -42,6 +42,8 @@
 
 #define NOTIF_PATIENT_CONNECTED 0x80
 #define NOTIF_INCORRECT_FLOW 0x100
+#define NOTIF_POWER_AUX 0x200
+#define NOTIF_POWER_MAIN 0x400
 
 // in tens of ml
 extern uint8_t tidal_vol;

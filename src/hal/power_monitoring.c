@@ -10,8 +10,8 @@ void init_power_monitoring() {
 }
 
 uint8_t error_power_aux() {
-    return (dio_read(DIO_PIN_MAIN_POWER_MONITORING) == DIO_LOW);
+    return (dio_read(DIO_PIN_AUX_POWER_MONITORING) == DIO_LOW);
 }
 uint8_t error_power_main() {
-    return (dio_read(DIO_PIN_AUX_POWER_MONITORING) == DIO_LOW);
+    return (dio_read(DIO_PIN_MAIN_POWER_MONITORING) == DIO_LOW);
 }
