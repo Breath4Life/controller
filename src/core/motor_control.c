@@ -61,8 +61,8 @@ const uint32_t f_home = 50; // steps/s (not µsteps/s)
 
 const int32_t steps_calib_down = 2000;
 const int32_t steps_calib_up = 1000;
-const int32_t steps_calib_end = 80;
-const int32_t steps_caliv_vol = 600;
+const int32_t steps_calib_end = 10;
+const int32_t steps_caliv_vol = 550;
 
 const uint32_t thresh_calib_vol_mil = 600;
 
@@ -88,11 +88,11 @@ void compute_config(){
     n_steps = vol2steps(tidal_vol);
     tot_pulses = n_steps * MOTOR_USTEPS;  
 
-    plateau_pulses = tot_pulses/20;
+    plateau_pulses = MOTOR_USTEPS*5; //tot_pulses/20;
     insp_pulses = tot_pulses - plateau_pulses;
     exp_pulses = tot_pulses;
 
-    T_tot_plateau = Ti / 10;
+    T_tot_plateau = Ti / 5;
     T_tot_Ti = Ti - T_tot_plateau;
     T_tot_Te = 750;
 
@@ -104,11 +104,15 @@ void compute_config(){
     f_plateau = tmp_f_plateau / T_tot_plateau;
     f_exp = tmp_f_exp / T_tot_Te;
 
+#if DEBUG_MOTOR     
     debug_print("ie %u \r\n",ie);
     debug_print("bpm %u \r\n",bpm);
     debug_print("TCT %u \r\n",TCT);
     debug_print("Ti %u \r\n",Ti);
     debug_print("nsteps %u \r\n",n_steps);
+    debug_print("pulse_lateau %u \r\n",plateau_pulses);
+    debug_print("Ttot plate %u \r\n",T_tot_plateau);
+#endif
 }
 
 void init_motor() {
@@ -384,7 +388,7 @@ void MotorControlTask(void *pvParameters)
                         if (notif_recv & MOTOR_NOTIF_MOVEMENT_FINISHED) {
                             breathState = plateau;
                             targetPosition = homePosition + insp_pulses + plateau_pulses; 
-                            set_motor_goto_position_accel_exec(targetPosition, f_plateau, 2, 200);
+                            set_motor_goto_position(targetPosition, f_plateau);
 #if DEBUG_MOTOR
                             debug_print("to plateau \r\n");
 #endif
