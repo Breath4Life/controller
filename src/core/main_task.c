@@ -97,22 +97,35 @@ void MainTask(void *pvParameters)
             xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_START_CALIBRATION, eSetBits);
 #endif
         }
-        // 6. End of calibration
-#if MOTOR_ACTIVE
-        else if ((globalState == calibration) && (motorState == motorStopped)) {
-#else
-        else if ((globalState == calibration)) { // && (motorState == motorStopped)) {
+        // 6. Calibration state
+        else if ((globalState == calibration)) {
             // Simulate calibration delay
-            vTaskDelayUntil(&xLastWakeTime, WELCOME_MSG_DUR);
+            vTaskDelayUntil(&xLastWakeTime, 2*WELCOME_MSG_DUR);
+
+#if MOTOR_ACTIVE
+            if (motorState == motorStopped) {
 #endif
-            globalState = stop;
-            // Notify LCD with every possible notifications to intialize display
-            xTaskNotify(lcdDisplayTaskHandle,
-                        DISP_NOTIF_STATE | DISP_NOTIF_PARAM | DISP_NOTIF_INST_P | DISP_NOTIF_PEAK_P,
-                        eSetBits);
+                globalState = stop;
+                // Notify LCD with every possible notifications to intialize display
+                xTaskNotify(lcdDisplayTaskHandle,
+                        DISP_NOTIF_STATE | DISP_NOTIF_PARAM |
+                        DISP_NOTIF_INST_P | DISP_NOTIF_PEAK_P, eSetBits);
+
 #if DEBUG_MAIN
-            debug_print("[MAIN] Told LCD calib done. \r\n");
+                debug_print("[MAIN] Told LCD calib done. \r\n");
 #endif
+
+#if MOTOR_ACTIVE
+            }
+#endif
+            // If START/STOP button pressed during calibration
+            if (BUTTON_PRESSED(buttons_pressed, button_startstop) && motorState == motorRunning) {
+                globalState == welcome_wait_cal;
+                updated_state = 1;
+#if MOTOR_ACTIVE
+                xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_HALT, eSetBits);
+#endif
+            }
         }
         // 7. Settings & Start/Stop
         // TODO: other part of the condition needed?
@@ -165,30 +178,21 @@ void MainTask(void *pvParameters)
                 xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PARAM, eSetBits);
             }
 
-
-        }
-
-        if (BUTTON_PRESSED(buttons_pressed, button_startstop)) {
-            if (globalState == stop) {
-                globalState = run;
-                updated_state = 1;
+            if (BUTTON_PRESSED(buttons_pressed, button_startstop)) {
+                if (globalState == stop) {
+                    globalState = run;
+                    updated_state = 1;
 #if MOTOR_ACTIVE
-                xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_START, eSetBits);
+                    xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_START, eSetBits);
 #endif
-            } else if (globalState == run) {
-                globalState = stop;
-                updated_state = 1;
+                } else if (globalState == run) {
+                    globalState = stop;
+                    updated_state = 1;
 #if MOTOR_ACTIVE
-                xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_HALT, eSetBits);
+                    xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_HALT, eSetBits);
 #endif
-            } else if (globalState == calibration) {
-                globalState = welcome_wait_cal;
-                updated_state = 1;
-#if MOTOR_ACTIVE
-                xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_HALT, eSetBits);
-#endif
+                }
             }
-
         }
 
         if (updated_state == 1 && errorCode == noError) {
