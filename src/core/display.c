@@ -92,7 +92,7 @@ void LCDDisplayTask(void *pvParameters)
 #endif
             disp_peak_p();
         }
-        if (notification & DISP_NOTIF_STATE) {
+        if (notification & DISP_NOTIF_STATE && alarmState == noAlarm) {
 #if DEBUG_LCD
             debug_print("[LCD] rcvd notif state.\r\n");
 #endif
