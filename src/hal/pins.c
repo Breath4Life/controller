@@ -62,10 +62,10 @@ struct io_pin_config DIO_PIN_CONFIG[] = {
 // The order of declaration in this array needs to be the same as for aio_pin
 struct io_pin_config AIO_PIN_CONFIG[] = {
     {AIO_PIN_PRESSURE_SENSOR_0, IO_PORTF, 0},
-    {AIO_PIN_PRESSURE_SENSOR_1, IO_PORTF, 1},
-    {AIO_PIN_PRESSURE_SENSOR_2, IO_PORTF, 2},
-    {AIO_PIN_TEMP_SENSOR_0,     IO_PORTF, 3},
-    {AIO_PIN_TEMP_SENSOR_1,     IO_PORTF, 4},
+    {AIO_PIN_PRESSURE_SENSOR_1, IO_PORTF, 3},
+    {AIO_PIN_PRESSURE_SENSOR_2, IO_PORTF, 4},
+    {AIO_PIN_TEMP_SENSOR_0,     IO_PORTF, 1},
+    {AIO_PIN_TEMP_SENSOR_1,     IO_PORTF, 2},
     {AIO_PIN_TEMP_SENSOR_2,     IO_PORTF, 5},
 
     {AIO_PIN_TEST_1,            IO_PORTF, 6},
