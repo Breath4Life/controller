@@ -45,6 +45,8 @@
 #define NOTIF_INCORRECT_FLOW 0x200
 #define NOTIF_POWER_MAIN 0x400
 
+#define NOTIF_MOTOR_ERROR 0x800
+
 // in tens of ml
 extern uint8_t tidal_vol;
 extern uint8_t bpm;

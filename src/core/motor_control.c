@@ -472,6 +472,8 @@ void MotorControlTask(void *pvParameters)
 #if DEBUG_MOTOR
                         debug_print("Ti pulses used %u \r\n",targetPosition);
                         debug_print("=> target %u \r\n",targetPosition);
+                        debug_print("cur pos %u \r\n",motor_current_position());
+                        debug_print("home %u \r\n",homePosition);
                         debug_print("to insp \r\n");
 #endif
                         break;
