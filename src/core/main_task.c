@@ -8,6 +8,7 @@
 #include "core/motor_control.h"
 #include "core/utils.h"
 #include "core/display.h"
+#include "core/volume.h"
 
 #include "hal/io.h"
 #include "hal/pins.h"

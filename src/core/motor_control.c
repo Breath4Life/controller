@@ -13,7 +13,7 @@
 #include "core/motor_control.h"
 #include "hal/limit_switch.h"
 
-#define DEBUG_MOTOR 1
+#define DEBUG_MOTOR 0
 
 /////////////////////////////////////
 uint32_t TCT;
