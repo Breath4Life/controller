@@ -6,6 +6,7 @@
 
 #include "hal/io.h"
 #include "core/main_task.h"
+#include "core/system.h"
 #include "hal/pins.h"
 #include "hal/motor.h"
 #include "core/debug.h"
@@ -57,12 +58,12 @@ TickType_t previousWakeTime;
 uint32_t ticksTctTime;
 
 // TODO reset proper value! 
-const uint32_t f_home = 50; // steps/s (not µsteps/s)
+const uint32_t f_home = 200; // steps/s (not µsteps/s)
 
 const int32_t steps_calib_down = 2000;
 const int32_t steps_calib_up = 1000;
 const int32_t steps_calib_end = 10;
-const int32_t steps_caliv_vol = 550;
+const int32_t steps_caliv_vol = 500;
 
 const uint32_t thresh_calib_vol_mil = 600;
 
@@ -145,6 +146,7 @@ void MotorControlTask(void *pvParameters)
                 xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,portMAX_DELAY);
 
                 if (notif_recv & MOTOR_NOTIF_START_CALIBRATION) {
+                    compute_config();
                     motorState = motorCalibrating;
                     calibState = calibDown;
                     currentPosition = 0;
@@ -196,13 +198,14 @@ void MotorControlTask(void *pvParameters)
                                 debug_print("to motor INIT \r\n");
 #endif
                             } else {
+                                xTaskNotify(mainTaskHandle, NOTIF_MOTOR_ERROR, eSetBits);
 #if DEBUG_MOTOR
                                 debug_print("DOWN calib SEND ERROR1\r\n");
 #endif
-                                //TODO Notify MOTOR_ERROR
+                                
                             }
                         } else {
-                            // TODO Notify MOTOR_ERROR     
+                            xTaskNotify(mainTaskHandle, NOTIF_MOTOR_ERROR, eSetBits);
 #if DEBUG_MOTOR
                             debug_print("DOWN calib SEND ERROR2\r\n"); 
 #endif
@@ -244,16 +247,16 @@ void MotorControlTask(void *pvParameters)
                                 debug_print("to motor INIT \r\n");
 #endif
                             } else {
+                                xTaskNotify(mainTaskHandle, NOTIF_MOTOR_ERROR, eSetBits);
 #if DEBUG_MOTOR
                                 debug_print("UP calib SEND ERROR1\r\n");
 #endif
-                                //TODO Notify MOTOR_ERROR
                             }
                         } else {
+                            xTaskNotify(mainTaskHandle, NOTIF_MOTOR_ERROR, eSetBits);
 #if DEBUG_MOTOR
                             debug_print("UP calib SEND ERROR1\r\n");
 #endif
-                            // TODO Notify MOTOR_ERROR     
                         }
                         break;
 
@@ -282,17 +285,17 @@ void MotorControlTask(void *pvParameters)
                                 debug_print("to motor INIT \r\n");
 #endif
                             } else {
+                                xTaskNotify(mainTaskHandle, NOTIF_MOTOR_ERROR, eSetBits);
 #if DEBUG_MOTOR
                                 debug_print("notif received %d\r\t",notif_recv);
                                 debug_print("pos end ERROR1\r\n");
 #endif
-                                //TODO Notify MOTOR_ERROR
                             }
                         } else {
+                            xTaskNotify(mainTaskHandle, NOTIF_MOTOR_ERROR, eSetBits);
 #if DEBUG_MOTOR
                             debug_print("pos end ERROR2\r\n");
 #endif
-                            // TODO Notify MOTOR_ERROR     
                         }
                         break;
                     
@@ -320,10 +323,10 @@ void MotorControlTask(void *pvParameters)
                                 debug_print("to motor INIT \r\n");
 #endif
                             } else {
-                                // TODO Notify MOTOR_ERROR
+                                xTaskNotify(mainTaskHandle, NOTIF_MOTOR_ERROR, eSetBits);
                             }
                         } else {
-                            // TODO Notify MOTOR_ERROR     
+                            xTaskNotify(mainTaskHandle, NOTIF_MOTOR_ERROR, eSetBits);
                         }
                         break;
 
@@ -348,10 +351,10 @@ void MotorControlTask(void *pvParameters)
                                 debug_print("to motor INIT \r\n");
 #endif
                             } else {
-                                // TODO Notify MOTOR_ERROR
+                                xTaskNotify(mainTaskHandle, NOTIF_MOTOR_ERROR, eSetBits);
                             }
                         } else {
-                            // TODO Notify MOTOR_ERROR     
+                            xTaskNotify(mainTaskHandle, NOTIF_MOTOR_ERROR, eSetBits);
                         }
                         break;
 
@@ -366,6 +369,7 @@ void MotorControlTask(void *pvParameters)
                 if (notif_recv & MOTOR_NOTIF_START) {
                     motorState = motorRunning;
                     breathState = startNewCycle;
+                    previousWakeTime = xTaskGetTickCount();
 #if DEBUG_MOTOR
                     debug_print("TCT %u \r\n",TCT);
                     debug_print("Ti %u \r\n",Ti);
@@ -400,9 +404,12 @@ void MotorControlTask(void *pvParameters)
 #if DEBUG_MOTOR
                             debug_print("to motor STOPPING \r\n");
 #endif
-                        }
                         // TODO update state based on the notification value 
-			break;
+
+                        } else {
+                            xTaskNotify(mainTaskHandle, NOTIF_MOTOR_ERROR, eSetBits);    
+                        }
+                        break;
 
                     case plateau:
                         // BOUNDED Wait notification
@@ -423,9 +430,12 @@ void MotorControlTask(void *pvParameters)
 #if DEBUG_MOTOR
                             debug_print("to motor STOPPING \r\n");
 #endif
+                            // TODO update state based on the notification value
+                        } else {
+                            xTaskNotify(mainTaskHandle, NOTIF_MOTOR_ERROR, eSetBits);
                         }
 
-                        // TODO update state based on the notification value 
+                         
 			break;  
 
                     case exp:
@@ -446,13 +456,15 @@ void MotorControlTask(void *pvParameters)
 #if DEBUG_MOTOR
                             debug_print("to motor STOPPING \r\n");
 #endif
+                            // TODO update state based on the notification value
+                        } else {
+                            xTaskNotify(mainTaskHandle, NOTIF_MOTOR_ERROR, eSetBits);
                         }
 
-                        // Update states regarding the received notification
-                        // TODO update state based on the notification value
+                        
 			break;
 
-                    // Add RECALIBRATION step
+                    // TODO: Add RECALIBRATION step
 
                     case cycleEnd:
                         vTaskDelayUntil(&previousWakeTime,ticksTctTime);
@@ -466,7 +478,6 @@ void MotorControlTask(void *pvParameters)
                         compute_config();
                         motor_enable();
                         breathState = insp;
-                        previousWakeTime = xTaskGetTickCount();
                         targetPosition = homePosition + insp_pulses;
                         set_motor_goto_position_accel_exec(targetPosition, f_insp, 2, 200); 
 #if DEBUG_MOTOR
@@ -495,10 +506,10 @@ void MotorControlTask(void *pvParameters)
                                     debug_print("to motor stopped\r\n");
 #endif
                                 } else {
-                                    // TODO Notify MOTOR_ERROR
+                                    xTaskNotify(mainTaskHandle, NOTIF_MOTOR_ERROR, eSetBits);
                                 }
                             } else {
-                                // TODO Notify MOTOR_ERROR     
+                                xTaskNotify(mainTaskHandle, NOTIF_MOTOR_ERROR, eSetBits);  
                             }
                         } else {
                             motor_disable();
