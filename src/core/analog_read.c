@@ -14,7 +14,7 @@
 
 #define N_ANALOG_READS 3
 
-#define DEBUG_ANALOG_READ 1
+#define DEBUG_ANALOG_READ 0
 
 volatile int16_t p;
 volatile int16_t p_peak;
