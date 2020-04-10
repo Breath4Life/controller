@@ -36,7 +36,9 @@ typedef enum {
     exp,
     cycleEnd,
     startNewCycle,
-    stopping
+    stopping,
+    reCalibUp,
+    reCalibHome
 } BreathState_t;
 
 extern volatile MotorState_t motorState;

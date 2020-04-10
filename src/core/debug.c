@@ -12,10 +12,11 @@
 #include "hal/pins.h"
 #include "hal/i2c.h"
 #include "hal/time.h"
+#include "core/debug.h"
 #include "core/volume.h"
 
 
-void debug_print_fromISR(const char *fmt, ...)
+void debug_print_FromISR(const char *fmt, ...)
 {
     char buffer[32];
 
