@@ -15,6 +15,9 @@
 #define MOTOR_FULL_BITS 0xFFFFFFFF
 #define MOTOR_USTEPS 1
 
+// Threshold used in the flow-check calibration [ml]
+#define VOLUME_CHECK_THRESHOLD 600
+
 typedef enum {
     motorInit,
     motorCalibrating,
