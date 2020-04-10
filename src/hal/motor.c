@@ -681,9 +681,10 @@ void set_motor_current_position_value(long new_abs_position){
     motor_position_abs = new_abs_position;
 }
 
-// Used when the motor need to be stopped before it ends 
+// Used when the motor need to be stopped before it ends
 // its movement
 // TODO: dirty, clean
+// FIXME currently likely source of drift
 void motor_anticipated_stop(){
 #if DEBUG_MOTOR
     debug_print("ANT STATES: %lu %lu \r\n",motor_position_abs,motor_position_abs + get_cnt5());

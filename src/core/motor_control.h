@@ -23,6 +23,7 @@ typedef enum {
     motorCalibrating,
     motorStopped,
     motorRunning,
+    motorError,
 } MotorState_t;
 
 typedef enum {
