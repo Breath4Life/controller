@@ -11,6 +11,7 @@
 #include "hal/motor.h"
 #include "core/debug.h"
 #include "core/motor_control.h"
+#include "core/volume.h"
 #include "hal/limit_switch.h"
 
 #define DEBUG_MOTOR 0
@@ -275,9 +276,11 @@ void MotorControlTask(void *pvParameters)
 
                                 targetPosition = homePosition + posOffset;
                                 calibState = calibVol;
+                                // Reset volume prior to flow check
+                                reset_volume();
                                 set_motor_goto_position_accel_exec(targetPosition, MOTOR_USTEPS*steps_caliv_vol, 2, 200);
 #if DEBUG_MOTOR
-                                debug_print("to flow vol\r\n");
+                                debug_print("[MOTOR] Start flow check.\r\n");
 #endif
                             } else if (notif_recv & MOTOR_NOTIF_HALT){
                                 motor_anticipated_stop();
@@ -293,23 +296,28 @@ void MotorControlTask(void *pvParameters)
                             notifyMotorError();
                         }
                         break;
-                    
 
                     case calibVol:
-                        // BOUNDED wait for limit switch up 
                         n_wait_recv = xTaskNotifyWait(0x0,MOTOR_FULL_BITS,&notif_recv,pdMS_TO_TICKS(5000));
-                        
+
                         // Verify deadline
                         if (n_wait_recv){
                             // Check for undesirable notification
                             if(notif_recv & MOTOR_NOTIF_MOVEMENT_FINISHED) {
-                                //TODO add volume check!
-                                calibState = calibVolEnd;
-                                targetPosition = homePosition;
-                                set_motor_goto_position_accel_exec(targetPosition, MOTOR_USTEPS*steps_caliv_vol, 2, 200);
+                                if (volume > VOLUME_CHECK_THRESHOLD) {
+                                    calibState = calibVolEnd;
+                                    targetPosition = homePosition;
+                                    set_motor_goto_position_accel_exec(targetPosition, MOTOR_USTEPS*steps_caliv_vol, 2, 200);
 #if DEBUG_MOTOR
-                                debug_print("to flow vol end\r\n");
+                                    debug_print("[MOTOR] Flow check: OK.\r\n");
 #endif
+                                } else {
+#if DEBUG_MOTOR
+                                    debug_print("[MOTOR] Flow check: KO.\r\n");
+#endif
+                                    // TODO: motorState ?
+                                    xTaskNotify(mainTaskHandle, NOTIF_INCORRECT_FLOW, eSetBits);
+                                }
                             } else if (notif_recv & MOTOR_NOTIF_HALT){
                                 motor_anticipated_stop();
                                 motor_disable();
