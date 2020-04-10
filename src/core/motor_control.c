@@ -64,17 +64,20 @@ uint32_t posOffset;
 TickType_t previousWakeTime;
 uint32_t ticksTctTime;
 
-// TODO reset proper value!
-const uint32_t f_home = 200; // steps/s (not µsteps/s)
+// TODO reset proper value! 
+const uint32_t f_home = 100*MOTOR_USTEPS; // steps/s (not µsteps/s)
 
 const int32_t steps_calib_down = 2000;
 const int32_t steps_calib_up = 1000;
-const int32_t steps_calib_end = 10;
+const int32_t steps_calib_end = 50;
 const int32_t steps_calib_vol = 500;
+const int32_t steps_recalib = 1000;
 
 const uint32_t thresh_calib_vol_mil = 600;
 
-// Threshold for volume calibraiton
+uint8_t recalibrateFlag;
+
+// Threshold for volume calibraiton 
 
 // 0 replaces the whole task by an empty loop for testing purposes
 #define MOTOR_ACTIVE 1
@@ -136,9 +139,12 @@ void init_motor() {
     targetPosition = 0;
     homePosition = 0;
     posOffset = 0;
+    recalibrateFlag = 0;
 }
 
 static void genMotorError() {
+    motor_anticipated_stop();
+    motor_disable();
     motorState = motorError;
     xTaskNotify(mainTaskHandle, NOTIF_MOTOR_ERROR, eSetBits);
 }
@@ -203,7 +209,7 @@ void MotorControlTask(void *pvParameters)
                     currentPosition = 0;
                     targetPosition = MOTOR_USTEPS*steps_calib_down;
                     motor_enable();
-                    set_motor_goto_position_accel_exec(targetPosition, MOTOR_USTEPS*f_home, 2, 200);
+                    set_motor_goto_position_accel_exec(targetPosition, f_home, 2, 200);
 #if DEBUG_MOTOR
                     debug_print("to calib down\r\n");
 #endif // DEBUG_MOTOR
@@ -416,9 +422,21 @@ void MotorControlTask(void *pvParameters)
                         } else if (notif & MOTOR_NOTIF_OVER_PRESSURE) {
                             // TODO
                         } else if (notif & MOTOR_NOTIF_LIM_UP) {
-                            // TODO
+                            motor_anticipated_stop();
+                            recalibrateFlag = 1;
+                            breathState = reCalibHome;
+                            set_motor_current_position_value(0);
+                            targetPosition = MOTOR_USTEPS * steps_calib_end;
+                            set_motor_goto_position_accel_exec(targetPosition, f_exp, 2, 200);
                         } else if (notif & MOTOR_NOTIF_LIM_DOWN) {
-                            // TODO
+                            motor_anticipated_stop();
+                            recalibrateFlag = 1;
+                            breathState = exp;
+                            targetPosition = homePosition;
+                            set_motor_goto_position_accel_exec(targetPosition, f_exp, 2, 200);
+#if DEBUG_MOTOR
+                            debug_print("recalibrate INSP asked \r\n");
+#endif
                         } else {
                             // case MOTOR_NOTIF_MOVEMENT_FINISHED
                             breathState = plateau;
@@ -440,9 +458,21 @@ void MotorControlTask(void *pvParameters)
                         } else if (notif & MOTOR_NOTIF_OVER_PRESSURE) {
                             // TODO
                         } else if (notif & MOTOR_NOTIF_LIM_UP) {
-                            // TODO
+                            motor_anticipated_stop();
+                            recalibrateFlag = 1;
+                            breathState = reCalibHome;
+                            set_motor_current_position_value(0);
+                            targetPosition = MOTOR_USTEPS * steps_calib_end;
+                            set_motor_goto_position_accel_exec(targetPosition, f_exp, 2, 200);
                         } else if (notif & MOTOR_NOTIF_LIM_DOWN) {
-                            // TODO
+                            motor_anticipated_stop();
+                            recalibrateFlag = 1;
+                            breathState = exp;
+                            targetPosition = homePosition;
+                            set_motor_goto_position_accel_exec(targetPosition, f_exp, 2, 200);
+#if DEBUG_MOTOR
+                            debug_print("recalibrate plateau asked \r\n");
+#endif
                         } else {
                             // case MOTOR_NOTIF_MOVEMENT_FINISHED
                             // go back to HOME
@@ -452,9 +482,12 @@ void MotorControlTask(void *pvParameters)
                             debug_print("[MOTOR] to exp\r\n");
 #endif // DEBUG_MOTOR
                         }
-                        break;  
+                        break;
 
                     case exp:
+#if DEBUG_MOTOR
+                        debug_print("in EXP phase \r\n");
+#endif
                         notif = boundedWaitNotification(
                                 MOTOR_NOTIF_LIM | MOTOR_NOTIF_HALT | MOTOR_NOTIF_MOVEMENT_FINISHED | MOTOR_NOTIF_OVER_PRESSURE,
                                 pdMS_TO_TICKS(3000)
@@ -464,17 +497,88 @@ void MotorControlTask(void *pvParameters)
                         } else if (notif & MOTOR_NOTIF_OVER_PRESSURE) {
                             // TODO
                         } else if (notif & MOTOR_NOTIF_LIM_UP) {
+                            motor_anticipated_stop();
+                            recalibrateFlag = 1;
+                            breathState = reCalibHome;
+                            set_motor_current_position_value(0);
+                            targetPosition = MOTOR_USTEPS * steps_calib_end;
+                            set_motor_goto_position_accel_exec(targetPosition, f_exp, 2, 200);
+                        } else if (notif & MOTOR_NOTIF_LIM_DOWN) {
+                            // TODO
+                        } else {
+                            // case MOTOR_NOTIF_MOVEMENT_FINISHED
+                            if (recalibrateFlag) {
+                                breathState = reCalibUp;
+                                currentPosition = motor_current_position();
+                                posOffset = MOTOR_USTEPS * steps_recalib; 
+                                if (currentPosition < posOffset){
+                                    set_motor_current_position_value(posOffset);
+                                    targetPosition = 0;
+                                } else {
+                                    targetPosition = currentPosition - posOffset; 
+                                }
+                                set_motor_goto_position_accel_exec(targetPosition, f_exp, 2, 200);
+
+                            } else {
+                                breathState = cycleEnd;
+                                motor_disable();
+#if DEBUG_MOTOR
+                                debug_print("[MOTOR] to wait cycle end\r\n");
+#endif
+                            }
+                        }
+			break;
+
+                    case reCalibUp:
+#if DEBUG_MOTOR
+                        debug_print("in reCalibUp phase \r\n");
+#endif
+                        notif = boundedWaitNotification(
+                                MOTOR_NOTIF_LIM | MOTOR_NOTIF_HALT | MOTOR_NOTIF_MOVEMENT_FINISHED | MOTOR_NOTIF_OVER_PRESSURE,
+                                pdMS_TO_TICKS(3000)
+                                );
+                        if (notif & MOTOR_NOTIF_HALT) {
+                            motorHalt("reCalibUp");
+                        } else if (notif & MOTOR_NOTIF_OVER_PRESSURE) {
+                            // TODO
+                        } else if (notif & MOTOR_NOTIF_LIM_UP) {
+                            // Stop motor
+                            motor_anticipated_stop();
+                            // Compute actual position when notified
+                            set_motor_current_position_value(0);
+                            // Compute next position
+                            targetPosition = MOTOR_USTEPS*steps_calib_end;
+                            breathState = reCalibHome;
+                            set_motor_goto_position_accel_exec(targetPosition, f_exp, 2, 200);
+                        } else if (notif & MOTOR_NOTIF_LIM_DOWN) {
+                            // TODO
+                        } else {
+                            // case MOTOR_NOTIF_MOVEMENT_FINISHED
+                            genMotorError();
+                        }
+                        break;
+
+                    case reCalibHome:
+#if DEBUG_MOTOR
+                        debug_print("in reCalibHome phase \r\n");
+#endif
+                        notif = boundedWaitNotification(
+                                MOTOR_NOTIF_LIM | MOTOR_NOTIF_HALT | MOTOR_NOTIF_MOVEMENT_FINISHED | MOTOR_NOTIF_OVER_PRESSURE,
+                                pdMS_TO_TICKS(3000)
+                                );
+                        if (notif & MOTOR_NOTIF_HALT) {
+                            motorHalt("reCalibUp");
+                        } else if (notif & MOTOR_NOTIF_OVER_PRESSURE) {
+                            // TODO
+                        } else if (notif & MOTOR_NOTIF_LIM_UP) {
                             // TODO
                         } else if (notif & MOTOR_NOTIF_LIM_DOWN) {
                             // TODO
                         } else {
                             // case MOTOR_NOTIF_MOVEMENT_FINISHED
-                            // for now, rest
+                            recalibrateFlag = 0;
                             breathState = cycleEnd;
                             motor_disable();
-#if DEBUG_MOTOR
-                            debug_print("[MOTOR] to wait cycle end\r\n");
-#endif // DEBUG_MOTOR
                         }
                         break;
 
@@ -486,9 +590,8 @@ void MotorControlTask(void *pvParameters)
 #endif // DEBUG_MOTOR
                         break;
 
-
                     case stopping:
-                        // BOUNDED wait for limit switch up 
+                        // BOUNDED wait for end of move
                         // TODO ensure each low-level motor move generates an
                         // end of movement notif and that we always do a move
                         // before coming into this state.

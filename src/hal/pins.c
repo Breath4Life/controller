@@ -10,11 +10,9 @@ struct io_pin_config DIO_PIN_CONFIG[] = {
 
     {DIO_PIN_MOTOR_STEP,              IO_PORTE, 4},
     {DIO_PIN_MOTOR_STEP_BIS,          IO_PORTE, 5},
-    {DIO_PIN_MOTOR_ENABLE,            IO_PORTJ, 1},
+    {DIO_PIN_MOTOR_ENABLE,            IO_PORTH, 3},
     {DIO_PIN_MOTOR_DIRECTION,         IO_PORTE, 3},
-    {DIO_PIN_MOTOR_SPRD,              IO_PORTH, 3},
-    {DIO_PIN_MOTOR_INDEX,             IO_PORTH, 4},
-    {DIO_PIN_MOTOR_DIAG,              IO_PORTH, 5},
+    {DIO_PIN_MOTOR_ERROR,             IO_PORTH, 4},
 
     {DIO_PIN_AUX_POWER_MONITORING,    IO_PORTH, 6},
     {DIO_PIN_MAIN_POWER_MONITORING,   IO_PORTB, 4},

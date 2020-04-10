@@ -60,7 +60,7 @@ ISR(PCINT0_vect) {
         last_start_bouncing = current_time_irq;
     }
     lim_switch_down_lvl = l_down;
-    lim_switch_down_lvl = l_up;
+    lim_switch_up_lvl = l_up;
     if (higherPriorityTaskWoken) {
         taskYIELD();
     }

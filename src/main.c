@@ -42,9 +42,7 @@ void initHardware(void)
     dio_init(DIO_PIN_MOTOR_STEP_BIS,          DIO_OUTPUT);
     dio_init(DIO_PIN_MOTOR_ENABLE,            DIO_OUTPUT);
     dio_init(DIO_PIN_MOTOR_DIRECTION,         DIO_OUTPUT);
-    dio_init(DIO_PIN_MOTOR_SPRD,              DIO_OUTPUT);
-    dio_init(DIO_PIN_MOTOR_INDEX,             DIO_OUTPUT);
-    dio_init(DIO_PIN_MOTOR_DIAG,              DIO_OUTPUT);
+    dio_init(DIO_PIN_MOTOR_ERROR,              DIO_OUTPUT);
 
     dio_init(DIO_PIN_DEBUGLED,                DIO_OUTPUT);
 
