@@ -42,6 +42,10 @@ void debug_print(const char *fmt, ...)
     sei();
 }
 
+void fake_debug_print(const char *_fmt, ...)
+{
+}
+
 void SFM3000Task(void *pvParameters)
 {
     init_volume();

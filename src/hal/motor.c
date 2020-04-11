@@ -24,9 +24,6 @@
 
 #include <avr/interrupt.h>
 
-#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
-#define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
-
 #define MOTORCTRL_DIR_FORWARD 0
 #define MOTORCTRL_DIR_BACKWARD 1
 #define MOTORCTRL_DRIVE_ENBL_TRUE 0
@@ -42,30 +39,14 @@
 
 #define MOTORCTRL_MAX_SPEED_SMALL_MVMT 500
 
-#ifndef RT_B4L
-#define ARDUINO_RT
-#endif // RT_B4L
-
-#ifndef ARDUINO_RT
 #include "hal/pins.h"
 #include "hal/io.h"
 #include "core/system.h"
 #include "core/debug.h"
+#include "core/utils.h"
 #include "core/motor_control.h"
 #include "task.h"
 #include "FreeRTOS.h"
-#endif // ARDUINO_RT
-
-#ifdef ARDUINO_RT
-const uint8_t MOTORCTRL_DRIVE_DIR_PIN = 22;
-const uint8_t MOTORCTRL_DRIVE_STEP_PIN = 2; // pwm_step (OC3B)
-const uint8_t MOTORCTRL_DRIVE_STEP_PIN_BIS = 3; // pwm_step (OC3C)
-const uint8_t MOTORCTRL_DRIVE_ENBL_PIN = 24;
-
-const uint8_t MOTORCTRL_STEP_CNT_PIN = 47; // CNT5 input
-const uint8_t MOTORCTRL_STEP_CNT_OUT_DBG_PIN = 25;
-const uint8_t MOTORCTRL_STEP_CNT_OUT_DBG_PIN2 = 27;
-#endif // ARDUINO_RT
 
 const unsigned int MOTORCTRL_PWM_FREQ_DIV_FACTOR = 31250;
 
@@ -128,14 +109,8 @@ static void setup_pwm_step()
   // Disable interrupts
   TIMSK3 = 0;
 
-#ifdef ARDUINO_RT
-  pinMode(MOTORCTRL_DRIVE_STEP_PIN, OUTPUT);
-  pinMode(MOTORCTRL_DRIVE_STEP_PIN_BIS, OUTPUT);
-  //pinMode(5, OUTPUT); // to debug PWM, always duty cycle 1/2
-#else
   dio_init(DIO_PIN_MOTOR_STEP, DIO_OUTPUT);
   dio_init(DIO_PIN_MOTOR_STEP_BIS, DIO_OUTPUT);
-#endif // ARDUINO_RT
 
   sei();//allow interrupts
 }
@@ -155,11 +130,7 @@ static void setup_ext_cnt5()
   cli();//stop interrupts
 
   // Counter for PWM output
-#ifdef ARDUINO_RT
-  pinMode(MOTORCTRL_STEP_CNT_PIN, INPUT);
-#else
   dio_init(DIO_PIN_STEP_COUNTER_TN, DIO_INPUT);
-#endif // ARDUINO_RT
   // WGM mode 4 (CTC - OCRn)
   // External rising-edge clock
   // ? add ICNC5 ?
@@ -171,42 +142,17 @@ static void setup_ext_cnt5()
   sei();//allow interrupts
 }
 
-#ifdef ARDUINO_RT
-void setup()
-#else
 void setup_motor()
-#endif // ARDUINO_RT
 {
 
   setup_pwm_step();
   setup_ext_cnt5();
 
-#ifdef ARDUINO_RT
-  pinMode(MOTORCTRL_STEP_CNT_OUT_DBG_PIN, OUTPUT);
-  digitalWrite(MOTORCTRL_STEP_CNT_OUT_DBG_PIN, 0);
-  pinMode(MOTORCTRL_STEP_CNT_OUT_DBG_PIN2, OUTPUT);
-  digitalWrite(MOTORCTRL_STEP_CNT_OUT_DBG_PIN2, 0);
-#endif // ARDUINO_RT
-
-#ifdef ARDUINO_RT
-  // TMC Dir pin
-  pinMode(MOTORCTRL_DRIVE_DIR_PIN, OUTPUT);
-  // TMC enable pin
-  pinMode(MOTORCTRL_DRIVE_ENBL_PIN, OUTPUT);
-  digitalWrite(MOTORCTRL_DRIVE_ENBL_PIN, MOTORCTRL_DRIVE_ENBL_FALSE);
-#else
   // TMC Dir pin
   dio_init(DIO_PIN_MOTOR_DIRECTION, DIO_OUTPUT);
   // TMC enable pin
   dio_init(DIO_PIN_MOTOR_ENABLE, DIO_OUTPUT);
   dio_write(DIO_PIN_MOTOR_ENABLE, MOTORCTRL_DRIVE_ENBL_FALSE);
-#endif // ARDUINO_RT
-
-#ifdef ARDUINO_RT
-  Serial.begin(9600);
-  while (! Serial); // Wait untilSerial is ready
-  Serial.println("Test Monitor startup...");
-#endif // ARDUINO_RT
 }
 
 // Interrupt callback for Timer5 (step counter)
@@ -470,7 +416,6 @@ ISR(MOTORCTRL_PWM_OVF_IRQ)
   TIMSK3 &= ~ MOTORCTRL_PWM_OVF_IRQ_CFG;
   // Report that motor is not in motion anymore
   motor_inmotion = 0;
-#ifndef ARDUINO_RT
   BaseType_t higherPriorityTaskWoken;
   xTaskNotifyFromISR(motorControlTaskHandle,
           MOTOR_NOTIF_MOVEMENT_FINISHED,
@@ -483,7 +428,6 @@ ISR(MOTORCTRL_PWM_OVF_IRQ)
     debug_print_FromISR("notified control.\r\n");
 #endif // MOTOR_DBG
   // should do a portYIELD_FROM_ISR(higherPriorityTaskWoken), but is not available in port
-#endif // ARDUINO_RT
 }
 
 // Maximum input threshold is COUNTER_STEP_MAX
@@ -536,20 +480,12 @@ uint32_t motor_remaining_distance(){
 
 void motor_enable()
 {
-#ifdef ARDUINO_RT
-      digitalWrite(MOTORCTRL_DRIVE_ENBL_PIN, MOTORCTRL_DRIVE_ENBL_TRUE);
-#else
       dio_write(DIO_PIN_MOTOR_ENABLE, MOTORCTRL_DRIVE_ENBL_TRUE);
-#endif // ARDUINO_RT
 }
 
 void motor_disable()
 {
-#ifdef ARDUINO_RT
-      digitalWrite(MOTORCTRL_DRIVE_ENBL_PIN, MOTORCTRL_DRIVE_ENBL_FALSE);
-#else
       dio_write(DIO_PIN_MOTOR_ENABLE, MOTORCTRL_DRIVE_ENBL_FALSE);
-#endif // ARDUINO_RT
 }
 
 void set_motor_goto_position_accel_exec(
@@ -599,11 +535,7 @@ void set_motor_goto_position_accel_exec(
     motor_position_rel = 0;
 
     //debug_print("To direction %u\r\n", direction);
-#ifdef ARDUINO_RT
-    digitalWrite(MOTORCTRL_DRIVE_DIR_PIN, direction);
-#else
     dio_write(DIO_PIN_MOTOR_DIRECTION, direction);
-#endif // ARDUINO_RT
     motor_direction = direction;
 
     // Then start PWM and set the step counter to necessary threshold
@@ -623,7 +555,7 @@ void set_motor_goto_position_accel_exec(
         selected_speed = MIN(MOTORCTRL_MAX_SPEED_SMALL_MVMT,target_speed);
       }
       // CASE: slow movement
-      else if (target_speed == step_freq_base)
+      else if (target_speed <= step_freq_base)
       {
 #if DEBUG_MOTOR
         debug_print("Slow movement.\r\n");
@@ -637,7 +569,7 @@ void set_motor_goto_position_accel_exec(
         {
           set_threshold_cnt5(COUNTER_STEP_MAX);
         }
-        selected_speed = step_freq_base;
+        selected_speed = target_speed;
       }
       // CASE: acceleration needed
       else
@@ -724,57 +656,3 @@ void set_motor_goto_position(uint32_t target_position_abs, const uint16_t target
   set_motor_goto_position_accel_exec(target_position_abs, target_speed, 0, target_speed);
 }
 
-#ifdef ARDUINO_RT
-void loop()
-{
-  uint16_t test_motor_speed_step;
-  uint16_t test_step_num_base;
-  uint16_t test_motor_speed; // Max MOTORCTRL_PWM_FREQ_DIV_FACTOR/2
-  uint32_t test_motor_target_pos;
-  uint32_t test_motor_target_pos_limit;
-
-/*
-  // Simple test case for constant speed movement
-  test_motor_speed = 5000; // Max MOTORCTRL_PWM_FREQ_DIV_FACTOR/2
-  test_motor_target_pos = 100000;
-  test_motor_target_pos_limit = 2000;
-
-  //while(1) {
-
-    set_motor_goto_position(test_motor_target_pos, test_motor_speed);
-    test_motor_target_pos +=40;
-    if (test_motor_target_pos > test_motor_target_pos_limit)
-    {
-      test_motor_target_pos = 0;
-    }
-
-    while (motor_inmotion)
-    {
-        delay(1000);
-    }
-  //}
-*/
-
-
-  // Simple test case for accel / decel movement
-  test_motor_speed_step = 200;
-  test_step_num_base = 2;
-  test_motor_speed = 10000; // Max MOTORCTRL_PWM_FREQ_DIV_FACTOR/2
-  test_motor_target_pos = 40000;
-  test_motor_target_pos_limit = 20;
-
-  set_motor_goto_position_accel_exec(test_motor_target_pos, test_motor_speed, test_step_num_base, test_motor_speed_step);
-
-  while (motor_inmotion)
-  {
-      delay(100);
-  }
-
-  test_motor_target_pos *= 2;
-
-  //set_motor_goto_position_accel_exec(test_motor_target_pos, test_motor_speed, test_step_num_base, test_motor_speed_step);
-
-  while(1) {}
-
-}
-#endif // ARDUINO_RT

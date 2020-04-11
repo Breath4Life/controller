@@ -164,7 +164,7 @@ void MainTask(void *pvParameters)
 #endif
                 updated_state = 1;
 
-                xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_START_CALIBRATION, eSetBits);
+                xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_GLOBAL_STATE, eSetBits);
 
 #if SIM_MOTOR
                 // MOTOR SIMULATION TODO: remove
@@ -215,7 +215,7 @@ void MainTask(void *pvParameters)
 #endif
                     updated_state = 1;
 
-                    xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_HALT, eSetBits);
+                    xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_GLOBAL_STATE, eSetBits);
                 }
             }
         }
@@ -287,7 +287,7 @@ void MainTask(void *pvParameters)
 #endif
                     updated_state = 1;
 
-                    xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_START, eSetBits);
+                    xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_GLOBAL_STATE, eSetBits);
                 } else if (globalState == run) {
                     globalState = stop;
 #if DEBUG_MAIN
@@ -295,7 +295,7 @@ void MainTask(void *pvParameters)
 #endif
                     updated_state = 1;
 
-                    xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_HALT, eSetBits);
+                    xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_GLOBAL_STATE, eSetBits);
                 }
             }
         }
