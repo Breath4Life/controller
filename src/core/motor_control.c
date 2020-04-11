@@ -462,6 +462,7 @@ void MotorControlTask(void *pvParameters)
                         compute_config();
                         motor_enable();
                         breathState = insp;
+                        reset_volume();
                         targetPosition = homePosition + insp_pulses;
                         MOTOR_DEBUG_PRINT("Ti pulses used %u \r\n",targetPosition);
                         MOTOR_DEBUG_PRINT("=> target %u \r\n",targetPosition);
