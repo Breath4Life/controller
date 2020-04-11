@@ -615,7 +615,9 @@ void set_motor_goto_position_accel_exec(
       // 2* since there is acceleration and deceleration
       if (target_position_rel <= 2*step_num_base)
       {
+#if DEBUG_MOTOR
         debug_print("No time to accelerate/decelerate.\r\n");
+#endif
         accel_enbl = 0;
         set_threshold_cnt5(target_position_rel);
         selected_speed = MIN(MOTORCTRL_MAX_SPEED_SMALL_MVMT,target_speed);
@@ -623,7 +625,9 @@ void set_motor_goto_position_accel_exec(
       // CASE: slow movement
       else if (target_speed == step_freq_base)
       {
+#if DEBUG_MOTOR
         debug_print("Slow movement.\r\n");
+#endif
         accel_enbl = 0;
         if (target_position_rel <= COUNTER_STEP_MAX)
         {
@@ -638,7 +642,9 @@ void set_motor_goto_position_accel_exec(
       // CASE: acceleration needed
       else
       {
+#if DEBUG_MOTOR
         debug_print("Acceleration needed.\r\n");
+#endif
         accel_enbl = 1;
         set_threshold_cnt5(step_num_base);
         selected_speed = step_freq_base;
