@@ -175,14 +175,14 @@ static uint32_t boundedWaitNotification(uint32_t admissible_notifications, TickT
         if (notif_recv & ~admissible_notifications) {
             // invalid notification
             genMotorError();
-            MOTOR_DEBUG_PRINT("[MOTOR] Unexp notif %x\r\n", notif_recv); 
+            MOTOR_DEBUG_PRINT("[MOTOR] Unexp notif %x\r\n", notif_recv);
         } else {
             return notif_recv;
         }
     } else {
         // no notification received, timeout
         genMotorError();
-        MOTOR_DEBUG_PRINT("[MOTOR] TIMEOUT\r\n"); 
+        MOTOR_DEBUG_PRINT("[MOTOR] TIMEOUT\r\n");
     }
     return notif_recv;
 }
@@ -225,7 +225,7 @@ void MotorControlTask(void *pvParameters)
                         targetPosition = MOTOR_USTEPS*steps_calib_down;
                         motor_enable();
                         MOTOR_DEBUG_PRINT("to calib down\r\n");
-                        notif = move_and_wait(targetPosition, f_home, 
+                        notif = move_and_wait(targetPosition, f_home,
                                 MOTOR_NOTIF_LIM | MOTOR_NOTIF_HALT | MOTOR_NOTIF_OVER_PRESSURE);
 
                     case calibDown:
@@ -570,11 +570,11 @@ void MotorControlTask(void *pvParameters)
 
 #else // MOTOR_ACTIVE
 
-    void MotorControlTask(void *pvParameters)
-    {
-        while (1) {
-            vTaskDelay(pdMS_TO_TICKS(100));
-        }
+void MotorControlTask(void *pvParameters)
+{
+    while (1) {
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
+}
 #endif // MOTOR_ACTIVE
 
