@@ -10,7 +10,7 @@
 
 #define DBG_SFM3000 0
 
-// in standard ml/s
+// in standard ml/min
 volatile int32_t flow;
 
 static const uint8_t i2c_address = 64;

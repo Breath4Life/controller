@@ -33,8 +33,10 @@ uint8_t poll_volume() {
     if (sfm3000_poll() == 0) {
         uint32_t curr_time = time_us();
         // TODO divisions by powers of 2 ideally...
+        // t_delta is in ms
         int32_t t_delta = (curr_time - last_poll_time)/1000;
-        int32_t volume_inc = flow * t_delta / 1000;
+        // flow is in sml/min and is inverted
+        int32_t volume_inc = -flow/60 * t_delta/1000;
         cli();
         volume += volume_inc;
         last_poll_time = curr_time;
