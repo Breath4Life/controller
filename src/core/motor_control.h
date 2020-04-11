@@ -16,7 +16,7 @@
 #define MOTOR_USTEPS 1
 
 // Threshold used in the flow-check calibration [ml]
-#define VOLUME_CHECK_THRESHOLD 600
+#define VOLUME_CHECK_THRESHOLD 500
 
 typedef enum {
     motorInit,
@@ -27,6 +27,7 @@ typedef enum {
 } MotorState_t;
 
 typedef enum {
+    calibStart,
     calibDown,
     calibUp,
     calibPosEnd,

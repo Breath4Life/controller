@@ -20,6 +20,13 @@ void debug_print(const char *fmt, ...);
 void debug_print_FromISR(const char *fmt, ...);
 
 /**
+ * @fake_debug_print Do nothing with varargs
+ *
+ * Useful to enable debug with pre-processor flags
+ */
+void fake_debug_print(const char *, ...);
+
+/**
  * @LEDTask Blink a LED every second.
  *
  * @param pvParameters Set to NULL.
