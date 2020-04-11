@@ -44,6 +44,9 @@ ISR(PCINT0_vect) {
     uint8_t l_up = dio_read(DIO_PIN_LIM_SWITCH_UP_MONITORING);
     BaseType_t higherPriorityTaskWoken = pdFALSE;
     uint32_t current_time_irq = time_us();
+    if (l_up == lim_switch_up_lvl && l_down == lim_switch_down_lvl) {
+        return;
+    }
     if (current_time_irq - last_start_bouncing > threshold_time_irq) {
         if (l_down && !lim_switch_down_lvl) {
             xTaskNotifyFromISR(motorControlTaskHandle, MOTOR_NOTIF_LIM_DOWN, eSetBits, &higherPriorityTaskWoken);
