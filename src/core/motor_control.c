@@ -106,7 +106,9 @@ static const char *bstate_names[] = {
     "stopping",
     "reCalibUp",
     "reCalibUpWaitStop",
-    "reCalibHome"
+    "reCalibHome",
+    "expStopping",
+    "reCalibDown",
 };
 
 static const char *cstate_names[] = {
@@ -145,7 +147,7 @@ static void boundedWaitNotification(uint32_t admissible_notifications, uint32_t 
 static uint8_t sleepWaitNotif(TickType_t endOfWait, uint32_t *notif);
 static uint32_t startCycleEnd();
 static void startRecalib();
-static uint32_t unboundedWaitNotification(uint32_t admissible_notifications);
+static void unboundedWaitNotification(uint32_t admissible_notifications);
 static void move_and_wait(uint32_t targetPosition, uint32_t max_duration, uint32_t admissible_notifications);
 static void doExpiration();
 static uint8_t test_notif(uint32_t tested_notif);
@@ -321,7 +323,7 @@ static void startRecalib() {
     move_and_wait(0, f_home, MOTOR_NOTIF_CYCLE);
 }
 
-static uint32_t unboundedWaitNotification(uint32_t admissible_notifications) {
+static void unboundedWaitNotification(uint32_t admissible_notifications) {
     uint32_t notif_recv;
     xTaskNotifyWait(0x0,ALL_NOTIF_BITS,&notif_recv,portMAX_DELAY);
     // received notification
@@ -330,7 +332,7 @@ static uint32_t unboundedWaitNotification(uint32_t admissible_notifications) {
         genMotorError("invalid notif");
         MOTOR_DEBUG_PRINT("[MOTOR] Unexp notif %x\r\n", notif_recv);
     }
-    return notif_recv;
+    notif = notif_recv;
 }
 
 static void move_and_wait(uint32_t targetPosition, uint32_t max_freq, uint32_t admissible_notifications) {
@@ -370,7 +372,7 @@ void MotorControlTask(void *pvParameters)
                     notif = 0;
                 } else {
                     // NON BOUNDED wait for calibrating notification
-                    notif = unboundedWaitNotification(MOTOR_NOTIF_GLOBAL_STATE);
+                    unboundedWaitNotification(MOTOR_NOTIF_GLOBAL_STATE);
                 }
                 break;
 
@@ -515,124 +517,50 @@ void MotorControlTask(void *pvParameters)
                     MOTOR_DEBUG_PRINT("f_insp %u \r\n",f_insp);
                     MOTOR_DEBUG_PRINT("f_exp %u \r\n",f_exp);
                 } else {
-                    // Non bounded wait for notif 
-                    notif = unboundedWaitNotification(MOTOR_NOTIF_GLOBAL_STATE);
+                    // Non bounded wait for notif
+                    unboundedWaitNotification(MOTOR_NOTIF_GLOBAL_STATE);
                 }
                 break;
 
             case motorRunning:
-                switch (breathState) {
-                    case startNewCycle:
-                        compute_config();
-                        motor_enable();
-                        breathState = insp;
-                        targetPosition = homePosition + insp_pulses;
-                        MOTOR_DEBUG_PRINT("Ti pulses used %u \r\n",targetPosition);
-                        MOTOR_DEBUG_PRINT("=> target %u \r\n",targetPosition);
-                        MOTOR_DEBUG_PRINT("cur pos %u \r\n",motor_current_position());
-                        MOTOR_DEBUG_PRINT("home %u \r\n",homePosition);
-                        MOTOR_DEBUG_PRINT("to insp \r\n");
-                        move_and_wait(targetPosition, f_insp, MOTOR_NOTIF_CYCLE);
-                        break;
-
-                    case insp:
-                        if (notif & MOTOR_NOTIF_GLOBAL_STATE) {
-                            motorGlStCh("INSP");
-                        } else if (notif & MOTOR_NOTIF_OVER_PRESSURE) {
-                            motorUnimplementedCase("insp OP");
-                        } else if (notif & MOTOR_NOTIF_LIM_UP) {
-                            recalibrateFlag = 1;
-                            resumeBoundedWaitNotification();
-                        } else if (notif & MOTOR_NOTIF_LIM_DOWN) {
-                            motor_anticipated_stop();
-                            recalibrateFlag = 1;
-                            MOTOR_DEBUG_PRINT("recalibrate INSP asked \r\n");
-                            // TODO wait a bit... to respect Ti
-                            doExpiration();
-                        } else {
-                            // case MOTOR_NOTIF_MOVEMENT_FINISHED
+                if (test_notif(MOTOR_NOTIF_OVER_PRESSURE)) {
+                    motorUnimplementedCase("running & OP");
+                } else if (test_notif(MOTOR_NOTIF_GLOBAL_STATE)) {
+                    motorGlStCh("");
+                } else if (test_notif(MOTOR_NOTIF_MOVEMENT_FINISHED)) {
+                    switch (breathState) {
+                        case insp:
                             breathState = plateau;
                             targetPosition = homePosition + insp_pulses + plateau_pulses;
                             move_and_wait(targetPosition, f_plateau, MOTOR_NOTIF_CYCLE);
                             MOTOR_DEBUG_PRINT("[MOTOR] to plateau %lu %lu\r\n", plateau_pulses, f_plateau);
-                        }
-                        break;
-
-                    case plateau:
-                        if (notif & MOTOR_NOTIF_GLOBAL_STATE) {
-                            motorGlStCh("PLATEAU");
-                        } else if (notif & MOTOR_NOTIF_OVER_PRESSURE) {
-                            motorUnimplementedCase("plateau OP");
-                        } else if (notif & MOTOR_NOTIF_LIM_UP) {
-                            recalibrateFlag = 1;
-                            resumeBoundedWaitNotification();
-                        } else if (notif & MOTOR_NOTIF_LIM_DOWN) {
-                            motor_anticipated_stop();
-                            recalibrateFlag = 1;
-                            MOTOR_DEBUG_PRINT("recalibrate plateau asked \r\n");
-                            // TODO wait a bit... to respect Ti
+                            break;
+                        case plateau:
                             doExpiration();
-                        } else {
-                            // case MOTOR_NOTIF_MOVEMENT_FINISHED
-                            doExpiration();
-                        }
-                        break;
-
-                    case exp:
-                        MOTOR_DEBUG_PRINT("in EXP phase \r\n");
-                        if (notif & MOTOR_NOTIF_GLOBAL_STATE) {
-                            motorGlStCh("EXP");
-                        } else if (notif & MOTOR_NOTIF_OVER_PRESSURE) {
-                            motorUnimplementedCase("exp OP");
-                        } else if (notif & MOTOR_NOTIF_LIM_UP) {
-                            motor_anticipated_stop();
-                            recalibrateFlag = 1;
-                            startRecalib();
-                        } else if (notif & MOTOR_NOTIF_LIM_DOWN) {
-                            MOTOR_ERROR_PRINT("[MOTOR] LIM_DOWN while EXP\r\n");
-                            resumeBoundedWaitNotification();
-                        } else {
-                            // case MOTOR_NOTIF_MOVEMENT_FINISHED
+                            break;
+                        case exp:
                             if (recalibrateFlag) {
                                 startRecalib();
                             } else {
                                 MOTOR_DEBUG_PRINT("[MOTOR] to wait cycle end\r\n");
                                 notif = startCycleEnd();
                             }
-                        }
-			break;
-
-                    case reCalibUp:
-                        MOTOR_DEBUG_PRINT("in reCalibUp phase \r\n");
-                        if (notif & MOTOR_NOTIF_GLOBAL_STATE) {
-                            motorGlStCh("reCalibUp");
-                        } else if (notif & MOTOR_NOTIF_OVER_PRESSURE) {
-                            motorUnimplementedCase("reCalibUp OP");
-                        } else if (notif & MOTOR_NOTIF_LIM_UP) {
-                            // Stop motor
-                            motor_anticipated_stop();
-                            breathState = reCalibUpWaitStop;
-                            MOTOR_DEBUG_PRINT("[MOTOR] to reCalibUpWaitStop\r\n");
-                            boundedWaitNotification(MOTOR_NOTIF_CYCLE, MOTOR_NOTIF_LIM, pdMS_TO_TICKS(2*1000/f_home));
-                        } else if (notif & MOTOR_NOTIF_LIM_DOWN) {
-                            MOTOR_DEBUG_PRINT("[MOTOR] reCalibUp wait\r\n");
-                            resumeBoundedWaitNotification();
-                        } else if (notif & MOTOR_NOTIF_MOVEMENT_FINISHED) {
-                            // case MOTOR_NOTIF_MOVEMENT_FINISHED
-                            genMotorError("calib movement finished");
-                        } else {
-                            genMotorError("reCalibUp URCH");
-                        }
-                        break;
-
-                    case reCalibUpWaitStop:
-                        MOTOR_DEBUG_PRINT("[MOTOR] reCalibUpWaitStop\r\n");
-                        if (notif & MOTOR_NOTIF_OVER_PRESSURE) {
-                            motorUnimplementedCase("reCalibUpWaitStop & OP");
-                        } else if (notif & MOTOR_NOTIF_GLOBAL_STATE) {
-                            motorStChCalib("reCalibUpWaitStop");
-                        } else {
-                            // case MOTOR_NOTIF_MOVEMENT_FINISHED
+                            break;
+                        case expStopping:
+                            // Move a bit down to escape from limit switch
+                            breathState = reCalibDown;
+                            move_and_wait(motor_current_position()+steps_calib_end*MOTOR_USTEPS, f_home, MOTOR_NOTIF_CYCLE);
+                            break;
+                        case cycleEnd:
+                            MOTOR_ERROR_PRINT("[MOTOR] MF while cycleEnd\r\n");
+                            sleep_finished = sleepWaitNotif(cycleStartTime, &notif);
+                            break;
+                        case stopping:
+                                motor_disable();
+                                motorState = motorStopped;
+                                MOTOR_DEBUG_PRINT("[MOTOR] to motor stopped\r\n");
+                            break;
+                        case reCalibUpWaitStop:
                             // Compute actual position when notified
                             set_motor_current_position_value(MOTOR_UP_POSITION);
                             // Compute next position
@@ -640,83 +568,132 @@ void MotorControlTask(void *pvParameters)
                             breathState = reCalibHome;
                             MOTOR_DEBUG_PRINT("[MOTOR] to reCalibHome\r\n");
                             move_and_wait(targetPosition, f_exp, MOTOR_NOTIF_CYCLE);
-                        }
-
-                    case reCalibHome:
-                        MOTOR_DEBUG_PRINT("in reCalibHome phase \r\n");
-                        if (notif & MOTOR_NOTIF_GLOBAL_STATE) {
-                            motorGlStCh("reCalibUp");
-                        } else if (notif & MOTOR_NOTIF_OVER_PRESSURE) {
-                            motorUnimplementedCase("reCalibHome OP");
-                        } else if (notif & MOTOR_NOTIF_LIM_UP) {
-                            MOTOR_ERROR_PRINT("[MOTOR] UP while reCalibHome\r\n");
-                            resumeBoundedWaitNotification();
-                        } else if (notif & MOTOR_NOTIF_LIM_DOWN) {
-                            MOTOR_ERROR_PRINT("[MOTOR] DOWN while reCalibHome\r\n");
-                            resumeBoundedWaitNotification();
-                        } else {
-                            // case MOTOR_NOTIF_MOVEMENT_FINISHED
+                            break;
+                        case reCalibHome:
                             recalibrateFlag = 0;
                             notif = startCycleEnd();
-                        }
-                        break;
-
-                    case cycleEnd:
-                        if (notif & MOTOR_NOTIF_GLOBAL_STATE) {
-                            motorGlStCh("cycleEnd");
-                        } else if (notif & MOTOR_NOTIF_OVER_PRESSURE) {
-                            // Ignore this.
-                            MOTOR_ERROR_PRINT("[MOTOR] OP while cycleEnd\r\n");
-                            sleep_finished = sleepWaitNotif(cycleStartTime, &notif);
-                        } else if (notif & MOTOR_NOTIF_LIM) {
+                            break;
+                        case reCalibDown:
+                            startRecalib();
+                            break;
+                        case startNewCycle:
+                        case reCalibUp:
+                            genMotorError("URCH");
+                            break;
+                    }
+                } else if (test_notif(MOTOR_NOTIF_LIM_UP)) {
+                    switch (breathState) {
+                        case insp:
+                        case plateau:
+                            recalibrateFlag = 1;
+                            resumeBoundedWaitNotification();
+                            break;
+                        case exp:
+                            motor_anticipated_stop();
+                            breathState = expStopping;
+                            boundedWaitNotification(MOTOR_NOTIF_CYCLE, MOTOR_NOTIF_LIM, pdMS_TO_TICKS(2*1000/f_home));
+                            break;
+                        case expStopping:
+                            MOTOR_ERROR_PRINT("[MOTOR] UP while expStopping\r\n");
+                            resumeBoundedWaitNotification();
+                            break;
+                        case cycleEnd:
                             MOTOR_ERROR_PRINT("[MOTOR] LIM while cycleEnd\r\n");
                             sleep_finished = sleepWaitNotif(cycleStartTime, &notif);
-                        } else if (notif & MOTOR_NOTIF_MOVEMENT_FINISHED) {
-                            MOTOR_ERROR_PRINT("[MOTOR] MF while cycleEnd\r\n");
-                            sleep_finished = sleepWaitNotif(cycleStartTime, &notif);
-                        } else if (sleep_finished) {
-                            breathState = startNewCycle;
-                            MOTOR_DEBUG_PRINT("to Start new cycle \r\n");
-                        } else {
-                            // Unreachable
-                            genMotorError("cycleEnd URCH");
-                        }
-                        break;
-
-                    case stopping:
-                        // BOUNDED wait for end of move
-                        // TODO ensure each low-level motor move generates an
-                        // end of movement notif and that we always do a move
-                        // before coming into this state.
-                        if(motor_moving()){
-                            if (notif & MOTOR_NOTIF_GLOBAL_STATE) {
-                                motorUnimplementedCase("state change while stopping");
-                            } else if (notif & MOTOR_NOTIF_OVER_PRESSURE) {
-                                motorUnimplementedCase("stopping OP");
-                            } else if (notif & MOTOR_NOTIF_LIM_UP) {
-                                recalibrateFlag = 1;
-                                motor_anticipated_stop();
-                                motor_disable();
-                                motorState = motorStopped;
-                                MOTOR_ERROR_PRINT("[MOTOR] UP while stopping\r\n");
-                            } else if (notif & MOTOR_NOTIF_LIM_DOWN) {
-                                recalibrateFlag = 1;
-                                motor_anticipated_stop();
-                                motor_disable();
-                                motorState = motorStopped;
-                                MOTOR_ERROR_PRINT("[MOTOR] UP while stopping\r\n");
-                            } else {
-                                // case MOTOR_NOTIF_MOVEMENT_FINISHED
-                                motor_disable();
-                                motorState = motorStopped;
-                                MOTOR_DEBUG_PRINT("[MOTOR] to motor stopped\r\n");
-                            }
-                        } else {
+                            break;
+                        case stopping:
+                            recalibrateFlag = 1;
+                            motor_anticipated_stop();
                             motor_disable();
                             motorState = motorStopped;
-                            MOTOR_DEBUG_PRINT("[MOTOR] to motor stopped\r\n");
-                        }
-                        break;
+                            MOTOR_ERROR_PRINT("[MOTOR] UP while stopping\r\n");
+                            break;
+                        case reCalibUp:
+                            // Stop motor
+                            motor_anticipated_stop();
+                            breathState = reCalibUpWaitStop;
+                            MOTOR_DEBUG_PRINT("[MOTOR] to reCalibUpWaitStop\r\n");
+                            boundedWaitNotification(MOTOR_NOTIF_CYCLE, MOTOR_NOTIF_LIM, pdMS_TO_TICKS(2*1000/f_home));
+                            break;
+                        case reCalibHome:
+                            MOTOR_ERROR_PRINT("[MOTOR] UP while reCalibHome\r\n");
+                            resumeBoundedWaitNotification();
+                            break;
+                        case startNewCycle:
+                        case reCalibUpWaitStop:
+                        case reCalibDown:
+                            genMotorError("URCH");
+                            break;
+                    }
+                } else if (test_notif(MOTOR_NOTIF_LIM_DOWN)) {
+                    switch (breathState) {
+                        case insp:
+                        case plateau:
+                            motor_anticipated_stop();
+                            recalibrateFlag = 1;
+                            MOTOR_DEBUG_PRINT("recalibrate INSP asked \r\n");
+                            // TODO wait a bit... to respect Ti
+                            doExpiration();
+                            break;
+                        case exp:
+                            MOTOR_ERROR_PRINT("[MOTOR] LIM_DOWN while EXP\r\n");
+                            resumeBoundedWaitNotification();
+                            break;
+                        case expStopping:
+                            MOTOR_ERROR_PRINT("[MOTOR] UP while expStopping\r\n");
+                            resumeBoundedWaitNotification();
+                            break;
+                        case cycleEnd:
+                            MOTOR_ERROR_PRINT("[MOTOR] LIM while cycleEnd\r\n");
+                            sleep_finished = sleepWaitNotif(cycleStartTime, &notif);
+                            break;
+                        case stopping:
+                                recalibrateFlag = 1;
+                                motor_anticipated_stop();
+                                motor_disable();
+                                motorState = motorStopped;
+                                MOTOR_ERROR_PRINT("[MOTOR] UP while stopping\r\n");
+                            break;
+                        case reCalibUp:
+                            MOTOR_DEBUG_PRINT("[MOTOR] reCalibUp wait\r\n");
+                            resumeBoundedWaitNotification();
+                            break;
+                        case reCalibHome:
+                            MOTOR_ERROR_PRINT("[MOTOR] DOWN while reCalibHome\r\n");
+                            resumeBoundedWaitNotification();
+                            break;
+                        case startNewCycle:
+                        case reCalibUpWaitStop:
+                        case reCalibDown:
+                            genMotorError("URCH");
+                            break;
+                    }
+                } else {
+                    switch (breathState) {
+                        case cycleEnd:
+                            if (sleep_finished) {
+                                breathState = startNewCycle;
+                                MOTOR_DEBUG_PRINT("to Start new cycle \r\n");
+                            } else {
+                                // Unreachable
+                                genMotorError("cycleEnd URCH");
+                            }
+                            break;
+                        case startNewCycle:
+                            compute_config();
+                            motor_enable();
+                            breathState = insp;
+                            targetPosition = homePosition + insp_pulses;
+                            MOTOR_DEBUG_PRINT("Ti pulses used %u \r\n",targetPosition);
+                            MOTOR_DEBUG_PRINT("=> target %u \r\n",targetPosition);
+                            MOTOR_DEBUG_PRINT("cur pos %u \r\n",motor_current_position());
+                            MOTOR_DEBUG_PRINT("home %u \r\n",homePosition);
+                            MOTOR_DEBUG_PRINT("to insp \r\n");
+                            move_and_wait(targetPosition, f_insp, MOTOR_NOTIF_CYCLE);
+                            break;
+                        default:
+                            genMotorError("URCH");
+                    }
                 }
                 break;
 
