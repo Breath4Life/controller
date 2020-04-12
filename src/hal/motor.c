@@ -634,9 +634,14 @@ void motor_anticipated_stop(){
     debug_print("ANT STATES: %lu %lu \r\n",motor_position_abs,motor_position_abs + get_cnt5());
 #endif
     cli();
-    disable_cnt5_irq();
-    stop_pwm_step(1);
-    sei();
+    if (motor_inmotion) {
+        disable_cnt5_irq();
+        stop_pwm_step(1);
+        sei();
+    } else {
+        sei();
+        xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_MOVEMENT_FINISHED, eSetBits);
+    }
 #if DEBUG_MOTOR
     debug_print("motor ANTICIPATED STOP \r\n");
 #endif
