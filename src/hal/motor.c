@@ -166,18 +166,17 @@ static void irq_step_count_clbk()
 {
 #if MOTOR_DBG
     uint32_t i;
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("In IRQ callback.\r\n");
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("============\r\n");
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("motor_position_rel:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", motor_position_rel);
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("motor_target_position_rel:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", motor_target_position_rel);
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("motor_target_pwm_freq:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", motor_target_pwm_freq);
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("motor_increment_pwm_freq:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", motor_increment_pwm_freq);
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("motor_current_pwm_freq:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", motor_current_pwm_freq);
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("motor_step_cnt_incr_curr:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", motor_step_cnt_incr_curr);
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("motor_step_cnt_accel_incr_base:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", motor_step_cnt_accel_incr_base);
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("motor_step_cnt_accel_incr_sum:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", motor_step_cnt_accel_incr_sum);
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("motor_step_cnt_accel_incr_last:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", motor_step_cnt_accel_incr_last);
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("============\r\n");
+    debug_print_FromISR("In IRQ callback.\r\n");
+    debug_print_FromISR("motor_position_rel: %i\r\n", motor_position_rel);
+    debug_print_FromISR("motor_target_position_rel: %i\r\n", motor_target_position_rel);
+    debug_print_FromISR("motor_target_pwm_freq: %i\r\n", motor_target_pwm_freq);
+    debug_print_FromISR("motor_increment_pwm_freq: %i\r\n", motor_increment_pwm_freq);
+    debug_print_FromISR("motor_current_pwm_freq: %i\r\n", motor_current_pwm_freq);
+    debug_print_FromISR("motor_step_cnt_incr_curr: %i\r\n", motor_step_cnt_incr_curr);
+    debug_print_FromISR("motor_step_cnt_accel_incr_base: %i\r\n", motor_step_cnt_accel_incr_base);
+    debug_print_FromISR("motor_step_cnt_accel_incr_sum: %i\r\n", motor_step_cnt_accel_incr_sum);
+    debug_print_FromISR("motor_step_cnt_accel_incr_last: %i\r\n", motor_step_cnt_accel_incr_last);
+    debug_print_FromISR("============\r\n");
 #endif // MOTOR_DBG
   int32_t remaining_distance;
   int32_t target_position_rel = motor_target_position_rel;
@@ -190,11 +189,11 @@ static void irq_step_count_clbk()
   motor_position_rel = position_rel;
 
 #if MOTOR_DBG
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("remaining_distance:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", remaining_distance);
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("target_position_rel:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", target_position_rel);
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("position_rel:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", position_rel);
-    for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR("motor_position_rel:"); for (i=0; i<LOOP_DUM_LEN; i++) ; debug_print_FromISR(" %i\r\n", motor_position_rel);
-  debug_print_FromISR("============\r\n");
+    debug_print_FromISR("remaining_distance: %i\r\n", remaining_distance);
+    debug_print_FromISR("target_position_rel: %i\r\n", target_position_rel);
+    debug_print_FromISR("position_rel: %i\r\n", position_rel);
+    debug_print_FromISR("motor_position_rel: %i\r\n", motor_position_rel);
+    debug_print_FromISR("============\r\n");
 #endif // MOTOR_DBG
 
   // CASE: movement finished
@@ -203,6 +202,7 @@ static void irq_step_count_clbk()
 #if MOTOR_DBG
     debug_print_FromISR("Movement finished.\r\n");
 #endif // MOTOR_DBG
+    disable_cnt5_irq();
     stop_pwm_step(1);
 #if MOTOR_DBG
     debug_print_FromISR("Motor stopped.\r\n");
@@ -416,6 +416,12 @@ ISR(MOTORCTRL_PWM_OVF_IRQ)
   TIMSK3 &= ~ MOTORCTRL_PWM_OVF_IRQ_CFG;
   // Report that motor is not in motion anymore
   motor_inmotion = 0;
+  if (motor_direction == MOTORCTRL_DIR_FORWARD) {
+      motor_position_abs += get_cnt5();
+  } else {
+      motor_position_abs -= get_cnt5();
+  }
+  reset_cnt5();
   BaseType_t higherPriorityTaskWoken;
   xTaskNotifyFromISR(motorControlTaskHandle,
           MOTOR_NOTIF_MOVEMENT_FINISHED,
@@ -601,13 +607,14 @@ void set_motor_goto_position_accel_exec(
         motor_target_pwm_freq = target_speed;
       }
       cli();
+      enable_cnt5_irq();
       set_freq_pwm_step(selected_speed);
       sei();
       motor_accel_enbl = accel_enbl;
     }
     else
     {
-        //motor_disable();
+        xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_MOVEMENT_FINISHED, eSetBits);
     }
   }
 }
@@ -621,29 +628,15 @@ void set_motor_current_position_value(long new_abs_position){
 
 // Used when the motor need to be stopped before it ends
 // its movement
-// TODO: dirty, clean
-// FIXME currently likely source of drift
+// FIXME currently likely source of drift (stopping from fast speed immediately followed by disabling the motor)
 void motor_anticipated_stop(){
 #if DEBUG_MOTOR
     debug_print("ANT STATES: %lu %lu \r\n",motor_position_abs,motor_position_abs + get_cnt5());
 #endif
-
-    // stop PWM stepper
-    stop_pwm_step(0);
-    
-    // set stop state
-    motor_inmotion = 0;
-
-    // Update states
-    if (motor_direction == MOTORCTRL_DIR_FORWARD)
-    {
-      motor_position_abs += get_cnt5();
-    }
-    else
-    {
-      motor_position_abs -= get_cnt5();
-    }
-
+    cli();
+    disable_cnt5_irq();
+    stop_pwm_step(1);
+    sei();
 #if DEBUG_MOTOR
     debug_print("motor ANTICIPATED STOP \r\n");
 #endif

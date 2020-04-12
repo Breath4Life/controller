@@ -25,7 +25,9 @@ typedef enum {
 typedef enum {
     calibStart,
     calibDown,
+    calibDownWaitStop,
     calibUp,
+    calibUpWaitStop,
     calibPosEnd,
     calibVol,
     calibVolEnd
@@ -39,6 +41,7 @@ typedef enum {
     startNewCycle,
     stopping,
     reCalibUp,
+    reCalibUpWaitStop,
     reCalibHome
 } BreathState_t;
 
