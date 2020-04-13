@@ -3,8 +3,11 @@
 
 #include <stdint.h>
 
-// in standard ml/s
-extern volatile int32_t flow;
+// Reading of the sfm3300 flow sensor, offset removed
+extern volatile int16_t reading_sfm3300;
+
+// Scale in [sensor reading unit]/(sl/min), given in datasheet
+#define SCALE_SFM3000 120
 
 // Initialize the sensor
 // blocking=1: block until first valid measurement is done.

@@ -9,21 +9,17 @@
 #include "FreeRTOS.h"
 
 #define DBG_SFM3000 0
+#define SEND_READING_TO_SERIAL 0
 
-// in standard ml/min
-volatile int32_t flow;
+// Reading of the sfm3300 flow sensor, offset removed
+volatile int16_t reading_sfm3300 = 0;
 
 static const uint8_t i2c_address = 64;
 
 // Offset flow, given in datasheet
-static const int32_t offset_sfm3000 = 32768;
-
-// Scale factor for Air & N2 is 140.0, O2 is 142.8
-static const int32_t scale_sfm3000 = 120;
-
+static const int32_t offset_sfm3000 = 32768L;
 
 static uint8_t crc8(const uint8_t data, uint8_t crc);
-static int32_t reading2flow(uint16_t reading);
 
 static enum {
     read_from_start,
@@ -49,12 +45,6 @@ void sfm3000_init(uint8_t blocking)
     } else {
         sfm3000_poll();
     }
-}
-
-static int32_t reading2flow(uint16_t reading)
-{
-    int32_t flow = (((int32_t) reading) - offset_sfm3000) * 1000 / scale_sfm3000; // sml/min
-    return flow;
 }
 
 uint8_t sfm3000_poll()
@@ -84,10 +74,15 @@ uint8_t sfm3000_poll()
                 //return 2; // TODO the CRC computation seems broken...
             }
             a = (a << 8) | b; // combine the two received bytes to a 16bit integer value
+
+            // Remove sfm3300 offset
+            reading_sfm3300 = ((int32_t) a) - offset_sfm3000;
+#if SEND_READING_TO_SERIAL
+            debug_print("%i:", reading_sfm3300);
+#endif
 #if DBG_SFM3000
             debug_print("updated reading\r\n");
 #endif
-            flow = reading2flow(a);
             return 0;
         }
     }
