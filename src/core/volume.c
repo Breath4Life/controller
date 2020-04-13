@@ -51,13 +51,16 @@ uint8_t poll_volume() {
         int64_t scale = SCALE_SFM3000 * 60;
         int32_t volume_inc = (((int64_t) reading_sfm3300) * ((int64_t) t_delta)) / scale;
 
+#if SEND_TO_SERIAL
+        // Send last_poll_time in µs
         debug_print("%lu:", last_poll_time);
+#endif
         cli();
         volume += volume_inc;
         last_poll_time = curr_time;
         sei();
 #if SEND_TO_SERIAL
-        // Send curr_time in µs, flow in L/min, volume in mL
+        // Send curr_time and t_delta in µs, volume and volume_inc in µl
         debug_print("%lu:%lu:%li:%li\r\n", curr_time, t_delta, volume, volume_inc);
 #endif
         return 0;

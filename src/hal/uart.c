@@ -31,26 +31,10 @@ void uart_init()
 
 void uart_transmit(char *data)
 {
-    /*
-    while (*data != '\0') {
-          while(!(UCSR0A & (1<<UDRE0)));
-          UDR0 = *data;
-          data++;
-    }
-    return;
-    */
-
     while (*data != '\0') {
         ringbuf_put(&uart_buf, *data);
         data++;
     }
-    /*
-    uint8_t c;
-    while (!ringbuf_empty(&uart_buf)) {
-          while(!(UCSR0A & (1<<UDRE0)));
-        UDR0 = ringbuf_get(&uart_buf);
-    }
-    */
     if (!transmitting) {
         UCSR0B |= ((1<<TXEN0)|(1<<UDRIE0));
         transmitting = 1;
