@@ -149,7 +149,7 @@ static const char *notif_names[] = {
 // 0 replaces the whole task by an empty loop for testing purposes
 #define MOTOR_ACTIVE 1
 
-static void nenMotorError(char *msg);
+static void genMotorError(char *msg);
 static void motorStChCalib(char *state);
 static void motorUnimplementedCase(char *state);
 static bool bwaitTimeoutExpired();
@@ -228,14 +228,13 @@ void init_motor() {
     cycleCount = 0;
 }
 
-// TODO re-activate and fix
 static void genMotorError(char *msg) {
     MOTOR_DEBUG_PRINT("[MOTOR] gErr %s %i/%i (%i)\r\n", msg, motorState, breathState, calibState);
-    //motorErrorState = errorStopping;
-    motor_anticipated_stop();
-    motor_disable();
+    motorErrorState = errorStopping;
+    //motor_anticipated_stop();
+    //motor_disable();
     motorState = motorError;
-    //stop_and_wait();
+    stop_and_wait();
 }
 
 static void motorStChCalib(char *state) {
@@ -340,7 +339,7 @@ static void move_and_wait(uint32_t targetPosition, uint32_t max_freq) {
     // max speed: 1200 steps/s. Acceleration: 200 steps/s/10ms
     // -> max 3*120 = 360 ms deceleration + acceleration + deceleration (we take 400 to have a margin)
     // total time is thus bounded by 360 ms + 1000*abs(currentPosition-targetPosition) / (max_freq)
-    if (motor_inmotion) {
+    if (motor_moving()) {
         genMotorError("INMOTION");
     } else {
         uint32_t max_duration = 400 + (1000*ABS(((int32_t) targetPosition) - ((int32_t) motor_current_position())))/max_freq;
@@ -747,20 +746,21 @@ void MotorControlTask(void *pvParameters)
                 break;
 
             case motorError:
-                vTaskDelay(pdMS_TO_TICKS(10000));
-                /*
+                //vTaskDelay(pdMS_TO_TICKS(10000));
                 switch (motorErrorState) {
                     case errorStopping:
-                        motorErrorState = motorStopped;
-                        motor_disable();
-                        xTaskNotify(mainTaskHandle, NOTIF_MOTOR_ERROR, eSetBits);
+                        if (test_notif(MOTOR_NOTIF_MOVEMENT_FINISHED)) {
+                            motorErrorState = errorStopped;
+                            motor_disable();
+                            xTaskNotify(mainTaskHandle, NOTIF_MOTOR_ERROR, eSetBits);
+                        } else {
+                            resumeBoundedWaitNotification();
+                        }
                         break;
                     case errorStopped:
-                        notif = 0;
                         unboundedWaitNotification(MOTOR_NOTIF_CYCLE);
                         break;
                 }
-                */
         }
     }
 }
