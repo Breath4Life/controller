@@ -13,7 +13,7 @@ uint32_t last_poll_time;
 
 #define DEBUG_FLOW 0
 #define SEND_FLOW_TO_SERIAL 0
-#define SEND_VOLUME_TO_SERIAL 1
+#define SEND_VOLUME_TO_SERIAL 0
 
 void init_volume() {
 #if DEBUG_FLOW

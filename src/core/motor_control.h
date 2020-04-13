@@ -34,23 +34,43 @@ typedef enum {
 } CalibState_t;
 
 typedef enum {
+    // inspiration
     insp,
+    // plateau
     plateau,
+    // expiration
     expiration,
+    // resting before inspiration
     cycleEnd,
+    // set parameters just before inspiration
     startNewCycle,
+    // moving to rest position after a stop command
     stopping,
+    // moving up for re-calibration
     reCalibUp,
+    // touched the upper limit switch while reCalibUp, now waiting for motor to stop
     reCalibUpWaitStop,
+    // reCalibration: after touching the limit switch up, moving to rest position
     reCalibHome,
+    // after touching the down limit swith during expiration, new waiting for the motor to stop
     expStopping,
+    // for recalibration, moving a little bit down to distance from the up limit switch
     reCalibDown,
+    // got a stop command, waiting for the motor to stop before going in the stopping state
     preStopping,
+    // touched limit switch down while insp, stopping before expiration
+    inspStopping,
 } BreathState_t;
+
+typedef enum {
+    errorStopping,
+    errorStopped,
+} MotorErrorState_t;
 
 extern volatile MotorState_t motorState;
 extern volatile CalibState_t calibState;
 extern volatile BreathState_t breathState;
+extern volatile MotorErrorState_t motorErrorState;
 
 void init_motor();
 

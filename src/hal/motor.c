@@ -20,6 +20,7 @@
 #define DEBUG_MOTOR 0
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <limits.h>
 
 #include <avr/interrupt.h>
@@ -66,6 +67,8 @@ static volatile uint16_t motor_step_cnt_accel_incr_base = 0;
 static volatile uint16_t motor_step_cnt_accel_incr_sum = 0;
 static volatile uint16_t motor_step_cnt_accel_incr_last = 0;
 static volatile uint16_t motor_pwm_freq_accel_last = 0;
+
+static volatile bool motor_stopping = false;
 
 static void setup_pwm_step();
 static void disable_cnt5_irq();
@@ -416,6 +419,7 @@ ISR(MOTORCTRL_PWM_OVF_IRQ)
   TIMSK3 &= ~ MOTORCTRL_PWM_OVF_IRQ_CFG;
   // Report that motor is not in motion anymore
   motor_inmotion = 0;
+  motor_stopping = false;
   if (motor_direction == MOTORCTRL_DIR_FORWARD) {
       motor_position_abs += get_cnt5();
   } else {
@@ -634,13 +638,16 @@ void motor_anticipated_stop(){
     debug_print("ANT STATES: %lu %lu \r\n",motor_position_abs,motor_position_abs + get_cnt5());
 #endif
     cli();
-    if (motor_inmotion) {
-        disable_cnt5_irq();
-        stop_pwm_step(1);
-        sei();
-    } else {
-        sei();
-        xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_MOVEMENT_FINISHED, eSetBits);
+    if (!motor_stopping) {
+        if (motor_inmotion) {
+            motor_stopping = true;
+            disable_cnt5_irq();
+            stop_pwm_step(1);
+            sei();
+        } else {
+            sei();
+            xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_MOVEMENT_FINISHED, eSetBits);
+        }
     }
 #if DEBUG_MOTOR
     debug_print("motor ANTICIPATED STOP \r\n");
