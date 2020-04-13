@@ -12,10 +12,8 @@ volatile int32_t volume;
 uint32_t last_poll_time;
 
 #define DEBUG_FLOW 0
-
-#if DEBUG_FLOW
-uint32_t i = 0;
-#endif
+#define SEND_FLOW_TO_SERIAL 0
+#define SEND_VOLUME_TO_SERIAL 1
 
 void init_volume() {
 #if DEBUG_FLOW
@@ -27,9 +25,6 @@ void init_volume() {
 }
 
 uint8_t poll_volume() {
-#if DEBUG_FLOW
-    //debug_print("[FLOW] Polled.\r\n");
-#endif
     if (sfm3000_poll() == 0) {
         uint32_t curr_time = time_us();
         // TODO divisions by powers of 2 ideally...
@@ -41,20 +36,13 @@ uint8_t poll_volume() {
         volume += volume_inc;
         last_poll_time = curr_time;
         sei();
-#if DEBUG_FLOW
-        if (i == 50) {
-            debug_print("[FLOW] Flow: %li.\r\n", flow);
-            debug_print("[FLOW] Vol: %li.\r\n", volume);
-            i = 0;
-        } else {
-            i++;
-        }
+#if SEND_FLOW_TO_SERIAL
+        debug_print("%li:%li\n", curr_time/1000, -flow/1000);
+#elif SEND_VOLUME_TO_SERIAL
+        debug_print("%li:%li\n", curr_time/1000, volume);
 #endif
         return 0;
     } else {
-#if DEBUG_FLOW
-        //debug_print("[FLOW] Not ready.\r\n");
-#endif
         return 1;
     }
 }
