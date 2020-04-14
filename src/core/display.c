@@ -166,8 +166,10 @@ char param_buffer[17];
 static void disp_param() {
     if (extra_param == 0) {
         sprintf(param_buffer, "%2u0 %2u I:E = 1:%1u", tidal_vol, bpm, ie);
-    } else {
+    } else if (extra_param == 1) {
         sprintf(param_buffer, "%2u0 %2u Pmax = %2u", tidal_vol, bpm, p_max);
+    } else if (extra_param == 2) {
+        sprintf(param_buffer, "%2u0 %2u PEEP = %2u", tidal_vol, bpm, peep);
     }
     lcd_write_string(param_buffer,2,1,NO_CR_LF);
 }

@@ -28,6 +28,8 @@
 #define MIN_PMAX 30
 #define INC_PMAX 1
 
+#define N_EXTRA 3
+
 #define ALARM_AUTO_UNMUTE_SEC 120 * 1000L
 
 // Alarm notification values

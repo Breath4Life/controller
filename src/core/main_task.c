@@ -244,28 +244,34 @@ void MainTask(void *pvParameters)
                 updated_setting = 1;
             }
             if (BUTTON_PRESSED(buttons_pressed, button_right)) {
-                extra_param = (extra_param + 1) % 2;
+                extra_param = (extra_param + 1) % N_EXTRA;
                 updated_setting = 1;
             }
             if (BUTTON_PRESSED(buttons_pressed, button_left)) {
-                extra_param = (extra_param - 1) % 2;
+                extra_param = (extra_param - 1) % N_EXTRA;
                 updated_setting = 1;
             }
             if (BUTTON_PRESSED(buttons_pressed, button_up)) {
-                if(extra_param == 0) {
+                if (extra_param == 0) {
                     ie = MIN(MAX_IE, ie + INC_IE);
-                } else {
+                    updated_setting = 1;
+                } else if (extra_param == 1) {
                     p_max = MIN(MAX_PMAX, p_max + INC_PMAX);
+                    updated_setting = 1;
+                } else if (extra_param == 2) {
+                    // PEEP, not settable
                 }
-                updated_setting = 1;
             }
             if (BUTTON_PRESSED(buttons_pressed, button_down)) {
-                if(extra_param == 0) {
+                if (extra_param == 0) {
                     ie = MAX(MIN_IE, ie - INC_IE);
-                } else {
+                    updated_setting = 1;
+                } else if (extra_param == 1) {
                     p_max = MAX(MIN_PMAX, p_max - INC_PMAX);
+                    updated_setting = 1;
+                } else if (extra_param == 2) {
+                    // PEEP, not settable
                 }
-                updated_setting = 1;
              }
 
             if (updated_setting) {

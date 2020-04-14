@@ -220,4 +220,5 @@ void measure_p_plateau() {
 void measure_peep() {
     peep = p;
     DEBUG_PRINT("[P-SENS] peep = %i.\r\n", peep);
+    xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PARAM, eSetBits);
 }
