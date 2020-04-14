@@ -95,6 +95,7 @@ static uint32_t notif = 0;
 static TimeOut_t timeOutBoundedWait;
 static TickType_t boundedWaitTime;
 static bool waitTimeoutAllowed;
+static int32_t cycle_volume;
 
 static uint32_t cycleCount;
 
@@ -165,8 +166,18 @@ static uint8_t test_notif(uint32_t tested_notif);
 static uint8_t need_recalibration();
 
 // TODO something real
-uint32_t vol2steps(uint8_t  tidal_vol){
-    return 10*tidal_vol;
+uint32_t vol2steps(uint8_t tidal_vol) {
+    MOTOR_DEBUG_PRINT("[MTR] v2st cycle ml: %li       ", cycle_volume/1000);
+    MOTOR_DEBUG_PRINT("tidal_vol: %u ", (int16_t) tidal_vol);
+    MOTOR_DEBUG_PRINT("n_steps: %lu\r\n", n_steps);
+    if (cycle_volume == 0) {
+        return 10*tidal_vol;
+    } else {
+        int32_t error = (((int32_t) tidal_vol)*10*1000L) - cycle_volume;
+        // gain of 0.5 step per ml
+        return n_steps + error/2000;
+        return 10*tidal_vol;
+    }
 }
 
 void compute_config() {
@@ -316,7 +327,6 @@ static void startCycleEnd() {
     boundedWaitNotification(wait_time, true);
 }
 
-
 static void startRecalib() {
     breathState = reCalibUp;
     MOTOR_DEBUG_PRINT("[MOTOR] reCalibUp pos %u\r\n", motor_current_position());
@@ -359,6 +369,9 @@ static void stop_and_wait() {
 
 static void doExpiration() {
     MOTOR_DEBUG_PRINT("[MOTOR] doExpiration\r\n");
+    // TODO do not base PID on volume when there is an
+    // error... (aka recalibreFlag is set).
+    cycle_volume = get_volume();
     breathState = expiration;
     targetPosition = homePosition;
     return move_and_wait(targetPosition, f_exp);
@@ -582,6 +595,7 @@ void MotorControlTask(void *pvParameters)
                             doExpiration();
                             break;
                         case expiration:
+                            MOTOR_DEBUG_PRINT("[MOTOR] finished EXP\r\n");
                             if (need_recalibration()) {
                                 startRecalib();
                             } else {
@@ -730,6 +744,7 @@ void MotorControlTask(void *pvParameters)
                         case startNewCycle:
                             compute_config();
                             motor_enable();
+                            reset_volume();
                             breathState = insp;
                             targetPosition = homePosition + insp_pulses;
                             MOTOR_DEBUG_PRINT("Ti pulses used %u \r\n",targetPosition);
@@ -750,6 +765,7 @@ void MotorControlTask(void *pvParameters)
                 switch (motorErrorState) {
                     case errorStopping:
                         if (test_notif(MOTOR_NOTIF_MOVEMENT_FINISHED)) {
+                            MOTOR_DEBUG_PRINT("[MOTOR] Finished stopping\r\n");
                             motorErrorState = errorStopped;
                             motor_disable();
                             xTaskNotify(mainTaskHandle, NOTIF_MOTOR_ERROR, eSetBits);

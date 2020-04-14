@@ -11,7 +11,7 @@ volatile int32_t volume;
 // Last poll time
 uint32_t last_poll_time;
 
-#define DEBUG_FLOW 0
+#define DEBUG_FLOW 1
 #define SEND_TO_SERIAL 0
 
 void init_volume() {
@@ -78,4 +78,14 @@ void reset_volume() {
     volume = 0;
     last_poll_time = curr_time;
     sei();
+}
+
+int32_t get_volume() {
+#if DEBUG_FLOW
+    debug_print("[FLOW] Get volume: %li.\r\n", volume);
+#endif
+    cli();
+    int32_t res = volume;
+    sei();
+    return res;
 }

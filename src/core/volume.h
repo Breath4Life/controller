@@ -4,7 +4,10 @@
 #include <stdint.h>
 
 
-// Total volume in standard ml
+/**
+ * @volume Current inspired volume in micro-liters
+ * access this only with interrupts disabled
+ */
 extern volatile int32_t volume;
 
 // Instantaneous flow in standard ml/s
@@ -17,5 +20,6 @@ uint8_t poll_volume();
 
 void reset_volume();
 
+int32_t get_volume();
 
 #endif // VOLUME_H_
