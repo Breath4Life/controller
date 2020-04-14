@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdbool.h>
 #include <avr/interrupt.h>
 #include "core/volume.h"
 #include "core/debug.h"
@@ -8,8 +9,11 @@
 // Total volume in standard µl
 volatile int32_t volume;
 
+// Has there been an error since the last reset ?
+static volatile bool error;
+
 // Last poll time
-uint32_t last_poll_time;
+static volatile uint32_t last_poll_time;
 
 #define DEBUG_FLOW 1
 #define SEND_TO_SERIAL 0
@@ -19,8 +23,7 @@ void init_volume() {
     debug_print("[FLOW] Init.\r\n");
 #endif
     sfm3000_init(1);
-    volume = 0;
-    last_poll_time = time_us();
+    reset_volume();
 }
 
 /*
@@ -45,27 +48,35 @@ void init_volume() {
  */
 
 uint8_t poll_volume() {
-    if (sfm3000_poll() == 0) {
-        uint32_t curr_time = time_us();
-        uint32_t t_delta = curr_time - last_poll_time;
-        int64_t scale = SCALE_SFM3000 * 60;
-        int32_t volume_inc = (((int64_t) reading_sfm3300) * ((int64_t) t_delta)) / scale;
+    switch (sfm3000_poll()) {
+        case 0: {
+                    uint32_t curr_time = time_us();
+                    uint32_t t_delta = curr_time - last_poll_time;
+                    int64_t scale = SCALE_SFM3000 * 60;
+                    int32_t volume_inc = (((int64_t) reading_sfm3300) * ((int64_t) t_delta)) / scale;
 
 #if SEND_TO_SERIAL
-        // Send last_poll_time in µs
-        debug_print("%lu:", last_poll_time);
+                    // Send last_poll_time in µs
+                    debug_print("%lu:", last_poll_time);
 #endif
-        cli();
-        volume += volume_inc;
-        last_poll_time = curr_time;
-        sei();
+                    cli();
+                    volume += volume_inc;
+                    last_poll_time = curr_time;
+                    sei();
 #if SEND_TO_SERIAL
-        // Send curr_time and t_delta in µs, volume and volume_inc in µl
-        debug_print("%lu:%lu:%li:%li\r\n", curr_time, t_delta, volume, volume_inc);
+                    // Send curr_time and t_delta in µs, volume and volume_inc in µl
+                    debug_print("%lu:%lu:%li:%li\r\n", curr_time, t_delta, volume, volume_inc);
 #endif
-        return 0;
-    } else {
-        return 1;
+                    return 0;
+                }
+        case 1:
+            return 1;
+        default:
+#if DEBUG_FLOW
+            debug_print("[FLOW] Error.\r\n");
+#endif
+            error = true;
+            return 2;
     }
 }
 
@@ -77,15 +88,22 @@ void reset_volume() {
     cli();
     volume = 0;
     last_poll_time = curr_time;
+    error = false;
     sei();
 }
 
-int32_t get_volume() {
+uint8_t get_volume(int32_t *vol) {
 #if DEBUG_FLOW
-    debug_print("[FLOW] Get volume: %li.\r\n", volume);
+    debug_print("[FLOW] Get volume: %i %li.\r\n", error, volume);
 #endif
     cli();
-    int32_t res = volume;
+    bool tmp_err = error;
+    int32_t tmp_vol = volume;
     sei();
-    return res;
+    if (tmp_err) {
+        return 1;
+    } else {
+        *vol = tmp_vol;
+        return 0;
+    }
 }

@@ -371,7 +371,12 @@ static void doExpiration() {
     MOTOR_DEBUG_PRINT("[MOTOR] doExpiration\r\n");
     // TODO do not base PID on volume when there is an
     // error... (aka recalibreFlag is set).
-    cycle_volume = get_volume();
+    if (get_volume(&cycle_volume) != 0) {
+        MOTOR_DEBUG_PRINT("[MOTOR] No valid volume\r\n");
+        cycle_volume = 0;
+    } else {
+        MOTOR_DEBUG_PRINT("[MOTOR] Valid volume\r\n");
+    }
     breathState = expiration;
     targetPosition = homePosition;
     return move_and_wait(targetPosition, f_exp);
@@ -455,7 +460,10 @@ void MotorControlTask(void *pvParameters)
                             break;
 
                         case calibVol:
-                            if (MOCK_VOLUME_SENSOR || volume > VOLUME_CHECK_THRESHOLD) {
+                            if (MOCK_VOLUME_SENSOR ||
+                                    (get_volume(&cycle_volume) == 0 &&
+                                     cycle_volume > VOLUME_CHECK_THRESHOLD)) {
+                                cycle_volume = 0;
                                 // Sufficient volume insufflated.
                                 calibState = calibVolEnd;
                                 MOTOR_DEBUG_PRINT("[MOTOR] Flow check: OK\r\n");

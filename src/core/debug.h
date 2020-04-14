@@ -47,9 +47,3 @@ void ReadIOTask(void *pvParameters);
  */
 void ReadAnalogTask(void *pvParameters);
 
-/**
- * @SFM3000Task Test SFM3000 (with I2C communication for testing purpose)
- *
- * @param pvParameters Set to NULL.
- */
-void SFM3000Task(void *pvParameters);

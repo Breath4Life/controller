@@ -46,24 +46,3 @@ void fake_debug_print(const char *_fmt, ...)
 {
 }
 
-void SFM3000Task(void *pvParameters)
-{
-    init_volume();
-
-    vTaskDelay(100 / portTICK_PERIOD_MS);
-
-
-    while (1)
-    {
-
-        TickType_t xLastWakeTime;
-        const TickType_t xFrequency = pdMS_TO_TICKS(200); // which is around 38 ms on scope
-
-        poll_volume();
-        debug_print("vol: %lu\r\n", volume);
-
-        //debug_print("current time [us] %lu\r\n", time_us());
-
-        vTaskDelayUntil( &xLastWakeTime, xFrequency );
-    }
-}

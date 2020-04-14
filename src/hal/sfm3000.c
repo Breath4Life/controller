@@ -63,7 +63,7 @@ uint8_t sfm3000_poll()
             uint8_t b = i2c_read(); // second received byte stored here
             uint8_t crc = i2c_read(); // crc value stored here
 
-            uint8_t mycrc = 0xFF; // initialize crc variable
+            uint8_t mycrc = 0x00; // initialize crc variable
             mycrc = crc8(a, mycrc); // let first byte through CRC calculation
             mycrc = crc8(b, mycrc); // and the second byte too
 
@@ -71,8 +71,12 @@ uint8_t sfm3000_poll()
 #if DBG_SFM3000
                 debug_print("crc error\r\n");
 #endif
-                //return 2; // TODO the CRC computation seems broken...
+                return 2;
+                // TODO reset the sensor
             }
+#if DBG_SFM3000
+                debug_print("new reading %x %x %x\r\n", a, b, crc);
+#endif
             a = (a << 8) | b; // combine the two received bytes to a 16bit integer value
 
             // Remove sfm3300 offset
@@ -80,12 +84,12 @@ uint8_t sfm3000_poll()
 #if SEND_READING_TO_SERIAL
             debug_print("%i:", reading_sfm3300);
 #endif
-#if DBG_SFM3000
-            debug_print("updated reading\r\n");
-#endif
             return 0;
         }
     }
+#if DBG_SFM3000
+                debug_print("no data\r\n");
+#endif
     return 1;
 }
 

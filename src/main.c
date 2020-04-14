@@ -76,7 +76,6 @@ void initHardware(void)
 
     init_power_monitoring();
 
-    // FIXME: should that be here?
     init_volume();
 }
 
@@ -92,7 +91,6 @@ int main(void)
     //xTaskCreate(LEDTask,           (const char *) "LEDTask",           128, NULL,  1, NULL);
     //xTaskCreate(ReadIOTask,        (const char *) "ReadIOTask",        128, NULL,  1, NULL);
     xTaskCreate(AnalogReadTask,    (const char *) "ReadAnalogTask",    128, NULL,  1, &analogReadTaskHandle);
-    //xTaskCreate(SFM3000Task,       (const char *) "SFM3000Task",       200, NULL,  1, &sfm3000TaskHandle);
 
     // Run the OS
     vTaskStartScheduler();

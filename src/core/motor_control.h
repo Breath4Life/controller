@@ -11,8 +11,9 @@
 
 #define MOTOR_USTEPS 1
 
-// Threshold used in the flow-check calibration [ml]
-#define VOLUME_CHECK_THRESHOLD 500
+// Threshold used in the flow-check calibration [ul]
+// FIXME put 600000
+#define VOLUME_CHECK_THRESHOLD 400000L
 
 typedef enum {
     motorInit,
