@@ -20,6 +20,8 @@ struct io_pin_config DIO_PIN_CONFIG[] = {
     {DIO_PIN_LIM_SWITCH_DOWN_MONITORING, IO_PORTB, 0},
     {DIO_PIN_LIM_SWITCH_UP_MONITORING, IO_PORTB, 1},
 
+    {DIO_PIN_DOOR_OPEN,                IO_PORTB, 2},
+
     {DIO_PIN_DEBUGLED,                IO_PORTJ, 0},
 
     {DIO_PIN_I2C_FLOW_SENSOR_DATA,    IO_PORTD, 0},
