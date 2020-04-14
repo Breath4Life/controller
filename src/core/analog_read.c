@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <avr/interrupt.h>
 #include "core/analog_read.h"
 #include "hal/io.h"
 #include "hal/pins.h"
