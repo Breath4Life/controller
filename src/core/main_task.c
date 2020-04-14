@@ -195,7 +195,7 @@ void MainTask(void *pvParameters)
 
                 xTaskNotify(lcdDisplayTaskHandle,
                         DISP_NOTIF_STATE | DISP_NOTIF_PARAM |
-                        DISP_NOTIF_INST_P | DISP_NOTIF_PEAK_P, eSetBits);
+                        DISP_NOTIF_PLATEAU_P | DISP_NOTIF_PEAK_P, eSetBits);
             }
             /*
              * 6b. If motorState is calibrating and the start/stop button was pressed

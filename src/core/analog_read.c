@@ -39,9 +39,6 @@ volatile int16_t temp1;
 static int16_t mes2pres(uint16_t mes);
 static int16_t mes2temp(uint16_t mes);
 
-void measure_p_plateau();
-void measure_peep();
-
 static enum {
     pressure,
     temperature0,
@@ -83,6 +80,13 @@ void AnalogReadTask(void *pvParameters) {
                     p = mes2pres(res);
 
                     if (globalState == run) {
+                        if (p > p_max) {
+                            // Overpressure
+                            DEBUG_PRINT("[P-SENS] OVERPRESSURE.\r\n");
+                            xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_OVER_PRESSURE, eSetBits);
+                            xTaskNotify(mainTaskHandle, ALARM_NOTIF_OVERPRESSURE, eSetBits);
+                        }
+
                         // Track max. instantaneous pressure during inspiration
                         if (breathState == insp && p > cycle_p_peak) {
                             cycle_p_peak = p;
@@ -90,17 +94,14 @@ void AnalogReadTask(void *pvParameters) {
 
                         // Inspiration is over, set p_peak, notify LCD and check thresholds
                         if (breathState == plateau && cycle_p_peak > 0) {
+                            cli();
                             p_peak = cycle_p_peak;
+                            sei();
                             cycle_p_peak = 0;
                             DEBUG_PRINT("[P-SENS] Updated p_peak.\r\n");
                             xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PEAK_P, eSetBits);
 
-                            if (p_peak > p_max) {
-                                // Overpressure
-                                DEBUG_PRINT("[P-SENS] OVERPRESSURE.\r\n");
-                                xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_OVER_PRESSURE, eSetBits);
-                                xTaskNotify(mainTaskHandle, ALARM_NOTIF_OVERPRESSURE, eSetBits);
-                            } else if (p_peak < NO_PRESSURE_THRESHOLD) {
+                            if (p_peak < NO_PRESSURE_THRESHOLD) {
                                 // No pressure
                                 DEBUG_PRINT("[P-SENS] NO PRESSURE.\r\n");
                                 xTaskNotify(mainTaskHandle, ALARM_NOTIF_NO_PRESSURE, eSetBits);
@@ -211,14 +212,18 @@ static int16_t mes2temp(uint16_t mes) {
 }
 
 void measure_p_plateau() {
+    cli();
     p_plateau = p;
+    sei();
     // TODO: alarm on p_plateau?
     DEBUG_PRINT("[P-SENS] p_plateau = %i.\r\n", p_plateau);
     xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PLATEAU_P, eSetBits);
 }
 
 void measure_peep() {
+    cli();
     peep = p;
+    sei();
     DEBUG_PRINT("[P-SENS] peep = %i.\r\n", peep);
     xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PARAM, eSetBits);
 }
