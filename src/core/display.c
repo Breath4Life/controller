@@ -17,7 +17,7 @@
 static void disp_alarm();
 static void disp_muted();
 static void disp_param();
-static void disp_inst_p();
+static void disp_plateau_p();
 static void disp_peak_p();
 static void disp_state();
 
@@ -81,11 +81,11 @@ void LCDDisplayTask(void *pvParameters)
 #endif
                 disp_param();
             }
-            if (notification & DISP_NOTIF_INST_P) {
+            if (notification & DISP_NOTIF_PLATEAU_P) {
 #if DEBUG_LCD
-                debug_print("[LCD] rcvd notif inst p.\r\n");
+                debug_print("[LCD] rcvd notif plateau p.\r\n");
 #endif
-                disp_inst_p();
+                disp_plateau_p();
             }
             if (notification & DISP_NOTIF_PEAK_P) {
 #if DEBUG_LCD
@@ -172,10 +172,10 @@ static void disp_param() {
     lcd_write_string(param_buffer,2,1,NO_CR_LF);
 }
 
-char inst_p_buffer[5];
-static void disp_inst_p() {
-    sprintf(inst_p_buffer, "P%2i ", p);
-    lcd_write_string(inst_p_buffer, 1, 1, NO_CR_LF);
+char plateau_p_buffer[5];
+static void disp_plateau_p() {
+    sprintf(plateau_p_buffer, "PL%2i", p_plateau);
+    lcd_write_string(plateau_p_buffer, 1, 1, NO_CR_LF);
 }
 
 char peak_p_buffer[6];

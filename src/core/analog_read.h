@@ -12,10 +12,11 @@
 #define MAX_TEMP0 50
 #define MAX_TEMP1 50
 
-
 extern volatile int16_t p;
 extern volatile int16_t p_peak;
 extern volatile int16_t cycle_p_peak;
+extern volatile int16_t p_plateau;
+extern volatile int16_t peep;
 
 extern volatile int16_t temp0;
 extern volatile int16_t temp1;
@@ -24,5 +25,8 @@ void init_analog_read();
 
 void AnalogReadTask(void *pvParameters);
 
+void measure_p_plateau();
+
+void measure_peep();
 
 #endif // ANALOG_READ_H_

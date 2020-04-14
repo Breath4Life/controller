@@ -14,17 +14,33 @@
 
 #define N_ANALOG_READS 3
 
-#define DEBUG_ANALOG_READ 0
+#define DEBUG_ANALOG_READ 1
 
+#if DEBUG_ANALOG_READ
+#define DEBUG_PRINT debug_print
+#else
+#define DEBUG_PRINT fake_debug_print
+#endif // DEBUG_PRINT
+
+// Instantaneous pressure in cmH2O
 volatile int16_t p;
+// Peak pressure over the last cycle in cmH2O
 volatile int16_t p_peak;
+// Peak pressure over the current cycle in cmH2O
 volatile int16_t cycle_p_peak;
+// Plateau pressure last measurement in cmH2O
+volatile int16_t p_plateau;
+// PEEP last measurement in cmH2O
+volatile int16_t peep;
 
 volatile int16_t temp0;
 volatile int16_t temp1;
 
 static int16_t mes2pres(uint16_t mes);
 static int16_t mes2temp(uint16_t mes);
+
+void measure_p_plateau();
+void measure_peep();
 
 static enum {
     pressure,
@@ -39,86 +55,86 @@ static const uint8_t aio_pins[N_ANALOG_READS] = {
 };
 
 void init_analog_read() {
+    // Initialize pressure measurements
     p = 0;
     p_peak = 0;
     cycle_p_peak = 0;
+    p_plateau = 0;
+    peep = 0;
+
+    // Initialize temperature measurements
     temp0 = 0;
     temp1 = 0;
+
     curr_mes = pressure;
     aio_read_start(aio_pins[curr_mes]);
 }
 
 void AnalogReadTask(void *pvParameters) {
     TickType_t xLastWakeTime = xTaskGetTickCount();
-#if DEBUG_ANALOG_READ
-    debug_print("[ANALOG-READ] Starting.\r\n");
-#endif
+    DEBUG_PRINT("[ANALOG-READ] Starting.\r\n");
 
     while (1) {
         if (aio_ready()) {
             uint16_t res = aio_read_result();
             switch (curr_mes) {
                 case pressure:
+                    // Instantaneous pressure
                     p = mes2pres(res);
-                    if (stoppedOrRunning()) {
-                        xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_INST_P, eSetBits);
-                     }
 
-                    // FIXME: was stoppedOrRunning before. Doesn't make sense in stop state right?
                     if (globalState == run) {
-                        // FIXME: added errorCode != overPressure, makes sense?
-                        if (p > p_max && errorCode != overPressure) {
-                            xTaskNotify(mainTaskHandle, ALARM_NOTIF_OVERPRESSURE, eSetBits);
-                            xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_OVER_PRESSURE, eSetBits);
-                        }
-
-
+                        // Track max. instantaneous pressure during inspiration
                         if (breathState == insp && p > cycle_p_peak) {
                             cycle_p_peak = p;
                         }
 
-                        // FIXME: added errorCode != noPressure, makes sense?
-                        if (p < NO_PRESSURE_THRESHOLD && errorCode != noPressure) {
-                            // TODO: only in insp ?
-                            xTaskNotify(mainTaskHandle, ALARM_NOTIF_NO_PRESSURE, eSetBits);
-
-#if DEBUG_ANALOG_READ
-                            debug_print("[ANALOG-READ] NOPSR notif to MAIN.\r\n");
-#endif
-                        }
-                        // FIXME: added errorCode != lowPressure, makes sense?
-                        else if (p < LOW_PRESSURE_THRESHOLD && errorCode != lowPressure) {
-                            // TODO: only in insp ?
-                            xTaskNotify(mainTaskHandle, ALARM_NOTIF_LOW_PRESSURE, eSetBits);
-                        }
-
+                        // Inspiration is over, set p_peak, notify LCD and check thresholds
                         if (breathState == plateau && cycle_p_peak > 0) {
                             p_peak = cycle_p_peak;
                             cycle_p_peak = 0;
+                            DEBUG_PRINT("[P-SENS] Updated p_peak.\r\n");
                             xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PEAK_P, eSetBits);
+
+                            if (p_peak > p_max) {
+                                // Overpressure
+                                DEBUG_PRINT("[P-SENS] OVERPRESSURE.\r\n");
+                                xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_OVER_PRESSURE, eSetBits);
+                                xTaskNotify(mainTaskHandle, ALARM_NOTIF_OVERPRESSURE, eSetBits);
+                            } else if (p_peak < NO_PRESSURE_THRESHOLD) {
+                                // No pressure
+                                DEBUG_PRINT("[P-SENS] NO PRESSURE.\r\n");
+                                xTaskNotify(mainTaskHandle, ALARM_NOTIF_NO_PRESSURE, eSetBits);
+                            } else if (p_peak < LOW_PRESSURE_THRESHOLD) {
+                                // Low pressure
+                                DEBUG_PRINT("[P-SENS] LOW PRESSURE.\r\n");
+                                xTaskNotify(mainTaskHandle, ALARM_NOTIF_LOW_PRESSURE, eSetBits);
+                            }
                         }
-                    }
-                    if (globalState == calibration) {
+                    } else if (globalState == calibration) {
                         if (p > CALIBRATION_MAX_P) {
-                            // FIXME: same notification to the motor for patient connected and overpressure?
-                            //xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_OVER_PRESSURE, eSetBits);
+                            // Pressure increased during self-calibration
+                            DEBUG_PRINT("[P-SENS] PATIENT CONNECTED?\r\n");
+                            xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_OVER_PRESSURE, eSetBits);
                             xTaskNotify(mainTaskHandle, NOTIF_PATIENT_CONNECTED, eSetBits);
                         }
                     }
+
                     curr_mes = temperature0;
                     break;
                 case temperature0:
                     temp0 = mes2temp(res);
-                    // FIXME: added errorCode != highTemperature, makes sense?
+
                     if (temp0 > MAX_TEMP0 && errorCode != highTemperature) {
+                        DEBUG_PRINT("[T0-SENS] HIGH TEMP: %i.\r\n", temp0);
                         xTaskNotify(mainTaskHandle, ALARM_NOTIF_HIGH_TEMP, eSetBits);
                     }
                     curr_mes = temperature1;
                     break;
                 case temperature1:
                     temp1 = mes2temp(res);
-                    // FIXME: added errorCode != highTemperature, makes sense?
+
                     if (temp1 > MAX_TEMP1 && errorCode != highTemperature) {
+                        DEBUG_PRINT("[T1-SENS] HIGH TEMP: %i.\r\n", temp1);
                         xTaskNotify(mainTaskHandle, ALARM_NOTIF_HIGH_TEMP, eSetBits);
                     }
                     curr_mes = pressure;
@@ -190,9 +206,18 @@ static int16_t mes2temp(uint16_t mes) {
 
     // FIXME: this is super dirty but I'm tired, fix that
     int32_t tmp = (-150 * ((int32_t) mes) + 80550)/427;
-#if DEBUG_ANALOG_READ
-//    debug_print("[ANALOG-READ] T: %i.\r\n", tmp);
-#endif
 
     return (int16_t) tmp;
+}
+
+void measure_p_plateau() {
+    p_plateau = p;
+    // TODO: alarm on p_plateau?
+    DEBUG_PRINT("[P-SENS] p_plateau = %i.\r\n", p_plateau);
+    xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PLATEAU_P, eSetBits);
+}
+
+void measure_peep() {
+    peep = p;
+    DEBUG_PRINT("[P-SENS] peep = %i.\r\n", peep);
 }
