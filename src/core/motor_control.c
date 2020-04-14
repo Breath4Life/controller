@@ -9,6 +9,7 @@
 #include "hal/io.h"
 #include "core/main_task.h"
 #include "core/system.h"
+#include "core/analog_read.h"
 #include "core/utils.h"
 #include "hal/pins.h"
 #include "hal/motor.h"
@@ -23,6 +24,8 @@
 // * fix timeout values
 // check that notif is always properly disabled when needed
 // robustify calibration & etc.
+
+#define MOTOR_VOL_CTRL 0
 
 #define DEBUG_MOTOR 1
 #if DEBUG_MOTOR
@@ -60,6 +63,8 @@ uint32_t tmp_f_exp;
 uint32_t f_insp;
 uint32_t f_plateau;
 uint32_t f_exp;
+
+uint32_t max_position;
 
 const uint32_t vol_ml = 700;
 
@@ -170,7 +175,7 @@ uint32_t vol2steps(uint8_t tidal_vol) {
     MOTOR_DEBUG_PRINT("[MTR] v2st cycle ml: %li       ", cycle_volume/1000);
     MOTOR_DEBUG_PRINT("tidal_vol: %u ", (int16_t) tidal_vol);
     MOTOR_DEBUG_PRINT("n_steps: %lu\r\n", n_steps);
-    if (cycle_volume == 0) {
+    if (cycle_volume == 0 || !MOTOR_VOL_CTRL) {
         return 10*tidal_vol;
     } else {
         int32_t error = (((int32_t) tidal_vol)*10*1000L) - cycle_volume;
@@ -196,7 +201,7 @@ void compute_config() {
     insp_pulses = tot_pulses - plateau_pulses;
     exp_pulses = tot_pulses;
 
-    T_tot_plateau = Ti / 8;
+    T_tot_plateau = Ti / 4;
     T_tot_Ti = Ti - T_tot_plateau;
     // TODO make this depend on number of pulses ? / "as fast as possible" means speed should not depend on volume
     T_tot_Te = 750; // As fast as possible. Should be less than 1s (for 30 BPM + I/E+1 case)
@@ -599,6 +604,7 @@ void MotorControlTask(void *pvParameters)
                             MOTOR_DEBUG_PRINT("[MOTOR] to plateau %lu %lu\r\n", plateau_pulses, f_plateau);
                             break;
                         case plateau:
+                            measure_p_plateau();
                         case inspStopping:
                             doExpiration();
                             break;
@@ -742,6 +748,7 @@ void MotorControlTask(void *pvParameters)
                     switch (breathState) {
                         case cycleEnd:
                             if (bwaitTimeoutExpired()) {
+                                measure_peep();
                                 breathState = startNewCycle;
                                 MOTOR_DEBUG_PRINT("to Start new cycle \r\n");
                             } else {

@@ -32,7 +32,7 @@ static void process_critical_failure(uint32_t notification);
 
 #define DEBUG_MAIN 0            // debug print
 #define SIM_MOTOR 0             // "simulate" motor to debug the rest
-#define ALARM_CHECK 0           // active/deactivate alarm check for debug
+#define ALARM_CHECK 1           // active/deactivate alarm check for debug
 #define CRI_FAIL_CHECK 0        // active/deactivate crit fail check during calib for debug
 #define POWER_AUX_CHECK 0       // active/deactivate power aux check for debug
 #define POWER_MAIN_CHECK 0      // active/deactivate power main check for debug

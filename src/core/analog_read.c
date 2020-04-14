@@ -178,9 +178,8 @@ static int16_t mes2pres(uint16_t mes) {
     // FIXME mes in uint16_t, could that cause any problem?
     int16_t tmp = scale_MPX5010DP * mes + offset_MPX5010DP;
 
-    // FIXME +1 added empirically here by observing that default value is -1...
     // TODO check scale and offset calculation above
-    return (tmp >> 6) + 1;
+    return (tmp >> 6);
 }
 
 static int16_t mes2temp(uint16_t mes) {
