@@ -27,7 +27,7 @@
 
 #define MOTOR_VOL_CTRL 0
 
-#define DEBUG_MOTOR 1
+#define DEBUG_MOTOR 0
 #if DEBUG_MOTOR
 #define MOTOR_DEBUG_PRINT debug_print
 #else
@@ -285,16 +285,21 @@ static bool bwaitTimeoutExpired() {
 // return true if notification received
 static bool resumeBoundedWaitNotification() {
     uint32_t notif_recv;
-    if (!bwaitTimeoutExpired() &&
-            (xTaskNotifyWait(0x0,ALL_NOTIF_BITS,&notif_recv,boundedWaitTime) == pdTRUE)) {
-        notif |= notif_recv;
+    if (notif) {
         return true;
-    } else if (waitTimeoutAllowed) {
-        return false;
     } else {
-        // no notification received, timeout
-        genMotorError("TIMEOUT");
-        return false;
+        if (bwaitTimeoutExpired()) {
+            boundedWaitTime = 0;
+        }
+        if (xTaskNotifyWait(0x0,ALL_NOTIF_BITS,&notif_recv,boundedWaitTime)) {
+            notif |= notif_recv;
+            return true;
+        } else {
+            if (!waitTimeoutAllowed) {
+                genMotorError("TIMEOUT");
+            }
+            return false;
+        }
     }
 }
 
@@ -405,7 +410,7 @@ static uint8_t need_recalibration() {
 static void abort_insp() {
     breathState = inspStopping;
     recalibrateFlag = true;
-    MOTOR_DEBUG_PRINT("recalibrate INSP asked \r\n");
+    MOTOR_DEBUG_PRINT("rcbINSPask\r\n");
     // TODO wait a bit... to respect Ti ?
     stop_and_wait();
 }
