@@ -48,12 +48,17 @@ typedef enum {
     lowPressure,
     abnVolume,
     abnFreq,
-    patientConnected,
-    incorrectFlow,
     auxPower
 } ErrorCode_t;
 
+typedef enum {
+    calibNoError,
+    patientConnected,
+    incorrectFlow
+} CalibError_t;
+
 extern volatile ErrorCode_t errorCode;
+extern volatile CalibError_t calibError;
 
 extern volatile uint8_t mute_on;
 

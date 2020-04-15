@@ -192,8 +192,24 @@ static void disp_state() {
         lcd_write_string(CRITICAL_FAILURE_MSG1, 1, 1, NO_CR_LF);
         lcd_write_string(CRITICAL_FAILURE_MSG2, 2, 1, NO_CR_LF);
     } else if (globalState == welcome_wait_cal) {
-        lcd_write_string(WAIT_CALI_MSG1, 1, 1, NO_CR_LF);
-        lcd_write_string(WAIT_CALI_MSG2, 2, 1, NO_CR_LF);
+        switch (calibError) {
+            case calibNoError:
+                lcd_write_string(WAIT_CALI_MSG1, 1, 1, NO_CR_LF);
+                lcd_write_string(WAIT_CALI_MSG2, 2, 1, NO_CR_LF);
+                break;
+            case patientConnected:
+                lcd_write_string(PAT_CONNECTED_MSG, 1, 1, NO_CR_LF);
+                lcd_write_string(RETRY_CALI_MSG, 2, 1, NO_CR_LF);
+                break;
+            case incorrectFlow:
+                lcd_write_string(INC_FLOW_MSG, 1, 1, NO_CR_LF);
+                lcd_write_string(RETRY_CALI_MSG, 2, 1, NO_CR_LF);
+                break;
+            default:
+                // Should never happens
+                lcd_write_string(WAIT_CALI_MSG1, 1, 1, NO_CR_LF);
+                lcd_write_string(WAIT_CALI_MSG2, 2, 1, NO_CR_LF);
+        }
     } else if(globalState == calibration) {
         lcd_write_string(CALI_MSG1, 1, 1, NO_CR_LF);
         lcd_write_string(CALI_MSG2, 2, 1, NO_CR_LF);

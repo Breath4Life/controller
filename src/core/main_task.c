@@ -17,6 +17,7 @@
 volatile GlobalState_t globalState;
 volatile AlarmState_t alarmState;
 volatile ErrorCode_t errorCode;
+volatile CalibError_t calibError;
 
 volatile uint8_t mute_on;
 TickType_t mute_time;
@@ -28,9 +29,12 @@ uint8_t p_max;
 uint8_t extra_param;
 
 static void process_alarm(uint32_t notification);
-static void process_critical_failure(uint32_t notification);
+static void process_calib_error(uint32_t notification);
+static void set_critical_failure();
 
-#define DEBUG_MAIN 0            // debug print
+// debug print
+#define DEBUG_MAIN 0
+
 #if DEBUG_MAIN
 #define DEBUG_PRINT debug_print
 #else
@@ -38,10 +42,10 @@ static void process_critical_failure(uint32_t notification);
 #endif // DEBUG_MAIN
 
 #define SIM_MOTOR 0             // "simulate" motor to debug the rest
-#define ALARM_CHECK 0           // active/deactivate alarm check for debug
-#define CRI_FAIL_CHECK 0        // active/deactivate crit fail check during calib for debug
-#define POWER_AUX_CHECK 0       // active/deactivate power aux check for debug
-#define POWER_MAIN_CHECK 0      // active/deactivate power main check for debug
+#define ALARM_CHECK 1           // active/deactivate alarm check for debug
+#define CALIB_ERROR_CHECK 1     // active/deactivate calib error check during calib for debug
+#define POWER_AUX_CHECK 1       // active/deactivate power aux check for debug
+#define POWER_MAIN_CHECK 1      // active/deactivate power main check for debug
 
 void initMainTask()
 {
@@ -53,6 +57,7 @@ void initMainTask()
 
     alarmState = noAlarm;
     errorCode = noError;
+    calibError = calibNoError;
     mute_on = 0;
 
     // TODO notify Buzzer task of Welcome
@@ -80,7 +85,7 @@ void MainTask(void *pvParameters)
     globalState = welcome_wait_cal;
     DEBUG_PRINT("[MAIN] -> welcome_wait_cal.\r\n");
     xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
-    DEBUG_PRINT("[MAIN] NOT_STATE -> LCD.\r\n");
+    DEBUG_PRINT("[MAIN] NOTIF_STATE -> LCD.\r\n");
 
     // Indicate if the state has changed
     uint8_t updated_state;
@@ -91,7 +96,6 @@ void MainTask(void *pvParameters)
     BaseType_t notif_recv = pdFALSE;
 
 #if SIM_MOTOR
-    // MOTOR SIMULATON TODO: REMOVE
     uint32_t calib_start = 0;
 #endif
 
@@ -100,7 +104,7 @@ void MainTask(void *pvParameters)
          * 0. If globalState is critical failure, full restart required, do nothing.
          */
         if (globalState == critical_failure) {
-            DEBUG_PRINT("[MAIN] critically failed.\r\n");
+            DEBUG_PRINT("[MAIN] Critically failed.\r\n");
             vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1000));
             continue;
         }
@@ -138,6 +142,7 @@ void MainTask(void *pvParameters)
             DEBUG_PRINT("[MAIN] ACK pressed.\r\n");
             alarmState = noAlarm;
             errorCode = noError;
+            calibError = calibNoError;
 
             dio_write(DIO_PIN_LED_NORMAL_STATE, 1);
             dio_write(DIO_PIN_ALARM_LED_LPA, 0);
@@ -153,13 +158,19 @@ void MainTask(void *pvParameters)
         if (globalState == welcome_wait_cal) {
            if (BUTTON_PRESSED(buttons_pressed, button_startstop)) {
                 globalState = calibration;
+                if (calibError != calibNoError) {
+                    // Reset calibError if coming from a failed calibration
+                    calibError = calibNoError;
+                    dio_write(DIO_PIN_LED_NORMAL_STATE, 1);
+                    dio_write(DIO_PIN_ALARM_LED_HPA, 0);
+                }
+
                 DEBUG_PRINT("[MAIN] -> calibration.\r\n");
                 updated_state = 1;
 
                 xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_GLOBAL_STATE, eSetBits);
 
 #if SIM_MOTOR
-                // MOTOR SIMULATION TODO: remove
                 calib_start = xTaskGetTickCount();
 #endif
             }
@@ -175,7 +186,6 @@ void MainTask(void *pvParameters)
              */
 
 #if SIM_MOTOR
-            // MOTOR SIMULATION TODO: replace with commented condition
             if (xTaskGetTickCount() - calib_start > 2*WELCOME_MSG_DUR) {
 #else
             if (motorState == motorStopped) {
@@ -193,7 +203,6 @@ void MainTask(void *pvParameters)
              */
 
 #if SIM_MOTOR
-            // MOTOR SIMULATION TODO: replace with commented condition
             else {
 #else
             else if (motorState == motorCalibrating) {
@@ -263,7 +272,7 @@ void MainTask(void *pvParameters)
              }
 
             if (updated_setting) {
-                DEBUG_PRINT("[MAIN] NOT_PARA -> LCD.\r\n");
+                DEBUG_PRINT("[MAIN] NOTIF_PARAM -> LCD.\r\n");
                 xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PARAM, eSetBits);
             }
 
@@ -304,7 +313,7 @@ void MainTask(void *pvParameters)
          */
         if (updated_state == 1 && errorCode == noError) {
             xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
-            DEBUG_PRINT("[MAIN] NOT_STATE -> LCD. \r\n");
+            DEBUG_PRINT("[MAIN] NOTIF_STATE -> LCD. \r\n");
         }
 
         /*
@@ -314,20 +323,28 @@ void MainTask(void *pvParameters)
             if (notif_recv == pdTRUE) {
                 DEBUG_PRINT("[MAIN] run rcvd notif.\r\n");
 #if ALARM_CHECK
-                process_alarm(notification);
+                if (notification & NOTIF_MOTOR_ERROR) {
+                    set_critical_failure();
+                } else {
+                    process_alarm(notification);
+                }
 #endif
             }
         }
 
         /*
-         * 10. If globalState is calibration, process received critical failure
+         * 10. If globalState is calibration, process received calib error
          * notifications (if any)
          */
         if (globalState == calibration) {
             if (notif_recv == pdTRUE) {
                 DEBUG_PRINT("[MAIN] calib rcvd notif.\r\n");
-#if CRI_FAIL_CHECK
-                process_critical_failure(notification);
+#if CALIB_ERROR_CHECK
+                if (notification & NOTIF_MOTOR_ERROR) {
+                    set_critical_failure();
+                } else {
+                    process_calib_error(notification);
+                }
 #endif
             }
         }
@@ -346,7 +363,7 @@ void MainTask(void *pvParameters)
          */
         if (error_power_main()) {
 #if POWER_MAIN_CHECK
-            process_critical_failure(NOTIF_POWER_MAIN);
+            set_critical_failure(NOTIF_POWER_MAIN);
 #endif
         }
 
@@ -403,10 +420,10 @@ void process_alarm(uint32_t notification)
             DEBUG_PRINT("[MAIN] ABNVOL.\r\n");
         } else if (notification & ALARM_NOTIF_ABN_FREQ) {
             errorCode = abnFreq;
-            DEBUG_PRINT("[MAIN] Rcvd ABNFREQ.\r\n");
+            DEBUG_PRINT("[MAIN] ABNFREQ.\r\n");
         } else if (notification & ALARM_NOTIF_POWER_AUX) {
             errorCode = auxPower;
-            DEBUG_PRINT("[MAIN] Rcvd AUXPWR.\r\n");
+            DEBUG_PRINT("[MAIN] AUXPWR.\r\n");
         }
         // TODO: errorCode?
 
@@ -439,23 +456,36 @@ void process_alarm(uint32_t notification)
     }
 }
 
-void process_critical_failure(uint32_t notification) {
-    globalState = critical_failure;
-    DEBUG_PRINT("[MAIN] -> critical_failure.\r\n");
-    alarmState = criticalPriorityAlarm;
+void process_calib_error(uint32_t notification) {
+    // TODO: buzzer beep
     dio_write(DIO_PIN_LED_NORMAL_STATE, 0);
     dio_write(DIO_PIN_ALARM_LED_HPA, 1);
 
     if (notification & NOTIF_PATIENT_CONNECTED) {
-        DEBUG_PRINT("[MAIN] PAT_CONNECTED. \r\n");
-        errorCode = patientConnected;
+        DEBUG_PRINT("[MAIN] PATIENT CONNECTED.\r\n");
+        calibError = patientConnected;
     } else if (notification & NOTIF_INCORRECT_FLOW) {
-        DEBUG_PRINT("[MAIN] INCOR_FLOW. \r\n");
-        errorCode = incorrectFlow;
-    } else if (notification & NOTIF_POWER_MAIN) {
-        DEBUG_PRINT("[MAIN] POWER_MAIN. \r\n");
-        // TODO: errorCode?
+        DEBUG_PRINT("[MAIN] INCORRECT FLOW.\r\n");
+        calibError = incorrectFlow;
+    } else {
+        DEBUG_PRINT("[MAIN] Unknown notif.\r\n");
     }
+
+    globalState = welcome_wait_cal;
+    DEBUG_PRINT("[MAIN] -> welcome_wait_cal.\r\n");
+
+    xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
+    DEBUG_PRINT("[MAIN] NOT_STATE -> LCD. \r\n");
+}
+
+void set_critical_failure() {
+    alarmState = highPriorityAlarm;
+    globalState = critical_failure;
+    DEBUG_PRINT("[MAIN] -> critical_failure.\r\n");
+
+    dio_write(DIO_PIN_ALARM_LED_LPA, 0);
+    dio_write(DIO_PIN_LED_NORMAL_STATE, 0);
+    dio_write(DIO_PIN_ALARM_LED_HPA, 1);
 
     xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
     DEBUG_PRINT("[MAIN] NOT_STATE -> LCD. \r\n");
