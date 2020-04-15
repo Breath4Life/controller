@@ -40,6 +40,8 @@
 
 #define MOTOR_UP_POSITION (2000*MOTOR_USTEPS)
 
+#define MAX_POS_MARGIN (10*MOTOR_USTEPS)
+
 /////////////////////////////////////
 uint32_t TCT;
 uint32_t Ti;
@@ -63,6 +65,8 @@ uint32_t tmp_f_exp;
 uint32_t f_insp;
 uint32_t f_plateau;
 uint32_t f_exp;
+
+const uint32_t f_fast = 500*MOTOR_USTEPS;
 
 uint32_t max_position;
 
@@ -195,6 +199,11 @@ void compute_config() {
     ticksTctTime = pdMS_TO_TICKS(TCT);
 
     n_steps = vol2steps(tidal_vol);
+    uint32_t max_steps = max_position - homePosition;
+    if (n_steps > max_steps) {
+        MOTOR_ERROR_PRINT("To lrg nstep: %lu, max: %lu\r\n", n_steps, max_steps);
+        n_steps = max_steps;
+    }
     tot_pulses = n_steps * MOTOR_USTEPS;
 
     plateau_pulses = MOTOR_USTEPS*5; //tot_pulses/20;
@@ -444,6 +453,11 @@ void MotorControlTask(void *pvParameters)
                             break;
 
                         case calibUpWaitStop:
+                            // travelled distance = posOffset - motor_current_position();
+                            // max position = MOTOR_UP_POSITION + travelled distance - MAX_POS_MARGIN
+                            max_position = posOffset + MOTOR_UP_POSITION - motor_current_position() - MAX_POS_MARGIN;
+                            MOTOR_DEBUG_PRINT("[MOTOR] setting max_pos: %lu ,", max_position);
+                            MOTOR_DEBUG_PRINT("posOffset: %lu, current: %lu\r\n", posOffset, motor_current_position());
                             // Compute next position
                             posOffset = MOTOR_UP_POSITION + MOTOR_USTEPS*steps_calib_end;
                             set_motor_current_position_value(MOTOR_UP_POSITION);
@@ -457,11 +471,15 @@ void MotorControlTask(void *pvParameters)
                             // Start volume calibration
                             posOffset = MOTOR_USTEPS*steps_calib_vol;
                             targetPosition = homePosition + posOffset;
+                            if (targetPosition > max_position) {
+                                MOTOR_ERROR_PRINT("[MOTOR] max position too small for volume check.\r\n");
+                                targetPosition = max_position;
+                            }
                             calibState = calibVol;
                             // Reset volume prior to flow check
                             reset_volume();
                             MOTOR_DEBUG_PRINT("[MOTOR] Start flow check.\r\n");
-                            move_and_wait(targetPosition, steps_calib_vol*MOTOR_USTEPS);
+                            move_and_wait(targetPosition, f_fast);
                             break;
 
                         case calibVol:
@@ -472,7 +490,7 @@ void MotorControlTask(void *pvParameters)
                                 // Sufficient volume insufflated.
                                 calibState = calibVolEnd;
                                 MOTOR_DEBUG_PRINT("[MOTOR] Flow check: OK\r\n");
-                                move_and_wait(homePosition, steps_calib_vol*MOTOR_USTEPS);
+                                move_and_wait(homePosition, f_fast);
                             } else {
                                 MOTOR_DEBUG_PRINT("[MOTOR] Flow check: FAIL\r\n");
                                 xTaskNotify(mainTaskHandle, NOTIF_INCORRECT_FLOW, eSetBits);
@@ -523,7 +541,6 @@ void MotorControlTask(void *pvParameters)
                 } else {
                     switch (calibState) {
                         case calibStart:
-                            compute_config();
                             calibState = calibDown;
                             set_motor_current_position_value(0);
                             targetPosition = MOTOR_USTEPS*steps_calib_down;
@@ -638,7 +655,7 @@ void MotorControlTask(void *pvParameters)
                             targetPosition = MOTOR_UP_POSITION + MOTOR_USTEPS*steps_calib_end;
                             breathState = reCalibHome;
                             MOTOR_DEBUG_PRINT("[MOTOR] to reCalibHome\r\n");
-                            move_and_wait(targetPosition, f_exp);
+                            move_and_wait(targetPosition, f_fast);
                             break;
                         case reCalibHome:
                             recalibrateFlag = false;
