@@ -173,6 +173,8 @@ static void stop_and_wait();
 static void doExpiration();
 static uint8_t test_notif(uint32_t tested_notif);
 static uint8_t need_recalibration();
+static void abort_insp();
+static void overPressureRunning();
 
 // TODO something real
 uint32_t vol2steps(uint8_t tidal_vol) {
@@ -400,6 +402,25 @@ static uint8_t need_recalibration() {
     return recalibrateFlag || ((cycleCount & 0x3) == 0);
 }
 
+static void abort_insp() {
+    breathState = inspStopping;
+    recalibrateFlag = true;
+    MOTOR_DEBUG_PRINT("recalibrate INSP asked \r\n");
+    // TODO wait a bit... to respect Ti ?
+    stop_and_wait();
+}
+
+static void overPressureRunning() {
+    switch (breathState) {
+        case insp:
+        case plateau:
+            abort_insp();
+            break;
+        default:
+            resumeBoundedWaitNotification();
+    }
+}
+
 #if MOTOR_ACTIVE
 void MotorControlTask(void *pvParameters)
 {
@@ -580,7 +601,7 @@ void MotorControlTask(void *pvParameters)
 
             case motorRunning:
                 if (test_notif(MOTOR_NOTIF_OVER_PRESSURE)) {
-                    motorUnimplementedCase("running & OP");
+                    overPressureRunning();
                 } else if (test_notif(MOTOR_NOTIF_GLOBAL_STATE)) {
                     switch (globalState) {
                         case run:
@@ -721,11 +742,7 @@ void MotorControlTask(void *pvParameters)
                     switch (breathState) {
                         case insp:
                         case plateau:
-                            breathState = inspStopping;
-                            recalibrateFlag = true;
-                            MOTOR_DEBUG_PRINT("recalibrate INSP asked \r\n");
-                            // TODO wait a bit... to respect Ti ?
-                            stop_and_wait();
+                            abort_insp();
                             break;
                         case expiration:
                         case inspStopping:

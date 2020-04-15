@@ -639,7 +639,9 @@ void motor_anticipated_stop(){
     debug_print("ANT STATES: %lu %lu \r\n",motor_position_abs,motor_position_abs + get_cnt5());
 #endif
     cli();
-    if (!motor_stopping) {
+    if (motor_stopping) {
+        sei();
+    } else {
         if (motor_inmotion) {
             motor_stopping = true;
             disable_cnt5_irq();
