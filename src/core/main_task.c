@@ -43,8 +43,8 @@ static void set_critical_failure();
 #endif // DEBUG_MAIN
 
 #define SIM_MOTOR 0             // "simulate" motor to debug the rest
-#define ALARM_CHECK 0           // active/deactivate alarm check for debug
-#define CALIB_ERROR_CHECK 0     // active/deactivate calib error check during calib for debug
+#define ALARM_CHECK 1           // active/deactivate alarm check for debug
+#define CALIB_ERROR_CHECK 1     // active/deactivate calib error check during calib for debug
 #define POWER_AUX_CHECK 0       // active/deactivate power aux check for debug
 #define POWER_MAIN_CHECK 0      // active/deactivate power main check for debug
 #define DOOR_CHECK 1            // active/deactivate door check for debug
@@ -510,3 +510,13 @@ uint8_t stoppedOrRunning() {
     return (globalState == stop || globalState == run);
 }
 
+// TODO: move
+void check_volume(uint32_t actual_vol) {
+    // Convert target tidal volume to tens µl
+    int32_t target_vol = tidal_vol * 1000L;
+
+    // Check that measured volume is within +-10% of the target volume
+    if((actual_vol > 11*target_vol) || (actual_vol < 9*target_vol)) {
+        process_alarm(ALARM_NOTIF_ABN_VOLUME);
+    }
+}

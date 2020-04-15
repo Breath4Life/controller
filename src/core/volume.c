@@ -109,15 +109,3 @@ uint8_t get_volume(int32_t *vol) {
     }
 }
 
-uint8_t check_volume() {
-    // Convert target tidal volume to tens µl
-    int32_t target = tidal_vol * 1000L;
-
-    // Access volume with interrupts disabled
-    cli();
-    int32_t mes_vol = volume;
-    sei();
-
-    // Check that measured volume is within +-10% of the target volume
-    return ((mes_vol < 11*target) && (mes_vol > 9*target));
-}

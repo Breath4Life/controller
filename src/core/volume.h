@@ -47,6 +47,4 @@ void reset_volume();
  */
 uint8_t get_volume(int32_t *vol);
 
-uint8_t check_volume();
-
 #endif // VOLUME_H_

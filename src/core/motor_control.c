@@ -397,6 +397,7 @@ static void doExpiration() {
         cycle_volume = 0;
     } else {
         MOTOR_DEBUG_PRINT("[MOTOR] Valid volume\r\n");
+        check_volume(cycle_volume);
     }
     breathState = expiration;
     targetPosition = homePosition;

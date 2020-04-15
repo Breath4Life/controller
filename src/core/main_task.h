@@ -70,5 +70,7 @@ void initMainTask();
 void MainTask(void *pvParameters);
 /* returns 1 if the global state is stop or run, otherwise 0 */
 uint8_t stoppedOrRunning();
+/* check if volume is within +- 10% of target volume */
+void check_volume(uint32_t actual_vol);
 
 #endif // MAINTASK_H_
