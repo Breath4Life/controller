@@ -17,6 +17,9 @@
 
 #define DEBUG_ANALOG_READ 1
 
+// Absurd value than can never happen
+#define INIT_CYCLE_P_PEAK -100
+
 #if DEBUG_ANALOG_READ
 #define DEBUG_PRINT debug_print
 #else
@@ -56,7 +59,7 @@ void init_analog_read() {
     // Initialize pressure measurements
     p = 0;
     p_peak = 0;
-    cycle_p_peak = 0;
+    cycle_p_peak = INIT_CYCLE_P_PEAK;
     p_plateau = 0;
     peep = 0;
 
@@ -94,11 +97,11 @@ void AnalogReadTask(void *pvParameters) {
                         }
 
                         // Inspiration is over, set p_peak, notify LCD and check thresholds
-                        if (breathState == plateau && cycle_p_peak > 0) {
+                        if (breathState == plateau && cycle_p_peak != INIT_CYCLE_P_PEAK) {
                             cli();
                             p_peak = cycle_p_peak;
                             sei();
-                            cycle_p_peak = 0;
+                            cycle_p_peak = INIT_CYCLE_P_PEAK;
                             DEBUG_PRINT("[P-SENS] Updated p_peak.\r\n");
                             xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PEAK_P, eSetBits);
 
