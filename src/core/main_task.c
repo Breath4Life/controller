@@ -31,8 +31,14 @@ static void process_alarm(uint32_t notification);
 static void process_critical_failure(uint32_t notification);
 
 #define DEBUG_MAIN 0            // debug print
+#if DEBUG_MAIN
+#define DEBUG_PRINT debug_print
+#else
+#define DEBUG_PRINT fake_debug_print
+#endif // DEBUG_MAIN
+
 #define SIM_MOTOR 0             // "simulate" motor to debug the rest
-#define ALARM_CHECK 1           // active/deactivate alarm check for debug
+#define ALARM_CHECK 0           // active/deactivate alarm check for debug
 #define CRI_FAIL_CHECK 0        // active/deactivate crit fail check during calib for debug
 #define POWER_AUX_CHECK 0       // active/deactivate power aux check for debug
 #define POWER_MAIN_CHECK 0      // active/deactivate power main check for debug
@@ -64,9 +70,7 @@ void MainTask(void *pvParameters)
 {
     TickType_t xLastWakeTime = xTaskGetTickCount();
 
-#if DEBUG_MAIN
-    debug_print("[MAIN] -> welcome.\r\n");
-#endif
+    DEBUG_PRINT("[MAIN] -> welcome.\r\n");
 
     vTaskDelayUntil(&xLastWakeTime, WELCOME_MSG_DUR);
     /*
@@ -74,13 +78,9 @@ void MainTask(void *pvParameters)
      * set globalState to welcome_wait_cal
      */
     globalState = welcome_wait_cal;
-#if DEBUG_MAIN
-    debug_print("[MAIN] -> welcome_wait_cal.\r\n");
-#endif
+    DEBUG_PRINT("[MAIN] -> welcome_wait_cal.\r\n");
     xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
-#if DEBUG_MAIN
-    debug_print("[MAIN] NOT_STATE -> LCD.\r\n");
-#endif
+    DEBUG_PRINT("[MAIN] NOT_STATE -> LCD.\r\n");
 
     // Indicate if the state has changed
     uint8_t updated_state;
@@ -100,9 +100,7 @@ void MainTask(void *pvParameters)
          * 0. If globalState is critical failure, full restart required, do nothing.
          */
         if (globalState == critical_failure) {
-#if DEBUG_MAIN
-            debug_print("[MAIN] critically failed.\r\n");
-#endif
+            DEBUG_PRINT("[MAIN] critically failed.\r\n");
             vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1000));
             continue;
         }
@@ -125,9 +123,7 @@ void MainTask(void *pvParameters)
          * 2. If the MUTE button was pressed down: toggle mute_on and record time
          */
         if (BUTTON_PRESSED(buttons_pressed, button_alarm_mute)) {
-#if DEBUG_MAIN
-            debug_print("[MAIN] MUTE pressed.\r\n");
-#endif
+            DEBUG_PRINT("[MAIN] MUTE pressed.\r\n");
             mute_on = !mute_on;
             dio_write(DIO_PIN_ALARM_LED_PAUSED, mute_on);
             mute_time = xTaskGetTickCount();
@@ -139,9 +135,7 @@ void MainTask(void *pvParameters)
          * and red LEDs
          */
         if (BUTTON_PRESSED(buttons_pressed, button_alarm_ack)) {
-#if DEBUG_MAIN
-            debug_print("[MAIN] ACK pressed.\r\n");
-#endif
+            DEBUG_PRINT("[MAIN] ACK pressed.\r\n");
             alarmState = noAlarm;
             errorCode = noError;
 
@@ -159,9 +153,7 @@ void MainTask(void *pvParameters)
         if (globalState == welcome_wait_cal) {
            if (BUTTON_PRESSED(buttons_pressed, button_startstop)) {
                 globalState = calibration;
-#if DEBUG_MAIN
-                debug_print("[MAIN] -> calibration.\r\n");
-#endif
+                DEBUG_PRINT("[MAIN] -> calibration.\r\n");
                 updated_state = 1;
 
                 xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_GLOBAL_STATE, eSetBits);
@@ -189,9 +181,7 @@ void MainTask(void *pvParameters)
             if (motorState == motorStopped) {
 #endif
                 globalState = stop;
-#if DEBUG_MAIN
-                debug_print("[MAIN] -> stop.\r\n");
-#endif
+                DEBUG_PRINT("[MAIN] -> stop.\r\n");
 
                 xTaskNotify(lcdDisplayTaskHandle,
                         DISP_NOTIF_STATE | DISP_NOTIF_PARAM |
@@ -210,9 +200,7 @@ void MainTask(void *pvParameters)
 #endif
                 if (BUTTON_PRESSED(buttons_pressed, button_startstop)) {
                     globalState = welcome_wait_cal;
-#if DEBUG_MAIN
-                    debug_print("[MAIN] -> welcome_wait_cal.\r\n");
-#endif
+                    DEBUG_PRINT("[MAIN] -> welcome_wait_cal.\r\n");
                     updated_state = 1;
 
                     xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_GLOBAL_STATE, eSetBits);
@@ -275,9 +263,7 @@ void MainTask(void *pvParameters)
              }
 
             if (updated_setting) {
-#if DEBUG_MAIN
-                debug_print("[MAIN] NOT_PARA -> LCD.\r\n");
-#endif
+                DEBUG_PRINT("[MAIN] NOT_PARA -> LCD.\r\n");
                 xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PARAM, eSetBits);
             }
 
@@ -288,17 +274,13 @@ void MainTask(void *pvParameters)
             if (BUTTON_PRESSED(buttons_pressed, button_startstop)) {
                 if (globalState == stop) {
                     globalState = run;
-#if DEBUG_MAIN
-                    debug_print("[MAIN] -> run.\r\n");
-#endif
+                    DEBUG_PRINT("[MAIN] -> run.\r\n");
                     updated_state = 1;
 
                     xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_GLOBAL_STATE, eSetBits);
                 } else if (globalState == run) {
                     globalState = stop;
-#if DEBUG_MAIN
-                    debug_print("[MAIN] -> stop.\r\n");
-#endif
+                    DEBUG_PRINT("[MAIN] -> stop.\r\n");
                     updated_state = 1;
 
                     xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_GLOBAL_STATE, eSetBits);
@@ -312,9 +294,7 @@ void MainTask(void *pvParameters)
          */
         if (mute_on && xTaskGetTickCount() - mute_time > pdMS_TO_TICKS(ALARM_AUTO_UNMUTE_SEC)) {
             mute_on = 0;
-#if DEBUG_MAIN
-            debug_print("[MAIN] Auto unmute.\r\n");
-#endif
+            DEBUG_PRINT("[MAIN] Auto unmute.\r\n");
             dio_write(DIO_PIN_ALARM_LED_PAUSED, 0);
         }
 
@@ -324,9 +304,7 @@ void MainTask(void *pvParameters)
          */
         if (updated_state == 1 && errorCode == noError) {
             xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
-#if DEBUG_MAIN
-            debug_print("[MAIN] NOT_STATE -> LCD. \r\n");
-#endif
+            DEBUG_PRINT("[MAIN] NOT_STATE -> LCD. \r\n");
         }
 
         /*
@@ -334,9 +312,7 @@ void MainTask(void *pvParameters)
          */
         if (globalState == run) {
             if (notif_recv == pdTRUE) {
-#if DEBUG_MAIN
-                debug_print("[MAIN] run rcvd notif.\r\n");
-#endif
+                DEBUG_PRINT("[MAIN] run rcvd notif.\r\n");
 #if ALARM_CHECK
                 process_alarm(notification);
 #endif
@@ -349,9 +325,7 @@ void MainTask(void *pvParameters)
          */
         if (globalState == calibration) {
             if (notif_recv == pdTRUE) {
-#if DEBUG_MAIN
-                debug_print("[MAIN] calib rcvd notif.\r\n");
-#endif
+                DEBUG_PRINT("[MAIN] calib rcvd notif.\r\n");
 #if CRI_FAIL_CHECK
                 process_critical_failure(notification);
 #endif
@@ -385,7 +359,6 @@ void MainTask(void *pvParameters)
         /*
          * 14. Poll volume sensing.
          */
-        // FIXME: smth to do with the return value? No a priori.
         poll_volume();
 
         /*
@@ -399,16 +372,12 @@ void process_alarm(uint32_t notification)
 {
     if (alarmState == noAlarm) {
         if (notification >= 0x10) {
-#if DEBUG_MAIN
-            debug_print("[MAIN] noAlarm -> HPA.\r\n");
-#endif
+            DEBUG_PRINT("[MAIN] noAlarm -> HPA.\r\n");
             alarmState = highPriorityAlarm;
             dio_write(DIO_PIN_LED_NORMAL_STATE, 0);
             dio_write(DIO_PIN_ALARM_LED_HPA, 1);
         } else {
-#if DEBUG_MAIN
-            debug_print("[MAIN] noAlarm -> MPA.\r\n");
-#endif
+            DEBUG_PRINT("[MAIN] noAlarm -> MPA.\r\n");
             alarmState = mediumPriorityAlarm;
             dio_write(DIO_PIN_LED_NORMAL_STATE, 0);
             dio_write(DIO_PIN_ALARM_LED_LPA, 1);
@@ -416,85 +385,55 @@ void process_alarm(uint32_t notification)
 
         if (notification & ALARM_NOTIF_OVERPRESSURE) {
             errorCode = overPressure;
-#if DEBUG_MAIN
-            debug_print("[MAIN] OVERPSR.\r\n");
-#endif
+            DEBUG_PRINT("[MAIN] OVERPSR.\r\n");
         } else if (notification & ALARM_NOTIF_NO_PRESSURE) {
             errorCode = noPressure;
-#if DEBUG_MAIN
-            debug_print("[MAIN] NOPSR.\r\n");
-#endif
+            DEBUG_PRINT("[MAIN] NOPSR.\r\n");
         } else if (notification & ALARM_NOTIF_HIGH_PRESSURE) {
             errorCode = highPressure;
-#if DEBUG_MAIN
-            debug_print("[MAIN] HIGHPSR.\r\n");
-#endif
+            DEBUG_PRINT("[MAIN] HIGHPSR.\r\n");
         } else if (notification & ALARM_NOTIF_HIGH_TEMP) {
             errorCode = highTemperature;
-#if DEBUG_MAIN
-            debug_print("[MAIN] HIGHTEMP.\r\n");
-#endif
+            DEBUG_PRINT("[MAIN] HIGHTEMP.\r\n");
         } else if (notification & ALARM_NOTIF_LOW_PRESSURE) {
             errorCode = lowPressure;
-#if DEBUG_MAIN
-            debug_print("[MAIN] NOPSR.\r\n");
-#endif
+            DEBUG_PRINT("[MAIN] NOPSR.\r\n");
         } else if (notification & ALARM_NOTIF_ABN_VOLUME) {
             errorCode = abnVolume;
-#if DEBUG_MAIN
-            debug_print("[MAIN] ABNVOL.\r\n");
-#endif
+            DEBUG_PRINT("[MAIN] ABNVOL.\r\n");
         } else if (notification & ALARM_NOTIF_ABN_FREQ) {
             errorCode = abnFreq;
-#if DEBUG_MAIN
-            debug_print("[MAIN] Rcvd ABNFREQ.\r\n");
-#endif
+            DEBUG_PRINT("[MAIN] Rcvd ABNFREQ.\r\n");
         } else if (notification & ALARM_NOTIF_POWER_AUX) {
             errorCode = auxPower;
-#if DEBUG_MAIN
-            debug_print("[MAIN] Rcvd AUXPWR.\r\n");
-#endif
+            DEBUG_PRINT("[MAIN] Rcvd AUXPWR.\r\n");
         }
         // TODO: errorCode?
 
         xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_ALARM, eSetBits);
-#if DEBUG_MAIN
-        debug_print("[MAIN] NOT_ALARM -> LCD.\r\n");
-#endif
+        DEBUG_PRINT("[MAIN] NOT_ALARM -> LCD.\r\n");
     } else if (alarmState == mediumPriorityAlarm && notification >= 0x10) {
-#if DEBUG_MAIN
-        debug_print("[MAIN] MPA -> HPA.\r\n");
-#endif
+        DEBUG_PRINT("[MAIN] MPA -> HPA.\r\n");
         alarmState = highPriorityAlarm;
         dio_write(DIO_PIN_ALARM_LED_LPA, 0);
         dio_write(DIO_PIN_ALARM_LED_HPA, 1);
 
         if (notification & ALARM_NOTIF_OVERPRESSURE) {
             errorCode = overPressure;
-#if DEBUG_MAIN
-            debug_print("[MAIN] OVERPSR.\r\n");
-#endif
+            DEBUG_PRINT("[MAIN] OVERPSR.\r\n");
         } else if (notification & ALARM_NOTIF_NO_PRESSURE) {
             errorCode = noPressure;
-#if DEBUG_MAIN
-            debug_print("[MAIN] NOPSR.\r\n");
-#endif
+            DEBUG_PRINT("[MAIN] NOPSR.\r\n");
         } else if (notification & ALARM_NOTIF_HIGH_PRESSURE) {
             errorCode = highPressure;
-#if DEBUG_MAIN
-            debug_print("[MAIN] HIGHPSR.\r\n");
-#endif
+            DEBUG_PRINT("[MAIN] HIGHPSR.\r\n");
         } else if (notification & ALARM_NOTIF_HIGH_TEMP) {
             errorCode = highTemperature;
-#if DEBUG_MAIN
-            debug_print("[MAIN] HIGHTEMP.\r\n");
-#endif
+            DEBUG_PRINT("[MAIN] HIGHTEMP.\r\n");
         }
 
         xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_ALARM, eSetBits);
-#if DEBUG_MAIN
-        debug_print("[MAIN] NOT_ALARM -> LCD. \r\n");
-#endif
+        DEBUG_PRINT("[MAIN] NOT_ALARM -> LCD. \r\n");
     } else {
         // Nothing to do here, already at highest priority
     }
@@ -502,34 +441,24 @@ void process_alarm(uint32_t notification)
 
 void process_critical_failure(uint32_t notification) {
     globalState = critical_failure;
-#if DEBUG_MAIN
-    debug_print("[MAIN] -> critical_failure.\r\n");
-#endif
+    DEBUG_PRINT("[MAIN] -> critical_failure.\r\n");
     alarmState = criticalPriorityAlarm;
     dio_write(DIO_PIN_LED_NORMAL_STATE, 0);
     dio_write(DIO_PIN_ALARM_LED_HPA, 1);
 
     if (notification & NOTIF_PATIENT_CONNECTED) {
-#if DEBUG_MAIN
-        debug_print("[MAIN] PAT_CONNECTED. \r\n");
-#endif
+        DEBUG_PRINT("[MAIN] PAT_CONNECTED. \r\n");
         errorCode = patientConnected;
     } else if (notification & NOTIF_INCORRECT_FLOW) {
-#if DEBUG_MAIN
-        debug_print("[MAIN] INCOR_FLOW. \r\n");
-#endif
+        DEBUG_PRINT("[MAIN] INCOR_FLOW. \r\n");
         errorCode = incorrectFlow;
     } else if (notification & NOTIF_POWER_MAIN) {
-#if DEBUG_MAIN
-        debug_print("[MAIN] POWER_MAIN. \r\n");
-#endif
+        DEBUG_PRINT("[MAIN] POWER_MAIN. \r\n");
         // TODO: errorCode?
     }
 
     xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
-#if DEBUG_MAIN
-    debug_print("[MAIN] NOT_STATE -> LCD. \r\n");
-#endif
+    DEBUG_PRINT("[MAIN] NOT_STATE -> LCD. \r\n");
 }
 
 uint8_t stoppedOrRunning() {
