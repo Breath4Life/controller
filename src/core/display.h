@@ -1,3 +1,7 @@
+/** Task in charge of handling the LCD display.
+ * The display depends the the global state variables of the system.  This task
+ * should be notified with the adequate notification when a parameter changes.
+ */
 #include "FreeRTOS.h"
 
 #define WELCOME_MSG1            "Breath4Life v1.0"
@@ -12,10 +16,15 @@
 #define CRITICAL_FAILURE_MSG1   "CRITICAL FAILURE"
 #define CRITICAL_FAILURE_MSG2   "RESTART REQUIRED"
 
+// The alaram state changed.
 #define DISP_NOTIF_ALARM 0x01
+// A parameter changed.
 #define DISP_NOTIF_PARAM 0x02
+// The plateau pressure changed.
 #define DISP_NOTIF_PLATEAU_P 0x04
+// The peak pressure changed.
 #define DISP_NOTIF_PEAK_P 0x08
+// The global state changed.
 #define DISP_NOTIF_STATE 0x10
 
 /**

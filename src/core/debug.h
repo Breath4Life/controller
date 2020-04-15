@@ -1,5 +1,6 @@
+/** Debug print functions.
+ */
 #include "FreeRTOS.h"
-
 
 /**
  * @debug_print Print a debug message on the UART.
@@ -25,25 +26,3 @@ void debug_print_FromISR(const char *fmt, ...);
  * Useful to enable debug with pre-processor flags
  */
 void fake_debug_print(const char *, ...);
-
-/**
- * @LEDTask Blink a LED every second.
- *
- * @param pvParameters Set to NULL.
- */
-void LEDTask(void *pvParameters);
-
-/**
- * @ReadIOTask Read a digital io every second (for testing purpose)
- *
- * @param pvParameters Set to NULL.
- */
-void ReadIOTask(void *pvParameters);
-
-/**
- * @ReadAnalogTask Read an analog input every second (for testing purpose)
- *
- * @param pvParameters Set to NULL.
- */
-void ReadAnalogTask(void *pvParameters);
-

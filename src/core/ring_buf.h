@@ -1,3 +1,5 @@
+/** Ring buffer used for buffering the debug output stream.
+ */
 #ifndef RING_BUF_H
 #define RING_BUF_H
 

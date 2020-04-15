@@ -112,6 +112,7 @@ void AlarmsTask(void *pvParameters)
             }
         }
 
+        // TODO replace this with a wait for notify
         vTaskDelayUntil( &xLastWakeTime, xFrequency);
     }
 }
