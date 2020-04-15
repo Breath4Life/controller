@@ -1,14 +1,21 @@
+/** High-level motor controlling task.
+ *
+ * Handle move the motor depending on the sensors, the parameters and the
+ * global state.
+ */
 #ifndef MOTOR_CONTROL_H_
 #define MOTOR_CONTROL_H_
 
 #include "FreeRTOS.h"
 
+// Notification that can be sent to the motor control task.
 #define MOTOR_NOTIF_LIM_DOWN 0x01
 #define MOTOR_NOTIF_LIM_UP 0x02
 #define MOTOR_NOTIF_MOVEMENT_FINISHED 0x08
 #define MOTOR_NOTIF_GLOBAL_STATE 0x10
 #define MOTOR_NOTIF_OVER_PRESSURE 0x80
 
+// Number of micro-steps per step of the stepper motor. (Driver configuration.)
 #define MOTOR_USTEPS 1
 
 // Threshold used in the flow-check calibration [ul]
@@ -68,11 +75,21 @@ typedef enum {
     errorStopped,
 } MotorErrorState_t;
 
+/** @motorState Global state of the motor.
+ */
 extern volatile MotorState_t motorState;
+/** @calibState sub-state of the motor when in motorCalibrating state.
+ */
 extern volatile CalibState_t calibState;
+/** @breathState sub-state of the motor when in motorRunning state.
+ */
 extern volatile BreathState_t breathState;
+/** @motorErrorState sub-state of the motor when in motorError state.
+ */
 extern volatile MotorErrorState_t motorErrorState;
 
+/** @init_motor Initialize the motor state machine
+ */
 void init_motor();
 
 /**
@@ -81,6 +98,5 @@ void init_motor();
  * @param pvParameters Set to NULL.
  */
 void MotorControlTask(void *pvParameters);
-
 
 #endif // MOTOR_CONTROL_H_
