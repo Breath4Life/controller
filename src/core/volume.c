@@ -52,7 +52,7 @@ uint8_t poll_volume() {
         case 0: {
                     uint32_t curr_time = time_us();
                     uint32_t t_delta = curr_time - last_poll_time;
-                    int64_t scale = SCALE_SFM3000 * 60;
+                    int64_t scale = SENSOR_DIR * SCALE_SFM3000 * 60;
                     int32_t volume_inc = (((int64_t) reading_sfm3300) * ((int64_t) t_delta)) / scale;
 
 #if SEND_TO_SERIAL

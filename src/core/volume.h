@@ -3,6 +3,11 @@
 
 #include <stdint.h>
 
+/*
+ * -1: flow sensor measures inspiration as a negative flow
+ *  1: flow sensor measures inspiration as a positive flow
+ */
+#define SENSOR_DIR -1
 
 /**
  * @volume Current inspired volume in micro-liters
