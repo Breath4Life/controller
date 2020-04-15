@@ -33,7 +33,7 @@ static void process_calib_error(uint32_t notification);
 static void set_critical_failure();
 
 // debug print
-#define DEBUG_MAIN 0
+#define DEBUG_MAIN 1
 
 #if DEBUG_MAIN
 #define DEBUG_PRINT debug_print
@@ -44,8 +44,8 @@ static void set_critical_failure();
 #define SIM_MOTOR 0             // "simulate" motor to debug the rest
 #define ALARM_CHECK 1           // active/deactivate alarm check for debug
 #define CALIB_ERROR_CHECK 1     // active/deactivate calib error check during calib for debug
-#define POWER_AUX_CHECK 1       // active/deactivate power aux check for debug
-#define POWER_MAIN_CHECK 1      // active/deactivate power main check for debug
+#define POWER_AUX_CHECK 0       // active/deactivate power aux check for debug
+#define POWER_MAIN_CHECK 0      // active/deactivate power main check for debug
 
 void initMainTask()
 {
@@ -363,7 +363,7 @@ void MainTask(void *pvParameters)
          */
         if (error_power_main()) {
 #if POWER_MAIN_CHECK
-            set_critical_failure(NOTIF_POWER_MAIN);
+            set_critical_failure();
 #endif
         }
 
