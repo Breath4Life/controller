@@ -21,6 +21,7 @@
 #include "hal/lcd.h"
 #include "hal/time.h"
 #include "hal/power_monitoring.h"
+#include "hal/door_open.h"
 
 TaskHandle_t mainTaskHandle;
 TaskHandle_t motorControlTaskHandle;
@@ -77,6 +78,8 @@ void initHardware(void)
     init_power_monitoring();
 
     init_volume();
+
+    door_open_init();
 }
 
 int main(void)

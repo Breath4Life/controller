@@ -13,6 +13,7 @@
 #include "hal/io.h"
 #include "hal/pins.h"
 #include "hal/power_monitoring.h"
+#include "hal/door_open.h"
 
 volatile GlobalState_t globalState;
 volatile AlarmState_t alarmState;
@@ -46,6 +47,7 @@ static void set_critical_failure();
 #define CALIB_ERROR_CHECK 1     // active/deactivate calib error check during calib for debug
 #define POWER_AUX_CHECK 0       // active/deactivate power aux check for debug
 #define POWER_MAIN_CHECK 0      // active/deactivate power main check for debug
+#define DOOR_CHECK 0            // active/deactivate door check for debug
 
 void initMainTask()
 {
@@ -354,6 +356,7 @@ void MainTask(void *pvParameters)
          */
         if (error_power_aux()) {
 #if POWER_AUX_CHECK
+            DEBUG_PRINT("[MAIN] POWER AUX ERROR.\r\n");
             process_alarm(ALARM_NOTIF_POWER_AUX);
 #endif
         }
@@ -363,23 +366,34 @@ void MainTask(void *pvParameters)
          */
         if (error_power_main()) {
 #if POWER_MAIN_CHECK
+            DEBUG_PRINT("[MAIN] POWER MAIN ERROR.\r\n");
             set_critical_failure();
 #endif
         }
 
         /*
-         * 13. EEPROM total operating writing
+         * 13. Check if casing door is open
+         */
+        if (is_door_open()) {
+#if DOOR_CHECK
+            DEBUG_PRINT("[MAIN] DOOR OPEN.\r\n");
+            set_critical_failure();
+#endif
+        }
+
+        /*
+         * 14. EEPROM total operating writing
          */
 
         // TODO
 
         /*
-         * 14. Poll volume sensing.
+         * 15. Poll volume sensing.
          */
         poll_volume();
 
         /*
-         * 15. Bounded wait for notification (10ms)
+         * 16. Bounded wait for notification (10ms)
          */
         notif_recv = xTaskNotifyWait(0x0, ALL_NOTIF_BITS, &notification, pdMS_TO_TICKS(10));
     }
