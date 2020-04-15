@@ -17,6 +17,11 @@ License along with this library; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 Modified 2012 by Todd Krein (todd@krein.org) to implement repeated starts
+
+Modified 2020 by Gaetan Casiers to adapt to the BreatheForLife project.
+Made the functions (mostly) non-blocking.
+Note: this is not robust and properly reviewed code, and should be rewritten to be interrupt-based.
+
 */
 
 #ifndef TwoWire_h

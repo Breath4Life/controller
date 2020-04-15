@@ -15,6 +15,10 @@
   You should have received a copy of the GNU Lesser General Public
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
+Modified 2020 by Gaetan Casiers to adapt to the BreatheForLife project.
+Made the functions (mostly) non-blocking.
+Note: this is not robust and properly reviewed code, and should be rewritten to be interrupt-based.
 */
 
 #ifndef twi_h
@@ -37,7 +41,7 @@
   #define TWI_MTX   2
   #define TWI_SRX   3
   #define TWI_STX   4
-  
+
   void twi_init(void);
   void twi_disable(void);
   void twi_setAddress(uint8_t);

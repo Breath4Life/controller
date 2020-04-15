@@ -3,6 +3,9 @@
  *
  *  Created on: 31.03.2017
  *      Author: Dennis Eichmann
+ *
+ *  Modified 2020 by Balasz Udvarhelyi for the BreatheForLife project.
+ *  Adapted counter used
  */
 
 

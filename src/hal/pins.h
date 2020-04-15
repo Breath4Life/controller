@@ -1,3 +1,8 @@
+/** Pinout of the system.
+ */
+#ifndef PINS_H_H
+#define PINS_H_H
+
 #include <stdint.h>
 
 // Simple structure to hold all pin mappings
@@ -92,3 +97,5 @@ enum aio_pin {
 // The declaration of the mappings are contained in hal/pins.c.
 extern struct io_pin_config DIO_PIN_CONFIG[];
 extern struct io_pin_config AIO_PIN_CONFIG[];
+
+#endif // PINS_H_H
