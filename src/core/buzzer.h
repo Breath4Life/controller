@@ -14,6 +14,13 @@ void init_buzzer();
  */
 void notify_buzzer();
 
+/** @play_tone Play a tone once.
+ *
+ * @param frequency Frequency of the tone (in Hz).
+ * @param time Duration of the tone (in ms).
+ */
+void play_tone(uint16_t frequency, uint16_t time);
+
 /**
  * @BuzzerTask Buzzer sound generation handling task.
  *

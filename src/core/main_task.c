@@ -81,6 +81,9 @@ void MainTask(void *pvParameters)
 
     DEBUG_PRINT("[MAIN] -> welcome.\r\n");
 
+    // TODO SPEC and adjust this
+    play_tone(440, 500);
+
     vTaskDelayUntil(&xLastWakeTime, WELCOME_MSG_DUR);
     /*
      * 4. If globalState is welcome and WELCOME_MSG_DUR s have elapsed,

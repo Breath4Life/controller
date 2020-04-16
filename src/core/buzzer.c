@@ -79,6 +79,11 @@ static void set_time_next_wakeup(uint16_t time) {
     boundedWaitTime = pdMS_TO_TICKS(time);
 }
 
+void play_tone(uint16_t frequency, uint16_t time) {
+    tone_start(frequency);
+    set_time_next_wakeup(time);
+}
+
 void BuzzerTask(void *pvParameters)
 {
     BUZZER_DEBUG_PRINT("[ALARM] Starting.\r\n");
@@ -94,8 +99,9 @@ void BuzzerTask(void *pvParameters)
             seq_offset = tones_size[buzzer_alarm_state];
             set_time_next_wakeup(0);
         }
-        if ((buzzer_alarm_state != noAlarm) && !muted) {
-            if (xTaskCheckForTimeOut(&timeOutBoundedWait, &boundedWaitTime)) {
+        if (xTaskCheckForTimeOut(&timeOutBoundedWait, &boundedWaitTime)) {
+            tone_stop();
+            if ((buzzer_alarm_state != noAlarm) && !muted) {
                 if (pausing) {
                     BUZZER_DEBUG_PRINT("[ALARM] Unpausing.\r\n");
                     pausing = 0;
@@ -108,13 +114,12 @@ void BuzzerTask(void *pvParameters)
                 } else {
                     BUZZER_DEBUG_PRINT("[ALARM] Pausing.\r\n");
                     pausing = 1;
-                    tone_stop();
                     set_time_next_wakeup(tones_pause[buzzer_alarm_state][seq_offset]);
                 }
+            } else {
+                // no wake-up needed
+                set_time_next_wakeup(1000);
             }
-        } else {
-            // no wake-up needed
-            set_time_next_wakeup(1000);
         }
 
         uint32_t notif_recv;
