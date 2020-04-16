@@ -9,6 +9,7 @@
 #include "core/utils.h"
 #include "core/display.h"
 #include "core/volume.h"
+#include "core/buzzer.h"
 
 #include "hal/io.h"
 #include "hal/pins.h"
@@ -146,6 +147,7 @@ void MainTask(void *pvParameters)
             alarmState = noAlarm;
             errorCode = noError;
             calibError = calibNoError;
+            notify_buzzer();
 
             dio_write(DIO_PIN_LED_NORMAL_STATE, 1);
             dio_write(DIO_PIN_ALARM_LED_LPA, 0);
@@ -447,6 +449,7 @@ void process_alarm(uint32_t notification)
         // TODO: errorCode?
 
         xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_ALARM, eSetBits);
+        notify_buzzer();
         DEBUG_PRINT("[MAIN] NOT_ALARM -> LCD.\r\n");
     } else if (alarmState == mediumPriorityAlarm && notification >= 0x10) {
         DEBUG_PRINT("[MAIN] MPA -> HPA.\r\n");
@@ -469,6 +472,7 @@ void process_alarm(uint32_t notification)
         }
 
         xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_ALARM, eSetBits);
+        notify_buzzer();
         DEBUG_PRINT("[MAIN] NOT_ALARM -> LCD. \r\n");
     } else {
         // Nothing to do here, already at highest priority
@@ -509,6 +513,7 @@ void set_critical_failure(CriticalFailureCause_t cause) {
 
     xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
     xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_GLOBAL_STATE, eSetBits);
+    notify_buzzer();
     DEBUG_PRINT("[MAIN] NOT_STATE -> LCD. \r\n");
 }
 
