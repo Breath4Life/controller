@@ -18,7 +18,7 @@
 
 void debug_print_FromISR(const char *fmt, ...)
 {
-    char buffer[128];
+    char buffer[32];
 
     va_list args;
     va_start(args, fmt);

@@ -47,6 +47,7 @@ static void set_critical_failure(CriticalFailureCause_t cause);
 #define SIM_MOTOR 0             // "simulate" motor to debug the rest
 #define ALARM_CHECK 1           // active/deactivate alarm check for debug
 #define CALIB_ERROR_CHECK 1     // active/deactivate calib error check during calib for debug
+
 #define POWER_AUX_CHECK 0       // active/deactivate power aux check for debug
 #define POWER_MAIN_CHECK 1      // active/deactivate power main check for debug
 #define DOOR_CHECK 1            // active/deactivate door check for debug
@@ -394,7 +395,6 @@ void MainTask(void *pvParameters)
         /*
          * 14. EEPROM total operating writing
          */
-
         // TODO
 
         /*

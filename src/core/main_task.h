@@ -73,4 +73,6 @@ uint8_t stoppedOrRunning();
 /* check if volume is within +- 10% of target volume */
 void check_volume(uint32_t actual_vol);
 
+void incrementCyclesNumber();
+
 #endif // MAINTASK_H_
