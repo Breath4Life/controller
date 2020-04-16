@@ -34,8 +34,8 @@
 
 // Pmax
 #define DEFAULT_PMAX 38
-#define MAX_PMAX 40
-#define MIN_PMAX 30
+#define MAX_PMAX 58
+#define MIN_PMAX 28
 #define INC_PMAX 1
 
 #define N_EXTRA 3
