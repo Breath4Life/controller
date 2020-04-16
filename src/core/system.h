@@ -57,8 +57,15 @@ typedef enum {
     incorrectFlow
 } CalibError_t;
 
+typedef enum {
+    doorOpen,
+    cfMotorError,
+    powerError
+} CriticalFailureCause_t;
+
 extern volatile ErrorCode_t errorCode;
 extern volatile CalibError_t calibError;
+extern volatile CriticalFailureCause_t criticalFailureCause;
 
 extern volatile uint8_t mute_on;
 

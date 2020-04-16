@@ -99,7 +99,7 @@ void LCDDisplayTask(void *pvParameters)
 #endif
                 // Only write the state info if either
                 // - there is no pending alarm (otherwhise alarm info is overwritten)
-                // - globalState is critical_failure
+                // - globalState is critical_failure FIXME: why?
                 if (alarmState == noAlarm || globalState == critical_failure) {
                     disp_state();
                 }
@@ -189,8 +189,27 @@ static void disp_peak_p() {
 static void disp_state() {
     if (globalState == critical_failure) {
         debug_print("[LCD] rcvd crit_fail.\r\n");
-        lcd_write_string(CRITICAL_FAILURE_MSG1, 1, 1, NO_CR_LF);
-        lcd_write_string(CRITICAL_FAILURE_MSG2, 2, 1, NO_CR_LF);
+        switch (criticalFailureCause) {
+            case doorOpen:
+                lcd_write_string(DOOR_OPEN_MSG, 1, 1, NO_CR_LF);
+                lcd_write_string(CRITICAL_FAILURE_MSG, 2, 1, NO_CR_LF);
+                break;
+            case cfMotorError:
+                lcd_write_string(MOTOR_ERROR_MSG, 1, 1, NO_CR_LF);
+                lcd_write_string(CRITICAL_FAILURE_MSG, 2, 1, NO_CR_LF);
+                break;
+            case powerError:
+                lcd_write_string(POWER_ERROR_MSG, 1, 1, NO_CR_LF);
+                lcd_write_string(CRITICAL_FAILURE_MSG, 2, 1, NO_CR_LF);
+                break;
+             default:
+                // Should never happen
+#if DEBUG_LCD
+                debug_print("[LCD] Unknown critical failure.\r\n");
+#endif
+                lcd_write_string(UNKNOWN_ERROR_MSG, 1, 1, NO_CR_LF);
+                lcd_write_string(CRITICAL_FAILURE_MSG, 2, 1, NO_CR_LF);
+        }
     } else if (globalState == welcome_wait_cal) {
         switch (calibError) {
             case calibNoError:
@@ -208,9 +227,9 @@ static void disp_state() {
             default:
                 // Should never happen
 #if DEBUG_LCD
-                debug_print("[LCD] Unknoswn calib Error.\r\n");
+                debug_print("[LCD] Unknown calib error.\r\n");
 #endif
-                lcd_write_string(WAIT_CALI_MSG1, 1, 1, NO_CR_LF);
+                lcd_write_string(UNKNOWN_ERROR_MSG, 1, 1, NO_CR_LF);
                 lcd_write_string(WAIT_CALI_MSG2, 2, 1, NO_CR_LF);
         }
     } else if(globalState == calibration) {

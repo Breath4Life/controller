@@ -19,6 +19,7 @@ volatile GlobalState_t globalState;
 volatile AlarmState_t alarmState;
 volatile ErrorCode_t errorCode;
 volatile CalibError_t calibError;
+volatile CriticalFailureCause_t criticalFailureCause;
 
 volatile uint8_t mute_on;
 TickType_t mute_time;
@@ -31,7 +32,7 @@ uint8_t extra_param;
 
 static void process_alarm(uint32_t notification);
 static void process_calib_error(uint32_t notification);
-static void set_critical_failure();
+static void set_critical_failure(CriticalFailureCause_t cause);
 
 // debug print
 #define DEBUG_MAIN 1
@@ -46,7 +47,7 @@ static void set_critical_failure();
 #define ALARM_CHECK 1           // active/deactivate alarm check for debug
 #define CALIB_ERROR_CHECK 1     // active/deactivate calib error check during calib for debug
 #define POWER_AUX_CHECK 0       // active/deactivate power aux check for debug
-#define POWER_MAIN_CHECK 0      // active/deactivate power main check for debug
+#define POWER_MAIN_CHECK 1      // active/deactivate power main check for debug
 #define DOOR_CHECK 1            // active/deactivate door check for debug
 
 void initMainTask()
@@ -326,7 +327,8 @@ void MainTask(void *pvParameters)
                 DEBUG_PRINT("[MAIN] run rcvd notif.\r\n");
 #if ALARM_CHECK
                 if (notification & NOTIF_MOTOR_ERROR) {
-                    set_critical_failure();
+                    CriticalFailureCause_t cause = cfMotorError;
+                    set_critical_failure(cause);
                 } else {
                     process_alarm(notification);
                 }
@@ -343,7 +345,8 @@ void MainTask(void *pvParameters)
                 DEBUG_PRINT("[MAIN] calib rcvd notif.\r\n");
 #if CALIB_ERROR_CHECK
                 if (notification & NOTIF_MOTOR_ERROR) {
-                    set_critical_failure();
+                    CriticalFailureCause_t cause = cfMotorError;
+                    set_critical_failure(cause);
                 } else {
                     process_calib_error(notification);
                 }
@@ -367,7 +370,8 @@ void MainTask(void *pvParameters)
         if (error_power_main()) {
 #if POWER_MAIN_CHECK
             DEBUG_PRINT("[MAIN] POWER MAIN ERROR.\r\n");
-            set_critical_failure();
+            CriticalFailureCause_t cause = powerError;
+            set_critical_failure(cause);
 #endif
         }
 
@@ -377,7 +381,8 @@ void MainTask(void *pvParameters)
         if (is_door_open()) {
 #if DOOR_CHECK
             DEBUG_PRINT("[MAIN] DOOR OPEN.\r\n");
-            set_critical_failure();
+            CriticalFailureCause_t cause = doorOpen;
+            set_critical_failure(cause);
 #endif
         }
 
@@ -492,9 +497,10 @@ void process_calib_error(uint32_t notification) {
     DEBUG_PRINT("[MAIN] NOT_STATE -> LCD. \r\n");
 }
 
-void set_critical_failure() {
+void set_critical_failure(CriticalFailureCause_t cause) {
     alarmState = highPriorityAlarm;
     globalState = critical_failure;
+    criticalFailureCause = cause;
     DEBUG_PRINT("[MAIN] -> critical_failure.\r\n");
 
     dio_write(DIO_PIN_ALARM_LED_LPA, 0);

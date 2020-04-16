@@ -4,17 +4,29 @@
  */
 #include "FreeRTOS.h"
 
+// Welcome message
 #define WELCOME_MSG1            "Breath4Life v1.0"
 #define WELCOME_MSG2            "Starting...     "
+
+// Waiting calibration message
 #define WAIT_CALI_MSG1          "Press START     "
 #define WAIT_CALI_MSG2          "to calibrate.   "
+
+// Calibration error messages
 #define PAT_CONNECTED_MSG       "Remove patient !"
 #define INC_FLOW_MSG            "Flow-check fail."
+#define UNKNOWN_ERROR_MSG       "Unknown error..."
 #define RETRY_CALI_MSG          "START to re-try."
+
+// Calibration message
 #define CALI_MSG1               "Calibrating...  "
 #define CALI_MSG2               "Please wait...  "
-#define CRITICAL_FAILURE_MSG1   "CRITICAL FAILURE"
-#define CRITICAL_FAILURE_MSG2   "RESTART REQUIRED"
+
+// Critical failure messages
+#define DOOR_OPEN_MSG           "! DOOR IS OPEN !"
+#define MOTOR_ERROR_MSG         "! MOTOR ERROR  !"
+#define POWER_ERROR_MSG         "! POWER ERROR  !"
+#define CRITICAL_FAILURE_MSG    "RESTART REQUIRED"
 
 // The alaram state changed.
 #define DISP_NOTIF_ALARM 0x01
