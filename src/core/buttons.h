@@ -6,8 +6,8 @@
 #define N_BUTTONS 11
 
 typedef enum {
-    button_right,
-    button_left,
+    button_next,
+    button_confirm,
     button_up,
     button_down,
     button_vtidal_up,

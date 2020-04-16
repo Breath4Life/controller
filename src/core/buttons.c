@@ -8,8 +8,8 @@
 static ButtonsState read_buttons();
 
 static const enum dio_pin button_pins[N_BUTTONS] = {
-    DIO_PIN_BUTTON_RIGHT,
-    DIO_PIN_BUTTON_LEFT,
+    DIO_PIN_BUTTON_NEXT,
+    DIO_PIN_BUTTON_CONFIRM,
     DIO_PIN_BUTTON_UP,
     DIO_PIN_BUTTON_DOWN,
     DIO_PIN_BUTTON_VTIDAL_UP,
@@ -22,8 +22,8 @@ static const enum dio_pin button_pins[N_BUTTONS] = {
 };
 
 const char *buttons_descr[N_BUTTONS] = {
-    "RIGHT",
-    "LEFT",
+    "NEXT",
+    "CONFIRM",
     "UP",
     "DOWN",
     "VTIDAL_UP",

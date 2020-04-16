@@ -25,11 +25,18 @@ volatile CriticalFailureCause_t criticalFailureCause;
 volatile uint8_t mute_on;
 TickType_t mute_time;
 
+// actual parameters
 uint8_t tidal_vol; // tens of mL
 uint8_t bpm;
 uint8_t ie;
 uint8_t p_max;
 uint8_t extra_param;
+
+// unconfirmed new parameters
+uint8_t new_tidal_vol; // tens of mL
+uint8_t new_bpm;
+uint8_t new_ie;
+uint8_t new_p_max;
 
 static void process_alarm(uint32_t notification);
 static void process_calib_error(uint32_t notification);
@@ -67,9 +74,13 @@ void initMainTask()
     // TODO notify Buzzer task of Welcome
 
     tidal_vol = DEFAULT_TIDAL_VOL;
+    new_tidal_vol = DEFAULT_TIDAL_VOL;
     bpm = DEFAULT_BPM;
+    new_bpm = DEFAULT_BPM;
     ie = DEFAULT_IE;
+    new_ie = DEFAULT_IE;
     p_max = DEFAULT_PMAX;
+    new_p_max = DEFAULT_PMAX;
     extra_param = 0;
 
     initButtons();
@@ -233,35 +244,38 @@ void MainTask(void *pvParameters)
              * state and notify LCD
              */
             if (BUTTON_PRESSED(buttons_pressed, button_vtidal_up)) {
-                tidal_vol = MIN(MAX_TIDAL_VOL, tidal_vol + INC_TIDAL_VOL);
+                new_tidal_vol = MIN(MAX_TIDAL_VOL, new_tidal_vol + INC_TIDAL_VOL);
                 updated_setting = 1;
             }
             if (BUTTON_PRESSED(buttons_pressed, button_vtidal_down)) {
-                tidal_vol = MAX(MIN_TIDAL_VOL, tidal_vol - INC_TIDAL_VOL);
+                new_tidal_vol = MAX(MIN_TIDAL_VOL, new_tidal_vol - INC_TIDAL_VOL);
                 updated_setting = 1;
             }
             if (BUTTON_PRESSED(buttons_pressed, button_freq_respi_up)) {
-                bpm = MIN(MAX_BPM, bpm + INC_BPM);
+                new_bpm = MIN(MAX_BPM, new_bpm + INC_BPM);
                 updated_setting = 1;
             }
             if (BUTTON_PRESSED(buttons_pressed, button_freq_respi_down)) {
-                bpm = MAX(MIN_BPM, bpm - INC_BPM);
+                new_bpm = MAX(MIN_BPM, new_bpm - INC_BPM);
                 updated_setting = 1;
             }
-            if (BUTTON_PRESSED(buttons_pressed, button_right)) {
+            if (BUTTON_PRESSED(buttons_pressed, button_next)) {
                 extra_param = (extra_param + 1) % N_EXTRA;
                 updated_setting = 1;
             }
-            if (BUTTON_PRESSED(buttons_pressed, button_left)) {
-                extra_param = (extra_param - 1) % N_EXTRA;
-                updated_setting = 1;
+            if (BUTTON_PRESSED(buttons_pressed, button_confirm)) {
+                DEBUG_PRINT("[MAIN] New parameters confirmed.\r\n");
+                tidal_vol = new_tidal_vol;
+                bpm = new_bpm;
+                ie = new_ie;
+                p_max = new_p_max;
             }
             if (BUTTON_PRESSED(buttons_pressed, button_up)) {
                 if (extra_param == 0) {
-                    ie = MIN(MAX_IE, ie + INC_IE);
+                    new_ie = MIN(MAX_IE, new_ie + INC_IE);
                     updated_setting = 1;
                 } else if (extra_param == 1) {
-                    p_max = MIN(MAX_PMAX, p_max + INC_PMAX);
+                    new_p_max = MIN(MAX_PMAX, new_p_max + INC_PMAX);
                     updated_setting = 1;
                 } else if (extra_param == 2) {
                     // PEEP, not settable
@@ -269,10 +283,10 @@ void MainTask(void *pvParameters)
             }
             if (BUTTON_PRESSED(buttons_pressed, button_down)) {
                 if (extra_param == 0) {
-                    ie = MAX(MIN_IE, ie - INC_IE);
+                    new_ie = MAX(MIN_IE, new_ie - INC_IE);
                     updated_setting = 1;
                 } else if (extra_param == 1) {
-                    p_max = MAX(MIN_PMAX, p_max - INC_PMAX);
+                    new_p_max = MAX(MIN_PMAX, new_p_max - INC_PMAX);
                     updated_setting = 1;
                 } else if (extra_param == 2) {
                     // PEEP, not settable

@@ -59,12 +59,18 @@
 
 #define NOTIF_MOTOR_ERROR 0x800
 
-// in tens of ml
-extern uint8_t tidal_vol;
+// actual parameters
+extern uint8_t tidal_vol; // in tens of ml
 extern uint8_t bpm;
 extern uint8_t ie;
 extern uint8_t p_max;
 extern uint8_t extra_param;
+
+// unconfirmed new parameters
+extern uint8_t new_tidal_vol; // in tens of ml
+extern uint8_t new_bpm;
+extern uint8_t new_ie;
+extern uint8_t new_p_max;
 
 void initMainTask();
 void MainTask(void *pvParameters);

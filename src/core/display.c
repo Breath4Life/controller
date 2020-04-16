@@ -16,21 +16,31 @@
 
 static void disp_alarm();
 static void disp_muted();
-static void disp_param();
+static void disp_tidal_vol(uint8_t force);
+static void disp_bpm(uint8_t force);
+static void disp_extra_param(uint8_t force);
 static void disp_plateau_p();
 static void disp_peak_p();
 static void disp_state();
 
-#define DEBUG_LCD 0
+#define DEBUG_LCD 1
+#if DEBUG_LCD
+#define DEBUG_PRINT debug_print
+#else
+#define DEBUG_PRINT fake_debug_print
+#endif // DEBUG_LCD
 
 uint32_t muted_switch_time = 0;
 uint8_t muted_msg_on = 0;
 
+uint32_t param_switch_time = 0;
+uint8_t tidal_vol_on = 0;
+uint8_t bpm_on = 0;
+uint8_t extra_param_on = 0;
+
 void LCDDisplayTask(void *pvParameters)
 {
-#if DEBUG_LCD
-    debug_print("[LCD] Starting.\r\n");
-#endif
+    DEBUG_PRINT("[LCD] Starting.\r\n");
 
     // Wait 100ms (otherwhise welcome message not printed)
     TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -40,12 +50,11 @@ void LCDDisplayTask(void *pvParameters)
     lcd_write_string(WELCOME_MSG1, 1, 1, NO_CR_LF);
     lcd_write_string(WELCOME_MSG2, 2, 1, NO_CR_LF);
 
-
     while (1) {
         uint32_t notification;
         uint32_t curr_time = time_us();
 
-        // Display "Muted" and the current state/alarm alternatively for 2 seconds if mute_on
+        // Display "Muted" and the current state or alarm alternatively for 2 seconds if mute_on
         if (mute_on && (globalState == stop || globalState == run)) {
             if (curr_time - muted_switch_time > 2000000L) {
                 if (!muted_msg_on) {
@@ -72,31 +81,50 @@ void LCDDisplayTask(void *pvParameters)
             }
         }
 
+        if (curr_time - param_switch_time > 250000L) {
+            if (new_tidal_vol != tidal_vol) {
+                disp_tidal_vol(0);
+            } else if (!tidal_vol_on) {
+                disp_tidal_vol(1);
+            }
+
+            if (new_bpm != bpm) {
+                disp_bpm(0);
+            } else if (!bpm_on) {
+                disp_bpm(1);
+            }
+
+            if (new_ie != ie || new_p_max != p_max) {
+                disp_extra_param(0);
+            } else if (!extra_param_on) {
+                disp_extra_param(1);
+            }
+
+            param_switch_time = curr_time;
+        }
+
         // FIXME: max wait has been changed to implement alternate mute/state/alarm display
-        BaseType_t notif_recv = xTaskNotifyWait(0x0, ALL_NOTIF_BITS, &notification, pdMS_TO_TICKS(1000));
+        BaseType_t notif_recv = xTaskNotifyWait(0x0, ALL_NOTIF_BITS, &notification, pdMS_TO_TICKS(100));
         if (notif_recv == pdTRUE) {
             if (notification & DISP_NOTIF_PARAM) {
-#if DEBUG_LCD
-                debug_print("[LCD] rcvd notif param.\r\n");
-#endif
-                disp_param();
+                DEBUG_PRINT("[LCD] rcvd notif param.\r\n");
+                // FIXME: not clean, for a single param change, we re-write everything
+                disp_tidal_vol(1);
+                disp_bpm(1);
+                disp_extra_param(1);
+
+                param_switch_time = time_us();
             }
             if (notification & DISP_NOTIF_PLATEAU_P) {
-#if DEBUG_LCD
-                debug_print("[LCD] rcvd notif plateau p.\r\n");
-#endif
+                DEBUG_PRINT("[LCD] rcvd notif plateau p.\r\n");
                 disp_plateau_p();
             }
             if (notification & DISP_NOTIF_PEAK_P) {
-#if DEBUG_LCD
-                debug_print("[LCD] rcvd notif peak p.\r\n");
-#endif
+                DEBUG_PRINT("[LCD] rcvd notif peak p.\r\n");
                 disp_peak_p();
             }
             if (notification & DISP_NOTIF_STATE) {
-#if DEBUG_LCD
-                debug_print("[LCD] rcvd notif state.\r\n");
-#endif
+                DEBUG_PRINT("[LCD] rcvd notif state.\r\n");
                 // Only write the state info if either
                 // - there is no pending alarm (otherwhise alarm info is overwritten)
                 // - globalState is critical_failure FIXME: why?
@@ -105,9 +133,7 @@ void LCDDisplayTask(void *pvParameters)
                 }
             }
             if (notification & DISP_NOTIF_ALARM) {
-#if DEBUG_LCD
-                debug_print("[LCD] rcvd notif ALARM.\r\n");
-#endif
+                DEBUG_PRINT("[LCD] rcvd notif ALARM.\r\n");
                 disp_alarm();
             }
         }
@@ -117,6 +143,7 @@ void LCDDisplayTask(void *pvParameters)
 }
 
 static void disp_alarm() {
+    // FIXME: buffer useless here
     char alarm_buffer[9];
 
     switch(errorCode) {
@@ -156,22 +183,81 @@ static void disp_alarm() {
 }
 
 static void disp_muted() {
-    char buffer[9];
-
-    sprintf(buffer, " MUTED ");
-    lcd_write_string(buffer, 1, 10, NO_CR_LF);
+    lcd_write_string(" MUTED ", 1, 10, NO_CR_LF);
 }
 
-char param_buffer[17];
-static void disp_param() {
-    if (extra_param == 0) {
-        sprintf(param_buffer, "%2u0 %2u I:E = 1:%1u", tidal_vol, bpm, ie);
-    } else if (extra_param == 1) {
-        sprintf(param_buffer, "%2u0 %2u Pmax = %2u", tidal_vol, bpm, p_max);
-    } else if (extra_param == 2) {
-        sprintf(param_buffer, "%2u0 %2u PEEP = %2u", tidal_vol, bpm, peep);
+// FIXME: better buffer usage
+char tidal_vol_buffer[8];
+static void disp_tidal_vol(uint8_t force) {
+    if (force) {
+        sprintf(tidal_vol_buffer, "%2u0 ", new_tidal_vol);
+        tidal_vol_on = 1;
+    } else {
+        if (tidal_vol_on) {
+            sprintf(tidal_vol_buffer, "    ");
+            tidal_vol_on = 0;
+        } else {
+            sprintf(tidal_vol_buffer, "%2u0 ", new_tidal_vol);
+            tidal_vol_on = 1;
+        }
     }
-    lcd_write_string(param_buffer,2,1,NO_CR_LF);
+
+    lcd_write_string(tidal_vol_buffer, 2, 1, NO_CR_LF);
+}
+
+// FIXME: better buffer usage
+char bpm_buffer[8];
+static void disp_bpm(uint8_t force) {
+    if (force) {
+        sprintf(bpm_buffer, "%2u ", new_bpm);
+        bpm_on = 1;
+    } else {
+        if (bpm_on) {
+            sprintf(bpm_buffer, "   ");
+            bpm_on = 0;
+        } else {
+            sprintf(bpm_buffer, "%2u ", new_bpm);
+            bpm_on = 1;
+        }
+    }
+
+    lcd_write_string(bpm_buffer, 2, 5, NO_CR_LF);
+}
+
+// FIXME: better buffer usage
+char extra_param_buffer[12];
+static void disp_extra_param(uint8_t force) {
+    if (extra_param == 0) {
+        if (force) {
+            sprintf(extra_param_buffer, "I:E = 1:%1u", new_ie);
+            extra_param_on = 1;
+        } else {
+            if (extra_param_on) {
+                sprintf(extra_param_buffer, "         ");
+                extra_param_on = 0;
+            } else {
+                sprintf(extra_param_buffer, "I:E = 1:%1u", new_ie);
+                extra_param_on = 1;
+            }
+        }
+    } else if (extra_param == 1) {
+        if (force) {
+            sprintf(extra_param_buffer, "Pmax = %2u", new_p_max);
+            extra_param_on = 1;
+         } else {
+            if (extra_param_on) {
+                sprintf(extra_param_buffer, "         ");
+                extra_param_on = 0;
+            } else {
+                sprintf(extra_param_buffer, "Pmax = %2u", new_p_max);
+                extra_param_on = 1;
+            }
+         }
+    } else if (extra_param == 2) {
+        sprintf(extra_param_buffer, "PEEP = %2u", peep);
+    }
+
+    lcd_write_string(extra_param_buffer, 2, 8, NO_CR_LF);
 }
 
 char plateau_p_buffer[5];
@@ -188,7 +274,7 @@ static void disp_peak_p() {
 
 static void disp_state() {
     if (globalState == critical_failure) {
-        debug_print("[LCD] rcvd crit_fail.\r\n");
+        DEBUG_PRINT("[LCD] rcvd crit_fail.\r\n");
         switch (criticalFailureCause) {
             case doorOpen:
                 lcd_write_string(DOOR_OPEN_MSG, 1, 1, NO_CR_LF);
@@ -204,9 +290,7 @@ static void disp_state() {
                 break;
              default:
                 // Should never happen
-#if DEBUG_LCD
-                debug_print("[LCD] Unknown critical failure.\r\n");
-#endif
+                DEBUG_PRINT("[LCD] Unknown critical failure.\r\n");
                 lcd_write_string(UNKNOWN_ERROR_MSG, 1, 1, NO_CR_LF);
                 lcd_write_string(CRITICAL_FAILURE_MSG, 2, 1, NO_CR_LF);
         }
@@ -226,9 +310,7 @@ static void disp_state() {
                 break;
             default:
                 // Should never happen
-#if DEBUG_LCD
-                debug_print("[LCD] Unknown calib error.\r\n");
-#endif
+                DEBUG_PRINT("[LCD] Unknown calib error.\r\n");
                 lcd_write_string(UNKNOWN_ERROR_MSG, 1, 1, NO_CR_LF);
                 lcd_write_string(WAIT_CALI_MSG2, 2, 1, NO_CR_LF);
         }
