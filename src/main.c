@@ -10,7 +10,7 @@
 #include "core/debug.h"
 #include "core/motor_control.h"
 #include "core/display.h"
-#include "core/alarms.h"
+#include "core/buzzer.h"
 #include "core/main_task.h"
 #include "core/analog_read.h"
 #include "core/volume.h"
@@ -27,7 +27,7 @@ TaskHandle_t mainTaskHandle;
 TaskHandle_t motorControlTaskHandle;
 TaskHandle_t lcdDisplayTaskHandle;
 TaskHandle_t analogReadTaskHandle;
-TaskHandle_t alarmsTaskHandle;
+TaskHandle_t buzzerTaskHandle;
 TaskHandle_t sfm3000TaskHandle;
 
 void initHardware(void)
@@ -73,7 +73,7 @@ void initHardware(void)
 
     initMainTask();
 
-    init_alarm();
+    init_buzzer();
 
     init_power_monitoring();
 
@@ -90,7 +90,7 @@ int main(void)
     xTaskCreate(MotorControlTask,  (const char *) "MotorControlTask",  512, NULL, 10, &motorControlTaskHandle);
     xTaskCreate(MainTask,  (const char *) "MainTask",  512, NULL, 12, &mainTaskHandle);
     xTaskCreate(LCDDisplayTask,    (const char *) "LCDDisplayTask",    512,  NULL,  3, &lcdDisplayTaskHandle);
-    xTaskCreate(AlarmsTask,        (const char *) "AlarmsTask",        128,  NULL,  4, &alarmsTaskHandle);
+    xTaskCreate(BuzzerTask,        (const char *) "BuzzerTask",        128,  NULL,  4, &buzzerTaskHandle);
     //xTaskCreate(LEDTask,           (const char *) "LEDTask",           128, NULL,  1, NULL);
     //xTaskCreate(ReadIOTask,        (const char *) "ReadIOTask",        128, NULL,  1, NULL);
     xTaskCreate(AnalogReadTask,    (const char *) "ReadAnalogTask",    128, NULL,  1, &analogReadTaskHandle);

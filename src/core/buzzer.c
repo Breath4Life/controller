@@ -9,6 +9,7 @@
 #include "hal/pins.h"
 #include "hal/tone.h"
 #include "hal/time.h"
+#include "core/buzzer.h"
 #include "core/system.h"
 #include "core/debug.h"
 #include "core/main_task.h"
@@ -54,7 +55,7 @@ static uint8_t seq_offset;
 
 #define DEBUG_ALARM 0
 
-void init_alarm() {
+void init_buzzer() {
     tone_init();
     buzzer_alarm_state = noAlarm;
     muted = 0;
@@ -63,7 +64,7 @@ void init_alarm() {
     pausing = 0;
 }
 
-void AlarmsTask(void *pvParameters)
+void BuzzerTask(void *pvParameters)
 {
     TickType_t xLastWakeTime = xTaskGetTickCount();
     const TickType_t xFrequency = pdMS_TO_TICKS(50);
