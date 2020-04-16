@@ -31,7 +31,8 @@ typedef enum {
     calibUpWaitStop,
     calibPosEnd,
     calibVol,
-    calibVolEnd
+    calibVolEnd,
+    calibWaitStopAbort
 } CalibState_t;
 
 typedef enum {

@@ -140,7 +140,8 @@ static const char *cstate_names[] = {
     "calibUpWaitStop",
     "calibPosEnd",
     "calibVol",
-    "calibVolEnd"
+    "calibVolEnd",
+    "calibWaitStopAbort"
 };
 
 static const char *notif_names[] = {
@@ -167,7 +168,7 @@ static bool resumeBoundedWaitNotification();
 static bool boundedWaitNotification(TickType_t ticksToWait, bool allow_timeout);
 static void startCycleEnd();
 static void startRecalib();
-static void unboundedWaitNotification(uint32_t admissible_notifications);
+static void unboundedWaitNotification();
 static void move_and_wait(uint32_t targetPosition, uint32_t max_speed);
 static void stop_and_wait();
 static void doExpiration();
@@ -349,16 +350,8 @@ static void startRecalib() {
     move_and_wait(0, f_home);
 }
 
-static void unboundedWaitNotification(uint32_t admissible_notifications) {
-    uint32_t notif_recv;
-    xTaskNotifyWait(0x0,ALL_NOTIF_BITS,&notif_recv,portMAX_DELAY);
-    // received notification
-    if (notif_recv & ~admissible_notifications) {
-        // invalid notification
-        genMotorError("invalid notif");
-        MOTOR_DEBUG_PRINT("[MOTOR] Unexp notif %x\r\n", notif_recv);
-    }
-    notif |= notif_recv;
+static void unboundedWaitNotification() {
+    while (!boundedWaitNotification(portMAX_DELAY, true));
 }
 
 static void move_and_wait(uint32_t targetPosition, uint32_t max_freq) {
@@ -421,6 +414,60 @@ static void overPressureRunning() {
     }
 }
 
+
+static void resetCalib(){
+    motorState = motorInit;
+    motor_disable();
+}
+
+static uint8_t flagNotifEndCalib;
+static uint32_t notifToSendEndCalib;
+
+static void resetEndCalib() {
+    flagNotifEndCalib = 0;
+    notifToSendEndCalib = 0;
+}
+
+static void endAbortCalib(){
+    MOTOR_DEBUG_PRINT("[MOTOR] END ABORT \r\n");
+    // Reset calibration
+    resetCalib();
+    // Notify main task if needed
+    if (flagNotifEndCalib) {
+        xTaskNotify(mainTaskHandle, notifToSendEndCalib, eSetBits);
+    } 
+    // Wait for notification
+    unboundedWaitNotification();
+}
+
+static void abortCalib(uint8_t flagEnd, uint32_t notif){
+    MOTOR_DEBUG_PRINT("[MOTOR] abort calib %s \r\n",cstate_names[calibState]);
+    flagNotifEndCalib = flagEnd;
+    notifToSendEndCalib = notif; 
+    switch (calibState) {
+        case calibStart:
+            resetCalib();
+            break;
+        case calibDown:
+        case calibUp:
+        case calibPosEnd:
+        case calibVol:
+        case calibVolEnd:
+            calibState = calibWaitStopAbort;            
+            stop_and_wait();
+            break;
+        case calibDownWaitStop:
+        case calibUpWaitStop:
+            calibState = calibWaitStopAbort;
+            resumeBoundedWaitNotification();
+              
+        case calibWaitStopAbort:
+            resumeBoundedWaitNotification();
+            break;
+    }
+}
+
+
 #if MOTOR_ACTIVE
 void MotorControlTask(void *pvParameters)
 {
@@ -431,22 +478,24 @@ void MotorControlTask(void *pvParameters)
         MOTOR_DEBUG_PRINT(" (%s) %i %i n 0x%lx\r\n", cstate_names[calibState], breathState, calibState, notif);
         switch (motorState) {
             case motorInit:
+                MOTOR_DEBUG_PRINT("IN motor INIT\r\n");
                 if (globalState == calibration) {
                     motorState = motorCalibrating;
                     calibState = calibStart;
+                    resetEndCalib();
                     MOTOR_DEBUG_PRINT("[MOTOR] Start calibration\r\n");
                     notif = 0;
                 } else {
                     // NON BOUNDED wait for calibrating notification
-                    unboundedWaitNotification(MOTOR_NOTIF_GLOBAL_STATE);
+                    unboundedWaitNotification();
                 }
                 break;
 
             case motorCalibrating:
                 if (test_notif(MOTOR_NOTIF_OVER_PRESSURE)) {
-                    motorUnimplementedCase("calib & OP");
+                    abortCalib(0,0);
                 } else if (test_notif(MOTOR_NOTIF_GLOBAL_STATE)) {
-                    motorStChCalib("");
+                    abortCalib(0,0);
                 } else if (test_notif(MOTOR_NOTIF_MOVEMENT_FINISHED)) {
                     switch (calibState) {
                         case calibStart:
@@ -514,9 +563,7 @@ void MotorControlTask(void *pvParameters)
                                 move_and_wait(homePosition, f_fast);
                             } else {
                                 MOTOR_DEBUG_PRINT("[MOTOR] Flow check: FAIL\r\n");
-                                xTaskNotify(mainTaskHandle, NOTIF_INCORRECT_FLOW, eSetBits);
-                                motor_disable();
-                                motorState = motorError;
+                                abortCalib(1,NOTIF_INCORRECT_FLOW);
                             }
                             break;
 
@@ -526,9 +573,14 @@ void MotorControlTask(void *pvParameters)
                             motorState = motorStopped;
                             MOTOR_DEBUG_PRINT("[MOTOR] END CALIB\r\n");
                             break;
+                        
+                        case calibWaitStopAbort:
+                            endAbortCalib();
+                            break;
                     }
                 } else if (test_notif(MOTOR_NOTIF_LIM_UP)) {
                     switch (calibState) {
+                        case calibDownWaitStop:
                         case calibDown:
                             // We were unrolling the rope, we will soon start
                             // enrolling it in the correct direction.
@@ -541,6 +593,14 @@ void MotorControlTask(void *pvParameters)
                             calibState = calibUpWaitStop;
                             MOTOR_DEBUG_PRINT("[MOTOR] finished calibUp\r\n");
                             stop_and_wait();
+                            break;
+
+                                
+                        case calibPosEnd:
+                        case calibVol:
+                        case calibVolEnd:
+                            MOTOR_DEBUG_PRINT("[MOTOR] LIM UP in %s \r\n",cstate_names[calibState]);
+                            abortCalib(1,NOTIF_INCORRECT_FLOW);
                             break;
 
                         default:
@@ -556,6 +616,14 @@ void MotorControlTask(void *pvParameters)
                             stop_and_wait();
                             break;
 
+                        case calibUp:
+                        case calibPosEnd:
+                        case calibVol:
+                        case calibVolEnd:
+                            MOTOR_DEBUG_PRINT("[MOTOR] LIM DOWN in %s \r\n",cstate_names[calibState]);
+                            abortCalib(1,NOTIF_INCORRECT_FLOW);
+                            break;
+
                         default:
                             genMotorError("unexpected notif");
                     }
@@ -566,7 +634,7 @@ void MotorControlTask(void *pvParameters)
                             set_motor_current_position_value(0);
                             targetPosition = MOTOR_USTEPS*steps_calib_down;
                             motor_enable();
-                            MOTOR_DEBUG_PRINT("to calib down\r\n");
+                            MOTOR_DEBUG_PRINT("to calib down/r\n");
                             move_and_wait(targetPosition, f_home);
                             break;
 
@@ -595,7 +663,7 @@ void MotorControlTask(void *pvParameters)
                     startRecalib();
                 } else {
                     // Non bounded wait for notif
-                    unboundedWaitNotification(MOTOR_NOTIF_GLOBAL_STATE);
+                    unboundedWaitNotification();
                 }
                 break;
 
@@ -823,7 +891,7 @@ void MotorControlTask(void *pvParameters)
                         }
                         break;
                     case errorStopped:
-                        unboundedWaitNotification(MOTOR_NOTIF_CYCLE);
+                        unboundedWaitNotification();
                         break;
                 }
         }
