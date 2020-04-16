@@ -38,6 +38,13 @@ void init_limit_switch() {
     PCICR |= _BV(PCIE0);
 }
 
+uint8_t get_lim_down_v() {
+    return lim_switch_down_lvl;
+}
+
+uint8_t get_lim_up_v() {
+    return lim_switch_up_lvl;
+}
 
 ISR(PCINT0_vect) {
     uint8_t l_down = dio_read(DIO_PIN_LIM_SWITCH_DOWN_MONITORING);
@@ -61,9 +68,11 @@ ISR(PCINT0_vect) {
 #endif // DEBUG_LIM_SWITCH
         }
         last_start_bouncing = current_time_irq;
+        lim_switch_down_lvl = l_down;
+        lim_switch_up_lvl = l_up;
     }
-    lim_switch_down_lvl = l_down;
-    lim_switch_up_lvl = l_up;
+    //lim_switch_down_lvl = l_down;
+    //lim_switch_up_lvl = l_up;
     if (higherPriorityTaskWoken) {
         taskYIELD();
     }

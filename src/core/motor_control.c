@@ -354,6 +354,15 @@ static void unboundedWaitNotification() {
     while (!boundedWaitNotification(portMAX_DELAY, true));
 }
 
+static uint8_t checkLimSwitch(uint32_t targetPosition) {
+    uint32_t curr_pos = motor_current_position();
+    if (curr_pos <= targetPosition) {
+        return !get_lim_down_v();
+    } else {
+        return !get_lim_up_v(); 
+    }
+}
+
 static void move_and_wait(uint32_t targetPosition, uint32_t max_freq) {
     // max speed: 1200 steps/s. Acceleration: 200 steps/s/10ms
     // -> max 3*120 = 360 ms deceleration + acceleration + deceleration (we take 400 to have a margin)
@@ -465,6 +474,14 @@ static void abortCalib(uint8_t flagEnd, uint32_t notif){
             resumeBoundedWaitNotification();
             break;
     }
+}
+
+static void to_lim_move_and_wait(uint32_t targetPosition, uint32_t max_speed) {
+   if (checkLimSwitch(targetPosition)) {
+        move_and_wait(targetPosition, max_speed);
+   } else {
+        genMotorError("Lim switch not usable \r\n"); 
+   }
 }
 
 
