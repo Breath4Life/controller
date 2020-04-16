@@ -14,10 +14,10 @@
 
 extern TaskHandle_t mainTaskHandle;
 extern TaskHandle_t motorControlTaskHandle;
+extern TaskHandle_t buzzerTaskHandle;
 extern TaskHandle_t lcdDisplayTaskHandle;
 extern TaskHandle_t analogReadTaskHandle;
-extern TaskHandle_t buzzerTaskHandle;
-extern TaskHandle_t sfm3000TaskHandle;
+extern TaskHandle_t eepromTaskHandle;
 
 typedef enum {
     welcome,
