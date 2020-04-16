@@ -500,7 +500,7 @@ void MotorControlTask(void *pvParameters)
         MOTOR_DEBUG_PRINT(" (%s) %i %i n 0x%lx\r\n", cstate_names[calibState], breathState, calibState, notif);
         switch (motorState) {
             case motorInit:
-                MOTOR_DEBUG_PRINT("IN motor INIT\r\n");
+                MOTOR_DEBUG_PRINT("IN motor INIT %i\r\n", globalState);
                 if (globalState == calibration) {
                     motorState = motorCalibrating;
                     calibState = calibStart;
@@ -510,6 +510,7 @@ void MotorControlTask(void *pvParameters)
                 } else {
                     // NON BOUNDED wait for calibrating notification
                     unboundedWaitNotification();
+                    notif = 0;
                 }
                 break;
 
