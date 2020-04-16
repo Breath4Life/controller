@@ -48,6 +48,14 @@ void init_limit_switch() {
 
 // We need to read the levels of the pins in the ISR since the interrupt is non-specific:
 // we don't know which pin toggled and in which direction.
+uint8_t get_lim_down_v() {
+    return lim_switch_down_lvl;
+}
+
+uint8_t get_lim_up_v() {
+    return lim_switch_up_lvl;
+}
+
 ISR(PCINT0_vect) {
     uint8_t l_down = dio_read(DIO_PIN_LIM_SWITCH_DOWN_MONITORING);
     uint8_t l_up = dio_read(DIO_PIN_LIM_SWITCH_UP_MONITORING);
@@ -70,9 +78,11 @@ ISR(PCINT0_vect) {
 #endif // DEBUG_LIM_SWITCH
         }
         last_start_bouncing = current_time_irq;
+        lim_switch_down_lvl = l_down;
+        lim_switch_up_lvl = l_up;
     }
-    lim_switch_down_lvl = l_down;
-    lim_switch_up_lvl = l_up;
+    //lim_switch_down_lvl = l_down;
+    //lim_switch_up_lvl = l_up;
     if (higherPriorityTaskWoken) {
         taskYIELD();
     }
