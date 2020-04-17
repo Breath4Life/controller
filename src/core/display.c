@@ -25,6 +25,25 @@
 #define MUTE_MSG_PERIOD pdMS_TO_TICKS(2000L)
 #define PARAM_BLINK_PERIOD pdMS_TO_TICKS(250)
 
+static const char *errorCode[] = {
+    "",
+    "MXPSR",
+    "NOPSR",
+    "HOPSR",
+    "MXTPM",
+    "LOPSR",
+    "TIDALV",
+    "RESPR",
+    "BATTERY",
+    "FLOW",
+    "PATIENT",
+    "DOOR",
+    "MOTOR",
+    "POWER"
+};
+
+static void lcdWriteTwoLines(char * firstLine, char * secondLine);
+
 static void initDisplay();
 static void displayWelcomeMsg();
 
@@ -73,7 +92,7 @@ void LCDDisplayTask(void *pvParameters)
                                                  &notification,
                                                  pdMS_TO_TICKS(100));
 
-        if (notif_rcv == pdTRUE) {
+        if (notif_recv == pdTRUE) {
             processDisplayNotification(notification);
         }
 
@@ -96,8 +115,7 @@ static void initDisplay() {
  * Displays the welcome message.
  */
 static void displayWelcomeMsg() {
-    lcd_write_string(WELCOME_MSG1, 1, 1, NO_CR_LF);
-    lcd_write_string(WELCOME_MSG2, 2, 1, NO_CR_LF);
+    lcdWriteTwoLines(WELCOME_MSG1, WELCOME_MSG2);
 }
 
 /*
@@ -136,9 +154,9 @@ static void toggleMuteMsg() {
  */
 static void refreshInfoZone() {
     if (alarmLevel == noAlarm) {
-        disp_state();
+        displayState();
     } else {
-        disp_alarm();
+        displayErrorCode();
     }
 }
 
@@ -161,15 +179,15 @@ static void pollUnsavedParamDisplay() {
  */
 static void toggleUnsavedParameters() {
     if (tidal_vol != saved_tidal_vol) {
-        displayTidalVolume(!tidalVolumeVisible);
+        displayTidalVolume(!paramVisible);
     }
 
     if (bpm != saved_bpm) {
-        displayRespFreq(!respFreqVisible);
+        displayRespFreq(!paramVisible);
     }
 
     if (unsaved_extra_param()) {
-        displayExtraParam(!extraParamVisible);
+        displayExtraParam(!paramVisible);
     }
 
     paramVisible = !paramVisible;
@@ -267,46 +285,37 @@ static void displayState() {
         DEBUG_PRINT("[LCD] rcvd crit_fail.\r\n");
         switch (alarmCause) {
             case doorOpen:
-                lcd_write_string(DOOR_OPEN_MSG, 1, 1, NO_CR_LF);
-                lcd_write_string(CRITICAL_FAILURE_MSG, 2, 1, NO_CR_LF);
+                lcdWriteTwoLines(DOOR_OPEN_MSG, CRITICAL_FAILURE_MSG);
                 break;
             case cfMotorError:
-                lcd_write_string(MOTOR_ERROR_MSG, 1, 1, NO_CR_LF);
-                lcd_write_string(CRITICAL_FAILURE_MSG, 2, 1, NO_CR_LF);
+                lcdWriteTwoLines(MOTOR_ERROR_MSG, CRITICAL_FAILURE_MSG);
                 break;
             case powerError:
-                lcd_write_string(POWER_ERROR_MSG, 1, 1, NO_CR_LF);
-                lcd_write_string(CRITICAL_FAILURE_MSG, 2, 1, NO_CR_LF);
+                lcdWriteTwoLines(POWER_ERROR_MSG, CRITICAL_FAILURE_MSG);
                 break;
              default:
                 // Should never happen
                 DEBUG_PRINT("[LCD] Unknown critical failure.\r\n");
-                lcd_write_string(UNKNOWN_ERROR_MSG, 1, 1, NO_CR_LF);
-                lcd_write_string(CRITICAL_FAILURE_MSG, 2, 1, NO_CR_LF);
+                lcdWriteTwoLines(UNKNOWN_ERROR_MSG, CRITICAL_FAILURE_MSG);
         }
     } else if (globalState == welcome_wait_cal) {
         switch (alarmCause) {
             case noError:
-                lcd_write_string(WAIT_CALI_MSG1, 1, 1, NO_CR_LF);
-                lcd_write_string(WAIT_CALI_MSG2, 2, 1, NO_CR_LF);
+                lcdWriteTwoLines(WAIT_CALI_MSG1, WAIT_CALI_MSG2);
                 break;
             case calibPatientConnected:
-                lcd_write_string(PAT_CONNECTED_MSG, 1, 1, NO_CR_LF);
-                lcd_write_string(RETRY_CALI_MSG, 2, 1, NO_CR_LF);
+                lcdWriteTwoLines(PAT_CONNECTED_MSG, RETRY_CALI_MSG);
                 break;
             case calibIncorrectFlow:
-                lcd_write_string(INC_FLOW_MSG, 1, 1, NO_CR_LF);
-                lcd_write_string(RETRY_CALI_MSG, 2, 1, NO_CR_LF);
+                lcdWriteTwoLines(INC_FLOW_MSG, RETRY_CALI_MSG);
                 break;
             default:
                 // Should never happen
                 DEBUG_PRINT("[LCD] Unknown calib error.\r\n");
-                lcd_write_string(UNKNOWN_ERROR_MSG, 1, 1, NO_CR_LF);
-                lcd_write_string(WAIT_CALI_MSG2, 2, 1, NO_CR_LF);
+                lcdWriteTwoLines(UNKNOWN_ERROR_MSG, RETRY_CALI_MSG);
         }
     } else if(globalState == calibration) {
-        lcd_write_string(CALI_MSG1, 1, 1, NO_CR_LF);
-        lcd_write_string(CALI_MSG2, 2, 1, NO_CR_LF);
+        lcdWriteTwoLines(CALI_MSG1, CALI_MSG2);
     } else if (globalState == stop) {
         lcd_write_string(" STOP  ",1,10,NO_CR_LF);
     } else if (globalState == run) {
@@ -318,51 +327,14 @@ static void displayState() {
  * Displays alarm error code in the LCD information zone.
  */
 static void displayErrorCode() {
-    // FIXME: buffer useless here
-    char alarm_buffer[9];
-
-    // FIXME: char* [] indexed by alarm Cause containing error codes
-    switch(alarmCause) {
-        case overPressure:
-            sprintf(alarm_buffer, " MXPSR ");
-            break;
-        case noPressure:
-            sprintf(alarm_buffer, " NOPSR ");
-            break;
-        case highPressure:
-            sprintf(alarm_buffer, " HOPSR ");
-            break;
-        case highTemperature:
-            sprintf(alarm_buffer, " MXTPM ");
-            break;
-        case lowPressure:
-            sprintf(alarm_buffer, " LOPSR ");
-            break;
-        case abnVolume:
-            sprintf(alarm_buffer, " TIDALV");
-            break;
-        case abnFreq:
-            sprintf(alarm_buffer, " RESPR ");
-            break;
-        case auxPower:
-            sprintf(alarm_buffer, " AUXPWR");
-            break;
-        case noError:
-            // FIXME: should never happen if above code well design
-            displayState()
-            break;
-        default:
-            sprintf(alarm_buffer, " ALARM ");
-    }
-
-    lcd_write_string(alarm_buffer, 1, 10, NO_CR_LF);
+    lcd_write_string(errorCode[alarmCause], 1, 10, NO_CR_LF);
 }
 
 static void processDisplayNotification(uint32_t notification) {
     // Update parameters
     if (notification & DISP_NOTIF_PARAM) {
         DEBUG_PRINT("[LCD] Rcvd NOTIF_PARAM.\r\n");
-        refreshParamZone();
+        refreshParametersZone();
     }
 
     // Update plateau pressure
@@ -382,4 +354,9 @@ static void processDisplayNotification(uint32_t notification) {
         DEBUG_PRINT("[LCD] Rcvd NOTIF_STATE|NOTIF_ALARM.\r\n");
         refreshInfoZone();
     }
+}
+
+static void lcdWriteTwoLines(char * firstLine, char * secondLine) {
+    lcd_write_string(firstLine, 1, 1, NO_CR_LF);
+    lcd_write_string(secondLine, 2, 1, NO_CR_LF);
 }
