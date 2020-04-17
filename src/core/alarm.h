@@ -14,8 +14,8 @@
 
 typedef enum {
     noAlarm,
-    highPriorityAlarm,
     mediumPriorityAlarm,
+    highPriorityAlarm,
     criticalPriorityAlarm
 } AlarmLevel_t;
 
