@@ -86,7 +86,7 @@ void play_tone(uint16_t frequency, uint16_t time) {
 
 void BuzzerTask(void *pvParameters)
 {
-    BUZZER_DEBUG_PRINT("[ALARM] Starting.\r\n");
+    //BUZZER_DEBUG_PRINT("[ALARM] Starting.\r\n");
 
     while (1) {
         if ((buzzer_alarm_state != alarmLevel) || (muted != alarmMuted)) {

@@ -16,4 +16,4 @@ do
   sleep 0.1
 done
 echo "Bootloader ready. Flashing ..."
-avrdude -C $(dirname $0)/avrdude.conf -v -v -v -v -patmega2560 -cwiring -P $PORT -b115200 -D -U flash:w:main.hex:i
+avrdude -C $(dirname $0)/avrdude.conf -v -v -patmega2560 -cwiring -P $PORT -b115200 -D -U flash:w:main.hex:i

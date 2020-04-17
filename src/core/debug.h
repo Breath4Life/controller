@@ -2,6 +2,9 @@
  */
 #ifndef DEBUG_H_
 #define DEBUG_H_
+
+#include <avr/pgmspace.h>
+
 #include "FreeRTOS.h"
 
 
@@ -12,7 +15,8 @@
  * This function supports the same arguments as printf.
  * Disables interrupts in the critical part of the function.
  */
-void debug_print(const char *fmt, ...);
+#define debug_print(fmt, ...) do { _debug_print(PSTR(fmt), ##__VA_ARGS__); } while (0)
+void _debug_print(const char *fmt, ...);
 
 /**
  * @debug_print Print a debug message on the UART.
@@ -21,7 +25,8 @@ void debug_print(const char *fmt, ...);
  * This function supports the same arguments as printf.
  * Called when iterrupts are already disabled
  */
-void debug_print_FromISR(const char *fmt, ...);
+#define debug_print_FromISR(fmt, ...) do { _debug_print_FromISR(fmt, ##__VA_ARGS__  ); } while (0)
+void _debug_print_FromISR(const char *fmt, ...);
 
 /**
  * @fake_debug_print Do nothing with varargs
@@ -29,6 +34,8 @@ void debug_print_FromISR(const char *fmt, ...);
  * Useful to enable debug with pre-processor flags
  */
 //#define fake_debug_print(...) do (__VA_ARGS__)
-void fake_debug_print(const char *, ...);
+#define fake_debug_print(fmt, ...) do {} while (0)
+//void _fake_debug_print(const char *, ...);
+
 
 #endif //DEBUG_H_

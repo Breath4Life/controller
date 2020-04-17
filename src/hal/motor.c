@@ -19,7 +19,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #define MOTOR_DBG 0
-#define DEBUG_MOTOR 0
+#define DEBUG_MOTOR_LL 0
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -519,7 +519,7 @@ void set_motor_goto_position_accel_exec(
     target_position_rel = target_position_abs - motor_position_abs;
     if (target_position_rel >= 0)
     {
-#if DEBUG_MOTOR
+#if DEBUG_MOTOR_LL
       debug_print("Forward %lu \r\n",motor_position_abs);
 #endif
       direction = MOTORCTRL_DIR_FORWARD;
@@ -531,7 +531,7 @@ void set_motor_goto_position_accel_exec(
     }
     else
     {
-#if DEBUG_MOTOR
+#if DEBUG_MOTOR_LL
       debug_print("Backward %lu \r\n",motor_position_abs);
 #endif
       direction = MOTORCTRL_DIR_BACKWARD;
@@ -559,7 +559,7 @@ void set_motor_goto_position_accel_exec(
       // 2* since there is acceleration and deceleration
       if (target_position_rel <= 2*step_num_base)
       {
-#if DEBUG_MOTOR
+#if DEBUG_MOTOR_LL
         debug_print("No time to accelerate/decelerate.\r\n");
 #endif
         accel_enbl = 0;
@@ -569,7 +569,7 @@ void set_motor_goto_position_accel_exec(
       // CASE: slow movement
       else if (target_speed <= step_freq_base)
       {
-#if DEBUG_MOTOR
+#if DEBUG_MOTOR_LL
         debug_print("Slow movement.\r\n");
 #endif
         accel_enbl = 0;
@@ -586,7 +586,7 @@ void set_motor_goto_position_accel_exec(
       // CASE: acceleration needed
       else
       {
-#if DEBUG_MOTOR
+#if DEBUG_MOTOR_LL
         debug_print("Acceleration needed.\r\n");
 #endif
         accel_enbl = 1;
@@ -635,7 +635,7 @@ void set_motor_current_position_value(long new_abs_position){
 // its movement
 // FIXME currently likely source of drift (stopping from fast speed immediately followed by disabling the motor)
 void motor_anticipated_stop(){
-#if DEBUG_MOTOR
+#if DEBUG_MOTOR_LL
     debug_print("ANT STATES: %lu %lu \r\n",motor_position_abs,motor_position_abs + get_cnt5());
 #endif
     cli();
@@ -652,7 +652,7 @@ void motor_anticipated_stop(){
             xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_MOVEMENT_FINISHED, eSetBits);
         }
     }
-#if DEBUG_MOTOR
+#if DEBUG_MOTOR_LL
     debug_print("motor ANTICIPATED STOP \r\n");
 #endif
 }
