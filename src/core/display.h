@@ -28,7 +28,7 @@
 #define POWER_ERROR_MSG         "! POWER ERROR  !"
 #define CRITICAL_FAILURE_MSG    "RESTART REQUIRED"
 
-// The alaram state changed.
+// The alarm state changed.
 #define DISP_NOTIF_ALARM 0x01
 // A parameter changed.
 #define DISP_NOTIF_PARAM 0x02
