@@ -30,43 +30,4 @@ typedef enum {
 
 extern volatile GlobalState_t globalState;
 
-typedef enum {
-    noAlarm,
-    highPriorityAlarm,
-    mediumPriorityAlarm,
-    criticalPriorityAlarm
-} AlarmState_t;
-
-extern volatile AlarmState_t alarmState;
-
-typedef enum {
-    noError,
-    overPressure,
-    noPressure,
-    highPressure,
-    highTemperature,
-    lowPressure,
-    abnVolume,
-    abnFreq,
-    auxPower
-} ErrorCode_t;
-
-typedef enum {
-    calibNoError,
-    patientConnected,
-    incorrectFlow
-} CalibError_t;
-
-typedef enum {
-    doorOpen,
-    cfMotorError,
-    powerError
-} CriticalFailureCause_t;
-
-extern volatile ErrorCode_t errorCode;
-extern volatile CalibError_t calibError;
-extern volatile CriticalFailureCause_t criticalFailureCause;
-
-extern volatile uint8_t mute_on;
-
 #endif // SYSTEM_H_

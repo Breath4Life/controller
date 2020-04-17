@@ -13,6 +13,7 @@
 #include "core/main_task.h"
 #include "core/debug.h"
 #include "core/analog_read.h"
+#include "core/alarm.h"
 
 static void disp_alarm();
 static void disp_muted();
@@ -46,12 +47,12 @@ void LCDDisplayTask(void *pvParameters)
         uint32_t curr_time = time_us();
 
         // Display "Muted" and the current state/alarm alternatively for 2 seconds if mute_on
-        if (mute_on && (globalState == stop || globalState == run)) {
+        if (alarmMuted && (globalState == stop || globalState == run)) {
             if (curr_time - muted_switch_time > 2000000L) {
                 if (!muted_msg_on) {
                     disp_muted();
                 } else {
-                    if (alarmState == noAlarm) {
+                    if (alarmLevel == noAlarm) {
                         disp_state();
                     } else {
                         disp_alarm();
@@ -64,7 +65,7 @@ void LCDDisplayTask(void *pvParameters)
         } else {
             if (muted_msg_on) {
                 muted_msg_on = !muted_msg_on;
-                if (alarmState == noAlarm) {
+                if (alarmLevel == noAlarm) {
                     disp_state();
                 } else {
                     disp_alarm();
@@ -100,7 +101,7 @@ void LCDDisplayTask(void *pvParameters)
                 // Only write the state info if either
                 // - there is no pending alarm (otherwhise alarm info is overwritten)
                 // - globalState is critical_failure FIXME: why?
-                if (alarmState == noAlarm || globalState == critical_failure) {
+                if (alarmLevel == noAlarm || globalState == critical_failure) {
                     disp_state();
                 }
             }
@@ -119,7 +120,7 @@ void LCDDisplayTask(void *pvParameters)
 static void disp_alarm() {
     char alarm_buffer[9];
 
-    switch(errorCode) {
+    switch(alarmCause) {
         case overPressure:
             sprintf(alarm_buffer, " MXPSR ");
             break;
@@ -189,7 +190,7 @@ static void disp_peak_p() {
 static void disp_state() {
     if (globalState == critical_failure) {
         debug_print("[LCD] rcvd crit_fail.\r\n");
-        switch (criticalFailureCause) {
+        switch (alarmCause) {
             case doorOpen:
                 lcd_write_string(DOOR_OPEN_MSG, 1, 1, NO_CR_LF);
                 lcd_write_string(CRITICAL_FAILURE_MSG, 2, 1, NO_CR_LF);
@@ -211,16 +212,16 @@ static void disp_state() {
                 lcd_write_string(CRITICAL_FAILURE_MSG, 2, 1, NO_CR_LF);
         }
     } else if (globalState == welcome_wait_cal) {
-        switch (calibError) {
-            case calibNoError:
+        switch (alarmCause) {
+            case noError:
                 lcd_write_string(WAIT_CALI_MSG1, 1, 1, NO_CR_LF);
                 lcd_write_string(WAIT_CALI_MSG2, 2, 1, NO_CR_LF);
                 break;
-            case patientConnected:
+            case calibPatientConnected:
                 lcd_write_string(PAT_CONNECTED_MSG, 1, 1, NO_CR_LF);
                 lcd_write_string(RETRY_CALI_MSG, 2, 1, NO_CR_LF);
                 break;
-            case incorrectFlow:
+            case calibIncorrectFlow:
                 lcd_write_string(INC_FLOW_MSG, 1, 1, NO_CR_LF);
                 lcd_write_string(RETRY_CALI_MSG, 2, 1, NO_CR_LF);
                 break;

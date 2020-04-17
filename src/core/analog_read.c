@@ -9,6 +9,7 @@
 #include "core/motor_control.h"
 #include "core/display.h"
 #include "core/debug.h"
+#include "core/alarm.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -87,8 +88,8 @@ void AnalogReadTask(void *pvParameters) {
                         if (p > p_max) {
                             // Overpressure
                             DEBUG_PRINT("[P-SENS] OVERPRESSURE.\r\n");
+                            sendNewAlarm(highPressure);
                             xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_OVER_PRESSURE, eSetBits);
-                            xTaskNotify(mainTaskHandle, ALARM_NOTIF_OVERPRESSURE, eSetBits);
                         }
 
                         // Track max. instantaneous pressure during inspiration
@@ -108,11 +109,11 @@ void AnalogReadTask(void *pvParameters) {
                             if (p_peak < NO_PRESSURE_THRESHOLD) {
                                 // No pressure
                                 DEBUG_PRINT("[P-SENS] NO PRESSURE.\r\n");
-                                xTaskNotify(mainTaskHandle, ALARM_NOTIF_NO_PRESSURE, eSetBits);
+                                sendNewAlarm(noPressure);
                             } else if (p_peak < LOW_PRESSURE_THRESHOLD) {
                                 // Low pressure
                                 DEBUG_PRINT("[P-SENS] LOW PRESSURE.\r\n");
-                                xTaskNotify(mainTaskHandle, ALARM_NOTIF_LOW_PRESSURE, eSetBits);
+                                sendNewAlarm(lowPressure);
                             }
                         }
                     } else if (globalState == calibration) {
@@ -120,7 +121,7 @@ void AnalogReadTask(void *pvParameters) {
                             // Pressure increased during self-calibration
                             DEBUG_PRINT("[P-SENS] PATIENT CONNECTED?\r\n");
                             xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_OVER_PRESSURE, eSetBits);
-                            xTaskNotify(mainTaskHandle, NOTIF_PATIENT_CONNECTED, eSetBits);
+                            sendNewAlarm(calibPatientConnected);
                         }
                     }
 
@@ -129,18 +130,18 @@ void AnalogReadTask(void *pvParameters) {
                 case temperature0:
                     temp0 = mes2temp(res);
 
-                    if (temp0 > MAX_TEMP0 && errorCode != highTemperature) {
+                    if (temp0 > MAX_TEMP0) {
                         DEBUG_PRINT("[T0-SENS] HIGH TEMP: %i.\r\n", temp0);
-                        xTaskNotify(mainTaskHandle, ALARM_NOTIF_HIGH_TEMP, eSetBits);
+                        sendNewAlarm(highTemperature);
                     }
                     curr_mes = temperature1;
                     break;
                 case temperature1:
                     temp1 = mes2temp(res);
 
-                    if (temp1 > MAX_TEMP1 && errorCode != highTemperature) {
+                    if (temp1 > MAX_TEMP1) {
                         DEBUG_PRINT("[T1-SENS] HIGH TEMP: %i.\r\n", temp1);
-                        xTaskNotify(mainTaskHandle, ALARM_NOTIF_HIGH_TEMP, eSetBits);
+                        sendNewAlarm(highTemperature);
                     }
                     curr_mes = pressure;
                     break;

@@ -16,6 +16,7 @@
 #include "core/debug.h"
 #include "core/motor_control.h"
 #include "core/volume.h"
+#include "core/alarm.h"
 #include "hal/limit_switch.h"
 
 
@@ -435,11 +436,11 @@ static void resetCalib(){
 }
 
 static uint8_t flagNotifEndCalib;
-static uint32_t notifToSendEndCalib;
+static AlarmCause_t notifToSendEndCalib;
 
 static void resetEndCalib() {
     flagNotifEndCalib = 0;
-    notifToSendEndCalib = 0;
+    notifToSendEndCalib = noError;
 }
 
 static void endAbortCalib(){
@@ -448,16 +449,16 @@ static void endAbortCalib(){
     resetCalib();
     // Notify main task if needed
     if (flagNotifEndCalib) {
-        xTaskNotify(mainTaskHandle, notifToSendEndCalib, eSetBits);
+        sendNewAlarm(notifToSendEndCalib);
     } 
     // Wait for notification
     unboundedWaitNotification();
 }
 
-static void abortCalib(uint8_t flagEnd, uint32_t notif){
+static void abortCalib(uint8_t flagEnd, AlarmCause_t error){
     MOTOR_DEBUG_PRINT("[MOTOR] abort calib %s \r\n",cstate_names[calibState]);
     flagNotifEndCalib = flagEnd;
-    notifToSendEndCalib = notif; 
+    notifToSendEndCalib = error;
     switch (calibState) {
         case calibStart:
             resetCalib();
@@ -467,14 +468,13 @@ static void abortCalib(uint8_t flagEnd, uint32_t notif){
         case calibPosEnd:
         case calibVol:
         case calibVolEnd:
-            calibState = calibWaitStopAbort;            
+            calibState = calibWaitStopAbort;
             stop_and_wait();
             break;
         case calibDownWaitStop:
         case calibUpWaitStop:
             calibState = calibWaitStopAbort;
             resumeBoundedWaitNotification();
-              
         case calibWaitStopAbort:
             resumeBoundedWaitNotification();
             break;
@@ -516,9 +516,9 @@ void MotorControlTask(void *pvParameters)
 
             case motorCalibrating:
                 if (test_notif(MOTOR_NOTIF_OVER_PRESSURE)) {
-                    abortCalib(0,0);
+                    abortCalib(0,noError);
                 } else if (test_notif(MOTOR_NOTIF_GLOBAL_STATE)) {
-                    abortCalib(0,0);
+                    abortCalib(0,noError);
                 } else if (test_notif(MOTOR_NOTIF_MOVEMENT_FINISHED)) {
                     switch (calibState) {
                         case calibStart:
@@ -586,7 +586,7 @@ void MotorControlTask(void *pvParameters)
                                 move_and_wait(homePosition, f_fast);
                             } else {
                                 MOTOR_DEBUG_PRINT("[MOTOR] Flow check: FAIL\r\n");
-                                abortCalib(1,NOTIF_INCORRECT_FLOW);
+                                abortCalib(1,calibIncorrectFlow);
                             }
                             break;
 
@@ -623,7 +623,7 @@ void MotorControlTask(void *pvParameters)
                         case calibVol:
                         case calibVolEnd:
                             MOTOR_DEBUG_PRINT("[MOTOR] LIM UP in %s \r\n",cstate_names[calibState]);
-                            abortCalib(1,NOTIF_INCORRECT_FLOW);
+                            abortCalib(1,calibIncorrectFlow);
                             break;
 
                         default:
@@ -644,7 +644,7 @@ void MotorControlTask(void *pvParameters)
                         case calibVol:
                         case calibVolEnd:
                             MOTOR_DEBUG_PRINT("[MOTOR] LIM DOWN in %s \r\n",cstate_names[calibState]);
-                            abortCalib(1,NOTIF_INCORRECT_FLOW);
+                            abortCalib(1,calibIncorrectFlow);
                             break;
 
                         default:
@@ -908,7 +908,7 @@ void MotorControlTask(void *pvParameters)
                             MOTOR_DEBUG_PRINT("[MOTOR] Finished stopping\r\n");
                             motorErrorState = errorStopped;
                             motor_disable();
-                            xTaskNotify(mainTaskHandle, NOTIF_MOTOR_ERROR, eSetBits);
+                            sendNewAlarm(cfMotorError);
                         } else {
                             resumeBoundedWaitNotification();
                         }

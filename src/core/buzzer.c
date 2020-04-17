@@ -14,6 +14,7 @@
 #include "core/debug.h"
 #include "core/main_task.h"
 #include "core/utils.h"
+#include "core/alarm.h"
 
 #define N_TONES_CRIT 5
 #define N_TONES_HIGH 5
@@ -38,7 +39,7 @@ static const uint16_t *tones_dur[] = { NULL, tones_dur_high, tones_dur_med, tone
 static const uint16_t *tones_pause[] = { NULL, tones_pause_high, tones_pause_med, tones_pause_crit};
 static const uint8_t tones_size[] = { 0, N_TONES_HIGH, N_TONES_MED, N_TONES_CRIT};
 
-static AlarmState_t buzzer_alarm_state;
+static AlarmLevel_t buzzer_alarm_state;
 static uint8_t muted;
 
 // Doing a pause between two sounds ?
@@ -89,11 +90,11 @@ void BuzzerTask(void *pvParameters)
     BUZZER_DEBUG_PRINT("[ALARM] Starting.\r\n");
 
     while (1) {
-        if ((buzzer_alarm_state != alarmState) || (muted != mute_on)) {
+        if ((buzzer_alarm_state != alarmLevel) || (muted != alarmMuted)) {
             BUZZER_DEBUG_PRINT("[ALARM] New alarm/mute.\r\n");
             tone_stop();
-            buzzer_alarm_state = alarmState;
-            muted = mute_on;
+            buzzer_alarm_state = alarmLevel;
+            muted = alarmMuted;
             // Do as if we were at the end of the sequence
             pausing = 1;
             seq_offset = tones_size[buzzer_alarm_state];

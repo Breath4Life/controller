@@ -53,11 +53,7 @@ void initHardware(void)
 
     dio_init(DIO_PIN_AUX_ALARM_GATE_PIN,      DIO_INPUT);
 
-    dio_init(DIO_PIN_ALARM_LED_HPA,           DIO_OUTPUT);
-    dio_init(DIO_PIN_ALARM_LED_LPA,           DIO_OUTPUT);
     dio_init(DIO_PIN_STEP_COUNTER_TN,         DIO_OUTPUT);
-    dio_init(DIO_PIN_ALARM_LED_PAUSED,        DIO_OUTPUT);
-    dio_init(DIO_PIN_LED_NORMAL_STATE,        DIO_OUTPUT);
 
     dio_init(DIO_PIN_LCD_EN,                  DIO_OUTPUT);
     dio_init(DIO_PIN_LCD_RS,                  DIO_OUTPUT);

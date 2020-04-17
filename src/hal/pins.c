@@ -53,7 +53,7 @@ struct io_pin_config DIO_PIN_CONFIG[] = {
     {DIO_PIN_ALARM_SOUND,             IO_PORTB, 7},
     {DIO_PIN_ALARM_SOUND_BIS,         IO_PORTG, 5},
     {DIO_PIN_ALARM_LED_HPA,           IO_PORTL, 4},
-    {DIO_PIN_ALARM_LED_LPA,           IO_PORTL, 3},
+    {DIO_PIN_ALARM_LED_MPA,           IO_PORTL, 3},
     {DIO_PIN_STEP_COUNTER_TN,         IO_PORTL, 2},
     {DIO_PIN_ALARM_LED_PAUSED,        IO_PORTL, 1},
     {DIO_PIN_LED_NORMAL_STATE,        IO_PORTL, 0},
