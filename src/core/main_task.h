@@ -40,17 +40,27 @@
 
 #define N_EXTRA 3
 
-#define ALARM_AUTO_UNMUTE_SEC 120 * 1000L
+#define ALARM_AUTO_UNMUTE_DELAY 120 * 1000L
+#define PARAM_AUTO_REVERT_DELAY 120 * 1000L
 
 // Alarm notification values
 #define MAIN_NOTIF_ALARM 0x01
 
-// in tens of ml
-extern uint8_t tidal_vol;
+// current parameters
+extern uint8_t tidal_vol; // in tens of ml
 extern uint8_t bpm;
 extern uint8_t ie;
 extern uint8_t p_max;
 extern uint8_t extra_param;
+
+// last confirmed parameters
+extern uint8_t saved_tidal_vol; // in tens of ml
+extern uint8_t saved_bpm;
+extern uint8_t saved_ie;
+extern uint8_t saved_p_max;
+
+uint8_t unsaved_parameters();
+uint8_t unsaved_extra_param();
 
 void initMainTask();
 void MainTask(void *pvParameters);

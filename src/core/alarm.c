@@ -143,7 +143,7 @@ void set_alarm_led(AlarmLevel_t state) {
 }
 
 void pollAlarm() {
-    if (alarmMuted && xTaskGetTickCount() - mute_time > pdMS_TO_TICKS(ALARM_AUTO_UNMUTE_SEC)) {
+    if (alarmMuted && xTaskGetTickCount() - mute_time > pdMS_TO_TICKS(ALARM_AUTO_UNMUTE_DELAY)) {
         DEBUG_PRINT("[MAIN] Auto unmute.\r\n");
         setMuteState(false);
     }

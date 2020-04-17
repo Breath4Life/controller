@@ -27,8 +27,8 @@ struct io_pin_config DIO_PIN_CONFIG[] = {
     {DIO_PIN_I2C_FLOW_SENSOR_DATA,    IO_PORTD, 0},
     {DIO_PIN_I2C_FLOW_SENSOR_CLOCK,   IO_PORTD, 1},
 
-    {DIO_PIN_BUTTON_RIGHT,            IO_PORTA, 0},
-    {DIO_PIN_BUTTON_LEFT,             IO_PORTA, 1},
+    {DIO_PIN_BUTTON_NEXT,             IO_PORTA, 0},
+    {DIO_PIN_BUTTON_CONFIRM,          IO_PORTA, 1},
     {DIO_PIN_BUTTON_UP,               IO_PORTA, 2},
     {DIO_PIN_BUTTON_DOWN,             IO_PORTA, 3},
     {DIO_PIN_BUTTON_VTIDAL_UP,        IO_PORTA, 4},

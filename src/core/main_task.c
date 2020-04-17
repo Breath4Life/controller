@@ -19,11 +19,22 @@
 
 volatile GlobalState_t globalState;
 
+// current parameters
 uint8_t tidal_vol; // tens of mL
 uint8_t bpm;
 uint8_t ie;
 uint8_t p_max;
 uint8_t extra_param;
+
+// last confirmed parameters
+uint8_t saved_tidal_vol; // tens of mL
+uint8_t saved_bpm;
+uint8_t saved_ie;
+uint8_t saved_p_max;
+
+static void save_parameters();
+static void revert_parameters();
+TickType_t last_update_time;
 
 // debug print
 #define DEBUG_MAIN 1
@@ -44,6 +55,8 @@ void initMainTask()
     bpm = DEFAULT_BPM;
     ie = DEFAULT_IE;
     p_max = DEFAULT_PMAX;
+    save_parameters();
+
     extra_param = 0;
 
     initButtons();
@@ -206,12 +219,13 @@ void MainTask(void *pvParameters)
                 bpm = MAX(MIN_BPM, bpm - INC_BPM);
                 updated_setting = 1;
             }
-            if (BUTTON_PRESSED(buttons_pressed, button_right)) {
+            if (BUTTON_PRESSED(buttons_pressed, button_next) && !unsaved_extra_param()) {
                 extra_param = (extra_param + 1) % N_EXTRA;
                 updated_setting = 1;
             }
-            if (BUTTON_PRESSED(buttons_pressed, button_left)) {
-                extra_param = (extra_param - 1) % N_EXTRA;
+            if (BUTTON_PRESSED(buttons_pressed, button_confirm)) {
+                DEBUG_PRINT("[MAIN] Current parameters saved.\r\n");
+                save_parameters();
                 updated_setting = 1;
             }
             if (BUTTON_PRESSED(buttons_pressed, button_up)) {
@@ -239,6 +253,8 @@ void MainTask(void *pvParameters)
 
             if (updated_setting) {
                 DEBUG_PRINT("[MAIN] NOTIF_PARAM -> LCD.\r\n");
+                DEBUG_PRINT("[MAIN] Parameters changed.\r\n");
+                last_update_time = xTaskGetTickCount();
                 xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PARAM, eSetBits);
             }
 
@@ -265,6 +281,14 @@ void MainTask(void *pvParameters)
 
         // 8. Update the alarm state if needed (muting and new alarms)
         pollAlarm();
+
+        /*
+         * If PARAM_AUTO_REVERT_DELAY has elapsed, revert current parameters to their last saved state
+         */
+        if (unsaved_parameters() && xTaskGetTickCount() - last_update_time > pdMS_TO_TICKS(PARAM_AUTO_REVERT_DELAY)) {
+            revert_parameters();
+            xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PARAM, eSetBits);
+        }
 
         /*
          * Common to any changing state, notify LCD of a state change
@@ -334,4 +358,44 @@ void check_volume(uint32_t actual_vol) {
     if((actual_vol > 11*target_vol) || (actual_vol < 9*target_vol)) {
         sendNewAlarm(abnVolume);
     }
+}
+
+/*
+ * Returns 1 if at least one parameter is unsaved/unconfirmed,
+ * 0 otherwise.
+ */
+uint8_t unsaved_parameters() {
+    return  (tidal_vol != saved_tidal_vol) ||
+            (bpm != saved_bpm) ||
+            (ie != saved_ie) ||
+            (p_max != saved_p_max);
+}
+
+/*
+ * Returns 1 if at least one of the extra parameters is
+ * unsaved/unconfirmed, 0 otherwise.
+ */
+uint8_t unsaved_extra_param() {
+    return  (ie != saved_ie) ||
+            (p_max != saved_p_max);
+}
+
+/*
+ * Saves/confirms the current parameters.
+ */
+static void save_parameters() {
+    saved_tidal_vol = tidal_vol;
+    saved_bpm = bpm;
+    saved_ie = ie;
+    saved_p_max = p_max;
+}
+
+/*
+ * Reverts the current parameters to their latest saved state.
+ */
+static void revert_parameters() {
+    tidal_vol = saved_tidal_vol;
+    bpm = saved_bpm;
+    ie = saved_ie;
+    p_max = saved_p_max;
 }
