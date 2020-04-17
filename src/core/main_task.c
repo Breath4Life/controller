@@ -367,6 +367,8 @@ void check_volume(uint32_t actual_vol) {
     }
 }
 
+// TODO: move what's below in parameters.c
+
 /*
  * Returns 1 if at least one parameter is unsaved/unconfirmed,
  * 0 otherwise.
@@ -379,6 +381,20 @@ uint8_t unsaved_parameters() {
 }
 
 /*
+ * Returns 1 if tidal_volume is unsaved/unconfirmed, 0 otherwise.
+ */
+uint8_t unsaved_tidal_vol() {
+    return tidal_vol != saved_tidal_vol;
+}
+
+/*
+ * Returns 1 if bpm is unsaved/unconfirmed, 0 otherwise.
+ */
+uint8_t unsaved_bpm() {
+    return bpm != saved_bpm;
+}
+
+/*
  * Returns 1 if at least one of the extra parameters is
  * unsaved/unconfirmed, 0 otherwise.
  */
@@ -386,6 +402,7 @@ uint8_t unsaved_extra_param() {
     return  (ie != saved_ie) ||
             (p_max != saved_p_max);
 }
+
 
 /*
  * Saves/confirms the current parameters.
