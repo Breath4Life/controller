@@ -559,6 +559,7 @@ static void calib_move_and_wait(uint32_t targetPosition, uint32_t max_freq) {
 }
 
 static void run_move_and_wait(uint32_t targetPosition, uint32_t max_freq) {
+    MOTOR_DEBUG_PRINT("RUN MOVE AND WAIT");
     uint32_t switches_test_value = checkLimsRun();
     if (switches_test_value == LIM_UNREACHABLE) {
         genMotorError("run LIM test unreachable");

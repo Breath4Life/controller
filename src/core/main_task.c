@@ -43,6 +43,13 @@ TickType_t last_update_time;
 #endif // DEBUG_MAIN
 
 #define SIM_MOTOR 0             // "simulate" motor to debug the rest
+#define ALARM_CHECK 1          // active/deactivate alarm check for debug
+#define CALIB_ERROR_CHECK 1     // active/deactivate calib error check during calib for debug
+
+#define POWER_AUX_CHECK 0       // active/deactivate power aux check for debug
+#define POWER_MAIN_CHECK 0      // active/deactivate power main check for debug
+#define DOOR_CHECK 0            // active/deactivate door check for debug
+
 void initMainTask()
 {
     globalState = welcome;
@@ -96,7 +103,9 @@ void MainTask(void *pvParameters)
             vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1000));
             continue;
         }
-        if (alarmLevel == criticalPriorityAlarm) {
+        if (alarmLevel == criticalPriorityAlarm && 
+                alarmCause != calibPatientConnected && 
+                alarmCause != calibIncorrectFlow ) {
             DEBUG_PRINT("[MAIN] -> critical_failure.\r\n");
             globalState = critical_failure;
             xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);

@@ -89,7 +89,7 @@ int main(void)
     xTaskCreate(BuzzerTask, "Buzzer", 128, NULL, 4, &buzzerTaskHandle);
     xTaskCreate(LCDDisplayTask, "LCDDisplay", 512, NULL, 3, &lcdDisplayTaskHandle);
     xTaskCreate(AnalogReadTask, "ReadAnalog", 128, NULL, 2, &analogReadTaskHandle);
-    xTaskCreate(eepromTask, "EEPROM", 128, NULL, 1, &eepromTaskHandle);
+    //xTaskCreate(eepromTask, "EEPROM", 128, NULL, 1, &eepromTaskHandle);
 
     // Run the OS
     vTaskStartScheduler();
