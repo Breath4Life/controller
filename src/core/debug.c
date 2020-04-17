@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include <avr/interrupt.h>
+#include <avr/pgmspace.h>
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -16,10 +17,9 @@
 #include "core/volume.h"
 
 
-void debug_print_FromISR(const char *fmt, ...)
+void _debug_print_FromISR(const char *fmt, ...)
 {
     char buffer[32];
-
     va_list args;
     va_start(args, fmt);
     vsnprintf(buffer, sizeof(buffer), fmt, args);
@@ -28,21 +28,18 @@ void debug_print_FromISR(const char *fmt, ...)
     uart_transmit(buffer);
 }
 
-void debug_print(const char *fmt, ...)
+void _debug_print(const char *fmt, ...)
 {
+    char fmt_buf[32];
     char buffer[32];
 
     va_list args;
     va_start(args, fmt);
-    vsnprintf(buffer, sizeof(buffer), fmt, args);
+    strcpy_P(fmt_buf, fmt);
+    vsnprintf_P(buffer, sizeof(buffer), fmt, args);
     va_end(args);
 
     cli();
     uart_transmit(buffer);
     sei();
 }
-
-void fake_debug_print(const char *_fmt, ...)
-{
-}
-
