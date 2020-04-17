@@ -42,6 +42,11 @@
 
 #define MAX_POS_MARGIN (10*MOTOR_USTEPS)
 
+#define LIM_UNPRESSED 0
+#define LIM_PRESSED 1
+#define LIM_DONTCARE 2
+#define LIM_UNREACHABLE 255
+
 /////////////////////////////////////
 uint32_t TCT;
 uint32_t Ti;
@@ -170,6 +175,8 @@ static void startCycleEnd();
 static void startRecalib();
 static void unboundedWaitNotification();
 static void move_and_wait(uint32_t targetPosition, uint32_t max_speed);
+static void calib_move_and_wait(uint32_t targetPosition, uint32_t max_speed);
+static void run_move_and_wait(uint32_t targetPosition, uint32_t max_speed);
 static void stop_and_wait();
 static void doExpiration();
 static uint8_t test_notif(uint32_t tested_notif);
@@ -352,20 +359,11 @@ static void startCycleEnd() {
 static void startRecalib() {
     breathState = reCalibUp;
     MOTOR_DEBUG_PRINT("[MOTOR] reCalibUp pos %u\r\n", motor_current_position());
-    move_and_wait(0, f_home);
+    run_move_and_wait(0, f_home);
 }
 
 static void unboundedWaitNotification() {
     while (!boundedWaitNotification(portMAX_DELAY, true));
-}
-
-static uint8_t checkLimSwitch(uint32_t targetPosition) {
-    uint32_t curr_pos = motor_current_position();
-    if (curr_pos <= targetPosition) {
-        return !get_lim_down_v();
-    } else {
-        return !get_lim_up_v(); 
-    }
 }
 
 static void move_and_wait(uint32_t targetPosition, uint32_t max_freq) {
@@ -403,7 +401,7 @@ static void doExpiration() {
     }
     breathState = expiration;
     targetPosition = homePosition;
-    return move_and_wait(targetPosition, f_exp);
+    return run_move_and_wait(targetPosition, f_exp);
 }
 
 static uint8_t need_recalibration() {
@@ -480,14 +478,118 @@ static void abortCalib(uint8_t flagEnd, AlarmCause_t error){
     }
 }
 
-static void to_lim_move_and_wait(uint32_t targetPosition, uint32_t max_speed) {
-   if (checkLimSwitch(targetPosition)) {
-        move_and_wait(targetPosition, max_speed);
-   } else {
-        genMotorError("Lim switch not usable \r\n"); 
-   }
+
+// Test if the value 'lim' (expected to be the result of a get_lim_X_v() call)  is 'value'
+// return 0 if succesful test, 1 otherwise
+static uint8_t testLimValue(uint8_t lim, uint8_t value) {
+    if (value == LIM_DONTCARE) {
+        return 0;
+    } else {
+        return !(lim == value);
+    }
 }
 
+// Test the value of the both limit switch 
+// return 0 if succesful tests, 1 otherwise
+static uint8_t testLims(uint8_t up, uint8_t down) {
+    return testLimValue(get_lim_up_v(),up) || 
+        testLimValue(get_lim_down_v(), down);
+}
+
+// Test the values of the switch depending on the 
+// current calibState value
+// Return 0 if succesful test, 1 otherwise
+// TODO: extend to return error code (using shift in each case for example)
+static uint32_t checkLimsCalib() {
+    if (!testLims(LIM_PRESSED, LIM_PRESSED)) {
+        return LIM_UNREACHABLE;
+    }
+    switch (calibState) {
+        case calibDown:
+        case calibPosEnd:
+            return testLims(LIM_DONTCARE, LIM_UNPRESSED); 
+        case calibUp:
+            return testLims(LIM_UNPRESSED, LIM_DONTCARE);
+        case calibVol:
+        case calibVolEnd:
+            return testLims(LIM_UNPRESSED, LIM_UNPRESSED);
+    
+        default:
+            return LIM_UNREACHABLE;
+    }
+}
+
+// As checkLimsCalib, but when running cycles
+static uint32_t checkLimsRun() {
+    if (!testLims(LIM_PRESSED, LIM_PRESSED)) {
+        return LIM_UNREACHABLE;
+    }
+    switch (breathState) {
+        case insp:
+        case plateau:
+        case expiration:
+            return testLims(LIM_UNPRESSED, LIM_UNPRESSED);
+        case reCalibUp:
+        case inspStopping:
+            return testLims(LIM_UNPRESSED, LIM_DONTCARE);
+        case reCalibDown:
+        case reCalibHome:
+        case expStopping:
+        case stopping:
+            return testLims(LIM_DONTCARE, LIM_UNPRESSED);
+
+        default:
+            return LIM_UNREACHABLE;
+    }
+}
+
+// Move and wait with an addition limitswitch test
+// TODO: handle different error code and return appropriate error code
+static void calib_move_and_wait(uint32_t targetPosition, uint32_t max_freq) {
+    uint32_t switches_test_value = checkLimsCalib();
+    if (switches_test_value == LIM_UNREACHABLE) {
+        genMotorError("calib LIM test unreachable");
+        move_and_wait(targetPosition, max_freq);
+    }
+    if (switches_test_value == 0) {
+        move_and_wait(targetPosition, max_freq);
+    } else {
+        abortCalib(1,calibIncorrectFlow);     
+    }
+}
+
+static void run_move_and_wait(uint32_t targetPosition, uint32_t max_freq) {
+    uint32_t switches_test_value = checkLimsRun();
+    if (switches_test_value == LIM_UNREACHABLE) {
+        genMotorError("run LIM test unreachable");
+    }
+    if (switches_test_value == 0) {
+        move_and_wait(targetPosition, max_freq);
+    } else {
+        switch (breathState) {
+            case insp:
+            case plateau:
+            case expiration:
+            case inspStopping:
+            case expStopping:
+            case stopping:
+                // TODO send notification
+                recalibrateFlag = true;
+                move_and_wait(targetPosition, max_freq);
+                break;
+            case reCalibUp:
+            case reCalibDown:
+            case reCalibHome:
+                genMotorError("Critical failure in recalibration");
+                break;
+
+            default:
+                genMotorError("handle switch error unreachable");
+                break;
+        }       
+    }
+    //move_and_wait(targetPosition,max_freq);
+}
 
 #if MOTOR_ACTIVE
 void MotorControlTask(void *pvParameters)
@@ -515,7 +617,7 @@ void MotorControlTask(void *pvParameters)
 
             case motorCalibrating:
                 if (test_notif(MOTOR_NOTIF_OVER_PRESSURE)) {
-                    abortCalib(0,noError);
+                    abortCalib(1,calibPatientConnected);
                 } else if (test_notif(MOTOR_NOTIF_GLOBAL_STATE)) {
                     abortCalib(0,noError);
                 } else if (test_notif(MOTOR_NOTIF_MOVEMENT_FINISHED)) {
@@ -537,7 +639,7 @@ void MotorControlTask(void *pvParameters)
                             targetPosition = 0;
                             calibState = calibUp;
                             MOTOR_DEBUG_PRINT("[MOTOR] finished calibDownWaitStop\r\n");
-                            move_and_wait(targetPosition, f_home);
+                            calib_move_and_wait(targetPosition, f_home);
                             break;
 
                         case calibUp:
@@ -555,7 +657,7 @@ void MotorControlTask(void *pvParameters)
                             set_motor_current_position_value(MOTOR_UP_POSITION);
                             calibState = calibPosEnd;
                             MOTOR_DEBUG_PRINT("[MOTOR] finished calibUpWaitStop\r\n");
-                            move_and_wait(posOffset, f_home);
+                            calib_move_and_wait(posOffset, f_home);
                             break;
 
                         case calibPosEnd:
@@ -571,7 +673,7 @@ void MotorControlTask(void *pvParameters)
                             // Reset volume prior to flow check
                             reset_volume();
                             MOTOR_DEBUG_PRINT("[MOTOR] Start flow check.\r\n");
-                            move_and_wait(targetPosition, f_fast);
+                            calib_move_and_wait(targetPosition, f_fast);
                             break;
 
                         case calibVol:
@@ -582,7 +684,7 @@ void MotorControlTask(void *pvParameters)
                                 // Sufficient volume insufflated.
                                 calibState = calibVolEnd;
                                 MOTOR_DEBUG_PRINT("[MOTOR] Flow check: OK\r\n");
-                                move_and_wait(homePosition, f_fast);
+                                calib_move_and_wait(homePosition, f_fast);
                             } else {
                                 MOTOR_DEBUG_PRINT("[MOTOR] Flow check: FAIL\r\n");
                                 abortCalib(1,calibIncorrectFlow);
@@ -657,7 +759,7 @@ void MotorControlTask(void *pvParameters)
                             targetPosition = MOTOR_USTEPS*steps_calib_down;
                             motor_enable();
                             MOTOR_DEBUG_PRINT("to calib down/r\n");
-                            move_and_wait(targetPosition, f_home);
+                            calib_move_and_wait(targetPosition, f_home);
                             break;
 
                         default:
@@ -728,11 +830,11 @@ void MotorControlTask(void *pvParameters)
                         case insp:
                             breathState = plateau;
                             targetPosition = homePosition + insp_pulses + plateau_pulses;
-                            move_and_wait(targetPosition, f_plateau);
+                            run_move_and_wait(targetPosition, f_plateau);
                             MOTOR_DEBUG_PRINT("[MOTOR] to plateau %lu %lu\r\n", plateau_pulses, f_plateau);
                             break;
                         case plateau:
-                            measure_p_plateau();
+                            //measure_p_plateau();
                         case inspStopping:
                             doExpiration();
                             break;
@@ -748,7 +850,7 @@ void MotorControlTask(void *pvParameters)
                         case expStopping:
                             // Move a bit down to escape from limit switch
                             breathState = reCalibDown;
-                            move_and_wait(motor_current_position()+steps_calib_end*MOTOR_USTEPS, f_home);
+                            run_move_and_wait(motor_current_position()+steps_calib_end*MOTOR_USTEPS, f_home);
                             break;
                         case cycleEnd:
                             MOTOR_ERROR_PRINT("[MOTOR] MF while cycleEnd\r\n");
@@ -766,7 +868,7 @@ void MotorControlTask(void *pvParameters)
                             targetPosition = MOTOR_UP_POSITION + MOTOR_USTEPS*steps_calib_end;
                             breathState = reCalibHome;
                             MOTOR_DEBUG_PRINT("[MOTOR] to reCalibHome\r\n");
-                            move_and_wait(targetPosition, f_fast);
+                            run_move_and_wait(targetPosition, f_fast);
                             break;
                         case reCalibHome:
                             recalibrateFlag = false;
@@ -781,7 +883,7 @@ void MotorControlTask(void *pvParameters)
                             break;
                         case preStopping:
                             breathState = stopping;
-                            move_and_wait(homePosition, f_exp);
+                            run_move_and_wait(homePosition, f_exp);
                             break;
                     }
                 } else if (test_notif(MOTOR_NOTIF_LIM_UP)) {
@@ -891,7 +993,7 @@ void MotorControlTask(void *pvParameters)
                             MOTOR_DEBUG_PRINT("cur pos %u \r\n",motor_current_position());
                             MOTOR_DEBUG_PRINT("home %u \r\n",homePosition);
                             MOTOR_DEBUG_PRINT("to insp \r\n");
-                            move_and_wait(targetPosition, f_insp);
+                            run_move_and_wait(targetPosition, f_insp);
                             break;
                         default:
                             genMotorError("URCH Bno notif");

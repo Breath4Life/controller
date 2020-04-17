@@ -43,7 +43,6 @@ TickType_t last_update_time;
 #endif // DEBUG_MAIN
 
 #define SIM_MOTOR 0             // "simulate" motor to debug the rest
-
 void initMainTask()
 {
     globalState = welcome;
