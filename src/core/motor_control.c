@@ -42,6 +42,11 @@
 
 #define MAX_POS_MARGIN (10*MOTOR_USTEPS)
 
+#define LIM_UNPRESSED 0
+#define LIM_PRESSED 1
+#define LIM_DONTCARE 2
+#define LIM_UNREACHABLE 255
+
 /////////////////////////////////////
 uint32_t TCT;
 uint32_t Ti;
@@ -359,15 +364,6 @@ static void unboundedWaitNotification() {
     while (!boundedWaitNotification(portMAX_DELAY, true));
 }
 
-static uint8_t checkLimSwitch(uint32_t targetPosition) {
-    uint32_t curr_pos = motor_current_position();
-    if (curr_pos <= targetPosition) {
-        return !get_lim_down_v();
-    } else {
-        return !get_lim_up_v(); 
-    }
-}
-
 static void move_and_wait(uint32_t targetPosition, uint32_t max_freq) {
     // max speed: 1200 steps/s. Acceleration: 200 steps/s/10ms
     // -> max 3*120 = 360 ms deceleration + acceleration + deceleration (we take 400 to have a margin)
@@ -481,12 +477,58 @@ static void abortCalib(uint8_t flagEnd, uint32_t notif){
     }
 }
 
-static void to_lim_move_and_wait(uint32_t targetPosition, uint32_t max_speed) {
-   if (checkLimSwitch(targetPosition)) {
-        move_and_wait(targetPosition, max_speed);
-   } else {
-        genMotorError("Lim switch not usable \r\n"); 
-   }
+
+// Test if the value 'lim' (expected to be the result of a get_lim_X_v() call)  is 'value'
+// return 0 if succesful test, 1 otherwise
+static uint8_t testLimValue(uint8_t lim, uint8_t value) {
+    if (value == LIM_DONTCARE) {
+        return 0;
+    } else {
+        return !(lim == value);
+    }
+}
+
+// Test the value of the both limit switch 
+// return 0 if succesful tests, 1 otherwise
+static uint8_t testLims(uint8_t up, uint8_t down) {
+    return testLimValue(get_lim_up_v(),up) || 
+        testLimValue(get_lim_down_v(), down);
+}
+
+// Test the values of the switch depending on the 
+// current calibState value
+// Return 0 if succesful test, 1 otherwise
+// TODO: extend to return error code (using shift in each case for example)
+static uint32_t checkLimsCalib() {
+    switch (calibState) {
+        case calibDown:
+            return testLims(LIM_DONTCARE, LIM_UNPRESSED); 
+        case calibUp:
+            return testLims(LIM_UNPRESSED, LIM_DONTCARE);
+        case calibPosEnd:
+            return testLims(LIM_DONTCARE, LIM_UNPRESSED);
+        case calibVol:
+            return testLims(LIM_UNPRESSED, LIM_UNPRESSED);
+        case calibVolEnd:
+            return testLims(LIM_UNPRESSED, LIM_UNPRESSED);
+    
+        default:
+            return LIM_UNREACHABLE;
+    }
+}
+
+// Move and wait with an addition limitswitch test
+// TODO: handle different error code and return appropriate error code
+static void calib_move_and_wait(uint32_t targetPosition, uint32_t max_freq) {
+    uint32_t switches_test_value = checkLimsCalib();
+    if (switches_test_value == LIM_UNREACHABLE) {
+        genMotorError("LIM test unreachable");
+    }
+    if (switches_test_value == 0) {
+        move_and_wait(targetPosition, max_freq);
+    } else {
+        abortCalib(1,NOTIF_INCORRECT_FLOW);     
+    }
 }
 
 
@@ -538,7 +580,7 @@ void MotorControlTask(void *pvParameters)
                             targetPosition = 0;
                             calibState = calibUp;
                             MOTOR_DEBUG_PRINT("[MOTOR] finished calibDownWaitStop\r\n");
-                            move_and_wait(targetPosition, f_home);
+                            calib_move_and_wait(targetPosition, f_home);
                             break;
 
                         case calibUp:
@@ -556,7 +598,7 @@ void MotorControlTask(void *pvParameters)
                             set_motor_current_position_value(MOTOR_UP_POSITION);
                             calibState = calibPosEnd;
                             MOTOR_DEBUG_PRINT("[MOTOR] finished calibUpWaitStop\r\n");
-                            move_and_wait(posOffset, f_home);
+                            calib_move_and_wait(posOffset, f_home);
                             break;
 
                         case calibPosEnd:
@@ -572,7 +614,7 @@ void MotorControlTask(void *pvParameters)
                             // Reset volume prior to flow check
                             reset_volume();
                             MOTOR_DEBUG_PRINT("[MOTOR] Start flow check.\r\n");
-                            move_and_wait(targetPosition, f_fast);
+                            calib_move_and_wait(targetPosition, f_fast);
                             break;
 
                         case calibVol:
@@ -583,7 +625,7 @@ void MotorControlTask(void *pvParameters)
                                 // Sufficient volume insufflated.
                                 calibState = calibVolEnd;
                                 MOTOR_DEBUG_PRINT("[MOTOR] Flow check: OK\r\n");
-                                move_and_wait(homePosition, f_fast);
+                                calib_move_and_wait(homePosition, f_fast);
                             } else {
                                 MOTOR_DEBUG_PRINT("[MOTOR] Flow check: FAIL\r\n");
                                 abortCalib(1,NOTIF_INCORRECT_FLOW);
@@ -658,7 +700,7 @@ void MotorControlTask(void *pvParameters)
                             targetPosition = MOTOR_USTEPS*steps_calib_down;
                             motor_enable();
                             MOTOR_DEBUG_PRINT("to calib down/r\n");
-                            move_and_wait(targetPosition, f_home);
+                            calib_move_and_wait(targetPosition, f_home);
                             break;
 
                         default:
