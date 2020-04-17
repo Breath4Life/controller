@@ -5,14 +5,6 @@
 
 #include <stdbool.h>
 
-// debug print
-#define DEBUG_ALARM 1
-#if DEBUG_ALARM
-#define DEBUG_PRINT debug_print
-#else
-#define DEBUG_PRINT fake_debug_print
-#endif // DEBUG_ALARM
-
 #define ALARM_CHECK 1           // active/deactivate alarm check for debug
 #define CALIB_ERROR_CHECK 1     // active/deactivate calib error check during calib for debug
 

@@ -53,7 +53,6 @@ static uint8_t seq_offset;
 // upper bound on the duration of any alarm beep/pause
 #define MAX_ALARM_DUR (4000L*1000L)
 
-#define DEBUG_BUZZER 0
 #if DEBUG_BUZZER
 #define BUZZER_DEBUG_PRINT debug_print
 #else

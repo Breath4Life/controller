@@ -17,6 +17,14 @@
 #include "core/debug.h"
 #include "core/buzzer.h"
 
+// debug print
+#if DEBUG_ALARM
+#define DEBUG_PRINT debug_print
+#else
+#define DEBUG_PRINT fake_debug_print
+#endif // DEBUG_ALARM
+
+
 volatile AlarmLevel_t alarmLevel;
 volatile AlarmCause_t alarmCause;
 volatile bool alarmMuted;

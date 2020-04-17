@@ -28,7 +28,6 @@
 
 #define MOTOR_VOL_CTRL 0
 
-#define DEBUG_MOTOR 0
 #if DEBUG_MOTOR
 #define MOTOR_DEBUG_PRINT debug_print
 #else

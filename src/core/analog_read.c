@@ -16,8 +16,6 @@
 
 #define N_ANALOG_READS 3
 
-#define DEBUG_ANALOG_READ 1
-
 // Absurd value than can never happen
 #define INIT_CYCLE_P_PEAK -100
 

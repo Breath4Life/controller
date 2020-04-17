@@ -31,12 +31,11 @@ static void disp_plateau_p();
 static void disp_peak_p();
 static void disp_state();
 
-#define DEBUG_LCD 1
-#if DEBUG_LCD
+#if DEBUG_DISPLAY
 #define DEBUG_PRINT debug_print
 #else
 #define DEBUG_PRINT fake_debug_print
-#endif // DEBUG_LCD
+#endif // DEBUG_DISPLAY
 
 uint32_t muted_switch_time = 0;
 uint8_t muted_msg_on = 0;

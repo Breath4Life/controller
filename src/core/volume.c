@@ -16,7 +16,6 @@ static volatile bool error;
 // Last poll time
 static volatile uint32_t last_poll_time;
 
-#define DEBUG_FLOW 1
 #define SEND_TO_SERIAL 0
 
 void init_volume() {

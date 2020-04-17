@@ -36,9 +36,6 @@ static void save_parameters();
 static void revert_parameters();
 TickType_t last_update_time;
 
-// debug print
-#define DEBUG_MAIN 1
-
 #if DEBUG_MAIN
 #define DEBUG_PRINT debug_print
 #else

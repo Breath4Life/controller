@@ -22,7 +22,6 @@
 #define EEPROM_OFFSET_TOT_TIME 0
 #define EEPROM_OFFSET_TOT_CYCLES 1
 
-#define DEBUG_EEPROM 1
 #if DEBUG_EEPROM
 #define DEBUG_PRINT debug_print
 #else
