@@ -13,8 +13,8 @@
 #include "core/debug.h"
 #include "core/analog_read.h"
 #include "core/alarm.h"
+#include "core/utils.h"
 
-#define DEBUG_DISPLAY 0
 #if DEBUG_DISPLAY
 #define DEBUG_PRINT debug_print
 #else
@@ -55,10 +55,9 @@ static void displayPeakPressure();
 static void refreshInfoZone();
 static void displayState();
 static void displayErrorCode();
-static void toggleMuteMsg();
 
 // Used for the alternating muted indication
-static TickType_t muteMsgLastVisible = 0;
+static TickType_t muteMsgLastToggle = 0;
 static bool muteMsgVisible = false;
 
 // Parameters display
@@ -69,11 +68,11 @@ static void displayRespFreq(bool visible);
 static void displayExtraParam(bool visible);
 
 // Used for unconfirmed parameters blinking
-static TickType_t paramLastVisible = 0;
+static TickType_t paramLastToggle = 0;
 static bool paramVisible = false;
 
-static void pollAlarmMutedDisplay();
-static void pollUnsavedParamDisplay();
+static TickType_t pollAlarmMutedDisplay();
+static TickType_t pollUnsavedParamDisplay();
 
 static void processDisplayNotification(uint32_t notification);
 
@@ -83,14 +82,14 @@ void LCDDisplayTask(void *pvParameters)
     displayWelcomeMsg();
 
     while (true) {
-        pollAlarmMutedDisplay();
-        pollUnsavedParamDisplay();
+        TickType_t nextMuteMsgToggle = pollAlarmMutedDisplay();
+        TickType_t nextParamToggle = pollUnsavedParamDisplay();
 
         uint32_t notification = 0;
         BaseType_t notif_recv = xTaskNotifyWait( 0x0,
                                                  ALL_NOTIF_BITS,
                                                  &notification,
-                                                 pdMS_TO_TICKS(100));
+                                                 MIN(nextMuteMsgToggle, nextParamToggle));
 
         if (notif_recv == pdTRUE) {
             processDisplayNotification(notification);
@@ -122,30 +121,30 @@ static void displayWelcomeMsg() {
  * If alarm is muted, LCD information zone must alternate between
  * a muted alarm indication and the current state/error information
  */
-static void pollAlarmMutedDisplay() {
+static TickType_t pollAlarmMutedDisplay() {
+    TickType_t currentTime = xTaskGetTickCount();
+
     if (alarmMuted) {
-        if (xTaskGetTickCount() - muteMsgLastVisible > MUTE_MSG_PERIOD) {
-            toggleMuteMsg();
+        if (currentTime - muteMsgLastToggle > MUTE_MSG_PERIOD) {
+            if (muteMsgVisible) {
+                refreshInfoZone();
+            } else {
+                lcd_write_string(" MUTED ", 1, 10, NO_CR_LF);
+            }
+
+            muteMsgLastToggle = xTaskGetTickCount();
+            muteMsgVisible = !muteMsgVisible;
+
+            return MUTE_MSG_PERIOD;
+         } else {
+            return currentTime - muteMsgLastToggle;
          }
     } else if (muteMsgVisible) {
         // Ensures the state/error information is visible when alarm has been unmuted
         refreshInfoZone();
     }
-}
 
-/*
- * Toggle the appearance of the "MUTED" message in
- * the information zone of the LCD.
- */
-static void toggleMuteMsg() {
-    if (muteMsgVisible) {
-        refreshInfoZone();
-    } else {
-        lcd_write_string(" MUTED ", 1, 10, NO_CR_LF);
-        muteMsgLastVisible = xTaskGetTickCount();
-    }
-
-    muteMsgVisible = !muteMsgVisible;
+    return portMAX_DELAY;
 }
 
 /*
@@ -163,26 +162,30 @@ static void refreshInfoZone() {
 /*
  * Unsaved parameters must blink while unconfirmed
  */
-static void pollUnsavedParamDisplay() {
+static TickType_t pollUnsavedParamDisplay() {
+    TickType_t currentTime = xTaskGetTickCount();
+
     if (unsaved_parameters()) {
-        if (xTaskGetTickCount() - paramLastVisible > PARAM_BLINK_PERIOD) {
+        if (currentTime - paramLastToggle > PARAM_BLINK_PERIOD) {
             toggleUnsavedParameters();
+            return PARAM_BLINK_PERIOD;
+        } else {
+            return currentTime - paramLastToggle;
         }
     } else if (!paramVisible) {
         // Ensure parameters are visible when confirmed
         refreshParametersZone();
     }
+
+    return portMAX_DELAY;
 }
 
-/*
- * Makes unsaved parameters blink.
- */
 static void toggleUnsavedParameters() {
-    if (tidal_vol != saved_tidal_vol) {
+    if (unsaved_tidal_vol()) {
         displayTidalVolume(!paramVisible);
     }
 
-    if (bpm != saved_bpm) {
+    if (unsaved_bpm()) {
         displayRespFreq(!paramVisible);
     }
 
@@ -190,11 +193,13 @@ static void toggleUnsavedParameters() {
         displayExtraParam(!paramVisible);
     }
 
+    paramLastToggle = xTaskGetTickCount();
     paramVisible = !paramVisible;
 }
 
+
 /*
- * Displays all parameters and update the paramLastVisible
+ * Displays all parameters and update the paramLastToggle
  */
 static void refreshParametersZone() {
     displayTidalVolume(true);
@@ -202,7 +207,7 @@ static void refreshParametersZone() {
     displayExtraParam(true);
 
     paramVisible = true;
-    paramLastVisible = xTaskGetTickCount();
+    paramLastToggle = xTaskGetTickCount();
 }
 
 
@@ -247,12 +252,16 @@ static void displayExtraParam(bool visible) {
     if (!visible) {
         sprintf(extraParamBuffer, "         ");
     } else {
-        if (extra_param == 0) {
-            sprintf(extraParamBuffer, "I:E = 1:%1u", ie);
-        } else if (extra_param == 1) {
-            sprintf(extraParamBuffer, "Pmax = %2u", p_max);
-        } else if (extra_param == 2) {
-            sprintf(extraParamBuffer, "PEEP = %2u", peep);
+        switch (extra_param) {
+            case 0:
+                sprintf(extraParamBuffer, "I:E = 1:%1u", ie);
+                break;
+            case 1:
+                sprintf(extraParamBuffer, "Pmax = %2u", p_max);
+                break;
+            case 2:
+                sprintf(extraParamBuffer, "PEEP = %2u", peep);
+                break;
         }
     }
 

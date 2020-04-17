@@ -53,13 +53,9 @@ extern uint8_t ie;
 extern uint8_t p_max;
 extern uint8_t extra_param;
 
-// last confirmed parameters
-extern uint8_t saved_tidal_vol; // in tens of ml
-extern uint8_t saved_bpm;
-extern uint8_t saved_ie;
-extern uint8_t saved_p_max;
-
 uint8_t unsaved_parameters();
+uint8_t unsaved_tidal_vol();
+uint8_t unsaved_bpm();
 uint8_t unsaved_extra_param();
 
 void initMainTask();
