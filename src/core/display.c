@@ -14,11 +14,18 @@
 #include "core/debug.h"
 #include "core/analog_read.h"
 
+/*
+ * TODO:
+ * - major clean-up
+ * - better buffer management?
+ * - more
+ */
+
 static void disp_alarm();
 static void disp_muted();
-static void disp_tidal_vol(uint8_t force);
-static void disp_bpm(uint8_t force);
-static void disp_extra_param(uint8_t force);
+static void disp_tidal_vol(uint8_t blank);
+static void disp_bpm(uint8_t blank);
+static void disp_extra_param(uint8_t blank);
 static void disp_plateau_p();
 static void disp_peak_p();
 static void disp_state();
@@ -55,6 +62,7 @@ void LCDDisplayTask(void *pvParameters)
         uint32_t curr_time = time_us();
 
         // Display "Muted" and the current state or alarm alternatively for 2 seconds if mute_on
+        // TODO: clean
         if (mute_on && (globalState == stop || globalState == run)) {
             if (curr_time - muted_switch_time > 2000000L) {
                 if (!muted_msg_on) {
@@ -79,28 +87,25 @@ void LCDDisplayTask(void *pvParameters)
                     disp_alarm();
                 }
             }
-        }
+       }
 
-        if (curr_time - param_switch_time > 250000L) {
-            if (new_tidal_vol != tidal_vol) {
-                disp_tidal_vol(0);
-            } else if (!tidal_vol_on) {
-                disp_tidal_vol(1);
+        // Make unsaved parameters blink
+        if (unsaved_parameters()) {
+            if (curr_time - param_switch_time > 250000L) {
+                if (saved_tidal_vol != tidal_vol) {
+                    disp_tidal_vol(tidal_vol_on);
+                }
+
+                if (saved_bpm != bpm) {
+                    disp_bpm(bpm_on);
+                }
+
+                if (unsaved_extra_param()) {
+                    disp_extra_param(extra_param_on);
+                }
+
+                param_switch_time = curr_time;
             }
-
-            if (new_bpm != bpm) {
-                disp_bpm(0);
-            } else if (!bpm_on) {
-                disp_bpm(1);
-            }
-
-            if (new_ie != ie || new_p_max != p_max) {
-                disp_extra_param(0);
-            } else if (!extra_param_on) {
-                disp_extra_param(1);
-            }
-
-            param_switch_time = curr_time;
         }
 
         // FIXME: max wait has been changed to implement alternate mute/state/alarm display
@@ -109,11 +114,13 @@ void LCDDisplayTask(void *pvParameters)
             if (notification & DISP_NOTIF_PARAM) {
                 DEBUG_PRINT("[LCD] rcvd notif param.\r\n");
                 // FIXME: not clean, for a single param change, we re-write everything
-                disp_tidal_vol(1);
-                disp_bpm(1);
-                disp_extra_param(1);
+                disp_tidal_vol(0);
+                disp_bpm(0);
+                disp_extra_param(0);
 
-                param_switch_time = time_us();
+                if (unsaved_parameters()) {
+                    param_switch_time = time_us();
+                }
             }
             if (notification & DISP_NOTIF_PLATEAU_P) {
                 DEBUG_PRINT("[LCD] rcvd notif plateau p.\r\n");
@@ -188,18 +195,13 @@ static void disp_muted() {
 
 // FIXME: better buffer usage
 char tidal_vol_buffer[8];
-static void disp_tidal_vol(uint8_t force) {
-    if (force) {
-        sprintf(tidal_vol_buffer, "%2u0 ", new_tidal_vol);
-        tidal_vol_on = 1;
+static void disp_tidal_vol(uint8_t blank) {
+    if (blank) {
+        sprintf(tidal_vol_buffer, "    ");
+        tidal_vol_on = 0;
     } else {
-        if (tidal_vol_on) {
-            sprintf(tidal_vol_buffer, "    ");
-            tidal_vol_on = 0;
-        } else {
-            sprintf(tidal_vol_buffer, "%2u0 ", new_tidal_vol);
-            tidal_vol_on = 1;
-        }
+        sprintf(tidal_vol_buffer, "%2u0 ", tidal_vol);
+        tidal_vol_on = 1;
     }
 
     lcd_write_string(tidal_vol_buffer, 2, 1, NO_CR_LF);
@@ -207,18 +209,13 @@ static void disp_tidal_vol(uint8_t force) {
 
 // FIXME: better buffer usage
 char bpm_buffer[8];
-static void disp_bpm(uint8_t force) {
-    if (force) {
-        sprintf(bpm_buffer, "%2u ", new_bpm);
-        bpm_on = 1;
+static void disp_bpm(uint8_t blank) {
+    if (blank) {
+        sprintf(bpm_buffer, "   ");
+        bpm_on = 0;
     } else {
-        if (bpm_on) {
-            sprintf(bpm_buffer, "   ");
-            bpm_on = 0;
-        } else {
-            sprintf(bpm_buffer, "%2u ", new_bpm);
-            bpm_on = 1;
-        }
+        sprintf(bpm_buffer, "%2u ", bpm);
+        bpm_on = 1;
     }
 
     lcd_write_string(bpm_buffer, 2, 5, NO_CR_LF);
@@ -226,35 +223,20 @@ static void disp_bpm(uint8_t force) {
 
 // FIXME: better buffer usage
 char extra_param_buffer[12];
-static void disp_extra_param(uint8_t force) {
-    if (extra_param == 0) {
-        if (force) {
-            sprintf(extra_param_buffer, "I:E = 1:%1u", new_ie);
-            extra_param_on = 1;
-        } else {
-            if (extra_param_on) {
-                sprintf(extra_param_buffer, "         ");
-                extra_param_on = 0;
-            } else {
-                sprintf(extra_param_buffer, "I:E = 1:%1u", new_ie);
-                extra_param_on = 1;
-            }
+static void disp_extra_param(uint8_t blank) {
+    if (blank) {
+        sprintf(extra_param_buffer, "         ");
+        extra_param_on = 0;
+    } else {
+        if (extra_param == 0) {
+            sprintf(extra_param_buffer, "I:E = 1:%1u", ie);
+        } else if (extra_param == 1) {
+            sprintf(extra_param_buffer, "Pmax = %2u", p_max);
+        } else if (extra_param == 2) {
+            sprintf(extra_param_buffer, "PEEP = %2u", peep);
         }
-    } else if (extra_param == 1) {
-        if (force) {
-            sprintf(extra_param_buffer, "Pmax = %2u", new_p_max);
-            extra_param_on = 1;
-         } else {
-            if (extra_param_on) {
-                sprintf(extra_param_buffer, "         ");
-                extra_param_on = 0;
-            } else {
-                sprintf(extra_param_buffer, "Pmax = %2u", new_p_max);
-                extra_param_on = 1;
-            }
-         }
-    } else if (extra_param == 2) {
-        sprintf(extra_param_buffer, "PEEP = %2u", peep);
+
+        extra_param_on = 1;
     }
 
     lcd_write_string(extra_param_buffer, 2, 8, NO_CR_LF);

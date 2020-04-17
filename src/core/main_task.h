@@ -40,7 +40,8 @@
 
 #define N_EXTRA 3
 
-#define ALARM_AUTO_UNMUTE_SEC 120 * 1000L
+#define ALARM_AUTO_UNMUTE_DELAY 120 * 1000L
+#define PARAM_AUTO_REVERT_DELAY 20 * 1000L
 
 // Alarm notification values
 #define ALARM_NOTIF_LOW_PRESSURE 0x01
@@ -59,18 +60,21 @@
 
 #define NOTIF_MOTOR_ERROR 0x800
 
-// actual parameters
+// current parameters
 extern uint8_t tidal_vol; // in tens of ml
 extern uint8_t bpm;
 extern uint8_t ie;
 extern uint8_t p_max;
 extern uint8_t extra_param;
 
-// unconfirmed new parameters
-extern uint8_t new_tidal_vol; // in tens of ml
-extern uint8_t new_bpm;
-extern uint8_t new_ie;
-extern uint8_t new_p_max;
+// last confirmed parameters
+extern uint8_t saved_tidal_vol; // in tens of ml
+extern uint8_t saved_bpm;
+extern uint8_t saved_ie;
+extern uint8_t saved_p_max;
+
+uint8_t unsaved_parameters();
+uint8_t unsaved_extra_param();
 
 void initMainTask();
 void MainTask(void *pvParameters);
@@ -78,5 +82,6 @@ void MainTask(void *pvParameters);
 uint8_t stoppedOrRunning();
 /* check if volume is within +- 10% of target volume */
 void check_volume(uint32_t actual_vol);
+
 
 #endif // MAINTASK_H_
