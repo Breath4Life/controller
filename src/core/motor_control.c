@@ -281,6 +281,7 @@ static bool bwaitTimeoutExpired() {
 static bool resumeBoundedWaitNotification() {
     uint32_t notif_recv;
     if (notif) {
+        DEBUG_PRINT("rBWN notif %x", notif);
         return true;
     } else {
         if (bwaitTimeoutExpired()) {
@@ -393,7 +394,7 @@ static void doExpiration() {
 
 // TODO change this
 static uint8_t need_recalibration() {
-    return recalibrateFlag || ((cycleCount & 0x3) == 0);
+    return recalibrateFlag || ((cycleCount & 0x3) == 0) || motor_error();
 }
 
 static void abort_insp() {
