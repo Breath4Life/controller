@@ -78,6 +78,13 @@ static void pollUnsavedParamDisplay();
 
 static void processDisplayNotification(uint32_t notification);
 
+static void welcomeScreen();
+static void welcomeWaitCalScreen();
+static void calibrationScreen();
+static void normalScreen(uint32_t notification);
+static void criticalFailureScreen();
+static void refreshLCD(uint32_t notification);
+
 void LCDDisplayTask(void *pvParameters)
 {
     DEBUG_PRINT("[LCD] Starting.\r\n");
@@ -279,38 +286,13 @@ static void displayPeakPressure() {
 }
 
 /*
- * Display current state in the LCD information zone.
+ * Display current state (run or stop) in the LCD information zone.
  */
 static void displayState() {
-    switch (globalState) {
-        case welcome:
-            DEBUG_PRINT("[LCD] gS = welcome.\r\n");
-            lcdWriteTwoLines(WELCOME_MSG1, WELCOME_MSG2);
-            break;
-        case welcome_wait_cal:
-            DEBUG_PRINT("[LCD] gS = welcome_wait_cal.\r\n");
-            if (alarmCause == noError) {
-                lcdWriteTwoLines(WAIT_CALI_MSG1, WAIT_CALI_MSG2);
-            } else {
-                lcdWriteTwoLines(CALI_ERROR_MSG1, CALI_ERROR_MSG2);
-            }
-            break;
-        case calibration:
-            DEBUG_PRINT("[LCD] gS = calibration.\r\n");
-            lcdWriteTwoLines(CALI_MSG1, CALI_MSG2);
-            break;
-        case stop:
-            DEBUG_PRINT("[LCD] gS = stop.\r\n");
-            lcd_write_string(STOPPED_MSG, 1, 10, NO_CR_LF);
-            break;
-        case run:
-            DEBUG_PRINT("[LCD] gS = run.\r\n");
-            lcd_write_string(RUNNING_MSG, 1, 10, NO_CR_LF);
-            break;
-        case critical_failure:
-            DEBUG_PRINT("[LCD] gS = critical_failure.\r\n");
-            lcdWriteTwoLines(CRITICAL_FAILURE_MSG1, CRITICAL_FAILURE_MSG2);
-            break;
+    if (globalState == run) {
+        lcd_write_string(STOPPED_MSG, 1, 10, NO_CR_LF);
+    } else if (globalState == stop) {
+        lcd_write_string(RUNNING_MSG, 1, 10, NO_CR_LF);
     }
 }
 
@@ -321,33 +303,82 @@ static void displayErrorCode() {
     lcd_write_string(errorCode[alarmCause], 1, 10, NO_CR_LF);
 }
 
-static void processDisplayNotification(uint32_t notification) {
-    // Update parameters
-    if (notification & DISP_NOTIF_PARAM) {
-        DEBUG_PRINT("[LCD] Rcvd PARAM.\r\n");
-        refreshParametersZone();
-    }
+// LCD welcome screen
+static void welcomeScreen() {
+    lcdWriteTwoLines(WELCOME_MSG1, WELCOME_MSG2);
+}
 
-    // Update plateau pressure
+// LCD welcome_wait_cal screen
+static void welcomeWaitCalScreen() {
+    if (alarmCause == noError) {
+        lcdWriteTwoLines(WAIT_CALI_MSG1, WAIT_CALI_MSG2);
+    } else {
+        lcdWriteTwoLines(CALI_ERROR_MSG1, CALI_ERROR_MSG2);
+        displayErrorCode();
+    }
+}
+
+// LCD calibration screen
+static void calibrationScreen() {
+    lcdWriteTwoLines(CALI_MSG1, CALI_MSG2);
+}
+
+// LCD "normal" (i.e. run or stop) screen
+static void normalScreen(uint32_t notification) {
     if (notification & DISP_NOTIF_PLATEAU_P) {
-        DEBUG_PRINT("[LCD] Rcvd PLATEAU_P.\r\n");
         displayPlateauPressure();
     }
 
-    // Update peak pressure
     if (notification & DISP_NOTIF_PEAK_P) {
-        DEBUG_PRINT("[LCD] Rcvd PEAK_P.\r\n");
         displayPeakPressure();
     }
 
-    // Update LCD information zone
-    if (notification & (DISP_NOTIF_STATE | DISP_NOTIF_ALARM)) {
-        DEBUG_PRINT("[LCD] Rcvd STATE|ALARM.\r\n");
-        refreshInfoZone();
+    if (alarmCause == noError) {
+        if (notification & DISP_NOTIF_STATE) {
+            displayState();
+         }
+    } else {
+        if (notification & DISP_NOTIF_ALARM) {
+            displayErrorCode();
+        }
     }
 
-    if (notification & DISP_NOTIF_MUTE) {
-        DEBUG_PRINT("[LCD] Rcvd MUTE.\r\n");
+    if (notification & DISP_NOTIF_PARAM) {
+        refreshParametersZone();
+    }
+}
+
+// LCD critical failure screen
+static void criticalFailureScreen() {
+    lcdWriteTwoLines(CRITICAL_FAILURE_MSG1, CRITICAL_FAILURE_MSG2);
+    displayErrorCode();
+}
+
+static void refreshLCD(uint32_t notification) {
+   switch (globalState) {
+        case welcome:
+            welcomeScreen();
+            break;
+        case welcome_wait_cal:
+            welcomeWaitCalScreen();
+            break;
+        case calibration:
+            calibrationScreen();
+            break;
+        case stop:
+        case run:
+            normalScreen(notification);
+            break;
+        case critical_failure:
+            criticalFailureScreen();
+            break;
+    }
+}
+
+static void processDisplayNotification(uint32_t notification) {
+    if (notification & DISP_NOTIF_REFRESH) {
+        refreshLCD(notification);
+    } else if (notification & DISP_NOTIF_MUTE) {
         // Initialize timeout for the mute indicator
         vTaskSetTimeOutState(&muteMsgToggleTimeOut);
         muteMsgToggleRemTime = 0;

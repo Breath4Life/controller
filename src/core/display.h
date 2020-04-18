@@ -9,12 +9,12 @@
 #define WELCOME_MSG2            "SN:00001 UP:0042"
 
 // Waiting calibration message
-#define WAIT_CALI_MSG1          "START to        "
-#define WAIT_CALI_MSG2          "self-calibrate  "
+#define WAIT_CALI_MSG1          " Press START to "
+#define WAIT_CALI_MSG2          " self-calibrate "
 
 // Calibration message
-#define CALI_MSG1               "Wait...         "
-#define CALI_MSG2               "Self-calibrating"
+#define CALI_MSG1               "Self-calibrating"
+#define CALI_MSG2               "Please wait...  "
 
 // Calibration error messages
 #define CALI_ERROR_MSG1         "ABORTED: "
@@ -41,6 +41,8 @@
 #define DISP_NOTIF_STATE 0x10
 // The mute button has been pressed
 #define DISP_NOTIF_MUTE 0x20
+// Refresh aggregated notif
+#define DISP_NOTIF_REFRESH (DISP_NOTIF_ALARM | DISP_NOTIF_PARAM | DISP_NOTIF_PLATEAU_P | DISP_NOTIF_PEAK_P | DISP_NOTIF_STATE)
 
 /**
  * @LCDDisplayTask Handle the display of the LCD screen.
