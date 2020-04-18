@@ -13,6 +13,7 @@ typedef enum {
     analogRead,
     buzzerTsk,
     volumeDbg,
+    parametersDbg,
 } DebugPrefix_t;
 
 

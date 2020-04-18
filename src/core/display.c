@@ -14,6 +14,7 @@
 #include "core/analog_read.h"
 #include "core/alarm.h"
 #include "core/utils.h"
+#include "core/parameters.h"
 
 #if DEBUG_DISPLAY
 #define DEBUG_PRINT debug_print

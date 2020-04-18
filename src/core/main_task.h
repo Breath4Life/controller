@@ -14,49 +14,10 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-// tidal vol in tens of mL
-#define DEFAULT_TIDAL_VOL 30
-#define MAX_TIDAL_VOL 60
-#define MIN_TIDAL_VOL 20
-#define INC_TIDAL_VOL 2
-
-// breath per min
-#define DEFAULT_BPM 15
-#define MAX_BPM 30
-#define MIN_BPM 12
-#define INC_BPM 1
-
-// I:E ratio
-#define DEFAULT_IE 1
-#define MAX_IE 3
-#define MIN_IE 1
-#define INC_IE 1
-
-// Pmax
-#define DEFAULT_PMAX 38
-#define MAX_PMAX 58
-#define MIN_PMAX 28
-#define INC_PMAX 1
-
-#define N_EXTRA 3
-
 #define ALARM_AUTO_UNMUTE_DELAY 120 * 1000L
-#define PARAM_AUTO_REVERT_DELAY 120 * 1000L
 
 // Alarm notification values
 #define MAIN_NOTIF_ALARM 0x01
-
-// current parameters
-extern uint8_t tidal_vol; // in tens of ml
-extern uint8_t bpm;
-extern uint8_t ie;
-extern uint8_t p_max;
-extern uint8_t extra_param;
-
-uint8_t unsaved_parameters();
-uint8_t unsaved_tidal_vol();
-uint8_t unsaved_bpm();
-uint8_t unsaved_extra_param();
 
 void initMainTask();
 void MainTask(void *pvParameters);
