@@ -11,10 +11,12 @@
 #include "hal/time.h"
 #include "core/buzzer.h"
 #include "core/system.h"
-#include "core/debug.h"
 #include "core/main_task.h"
 #include "core/utils.h"
 #include "core/alarm.h"
+
+#define CURR_DEBUG_PREFIX buzzerTsk
+#include "core/debug.h"
 
 #define N_TONES_CRIT 5
 #define N_TONES_HIGH 5
@@ -54,7 +56,7 @@ static uint8_t seq_offset;
 #define MAX_ALARM_DUR (4000L*1000L)
 
 #if DEBUG_BUZZER
-#define BUZZER_DEBUG_PRINT debug_print
+#define BUZZER_DEBUG_PRINT debug_print_prefix
 #else
 #define BUZZER_DEBUG_PRINT fake_debug_print
 #endif
@@ -86,11 +88,11 @@ void play_tone(uint16_t frequency, uint16_t time) {
 
 void BuzzerTask(void *pvParameters)
 {
-    //BUZZER_DEBUG_PRINT("[ALARM] Starting.\r\n");
+    //BUZZER_DEBUG_PRINT("Starting");
 
     while (1) {
         if ((buzzer_alarm_state != alarmLevel) || (muted != alarmMuted)) {
-            BUZZER_DEBUG_PRINT("[ALARM] New alarm/mute.\r\n");
+            BUZZER_DEBUG_PRINT("New alarm/mute");
             tone_stop();
             buzzer_alarm_state = alarmLevel;
             muted = alarmMuted;
@@ -103,7 +105,7 @@ void BuzzerTask(void *pvParameters)
             tone_stop();
             if ((buzzer_alarm_state != noAlarm) && !muted) {
                 if (pausing) {
-                    BUZZER_DEBUG_PRINT("[ALARM] Unpausing.\r\n");
+                    BUZZER_DEBUG_PRINT("Unpausing");
                     pausing = 0;
                     seq_offset += 1;
                     if (seq_offset >= tones_size[buzzer_alarm_state]) {
@@ -112,7 +114,7 @@ void BuzzerTask(void *pvParameters)
                     tone_start(tones_freq[buzzer_alarm_state][seq_offset]);
                     set_time_next_wakeup(tones_dur[buzzer_alarm_state][seq_offset]);
                 } else {
-                    BUZZER_DEBUG_PRINT("[ALARM] Pausing.\r\n");
+                    BUZZER_DEBUG_PRINT("Pausing");
                     pausing = 1;
                     set_time_next_wakeup(tones_pause[buzzer_alarm_state][seq_offset]);
                 }

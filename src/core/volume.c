@@ -2,10 +2,18 @@
 #include <stdbool.h>
 #include <avr/interrupt.h>
 #include "core/volume.h"
-#include "core/debug.h"
 #include "core/main_task.h"
 #include "hal/sfm3000.h"
 #include "hal/time.h"
+
+#define CURR_DEBUG_PREFIX volumeDbg
+#include "core/debug.h"
+
+#if DEBUG_FLOW
+#define DEBUG_PRINT debug_print_prefix
+#else
+#define DEBUG_PRINT fake_debug_print
+#endif // DEBUG_FLOW
 
 // Total volume in standard µl
 volatile int32_t volume;
@@ -19,9 +27,7 @@ static volatile uint32_t last_poll_time;
 #define SEND_TO_SERIAL 0
 
 void init_volume() {
-#if DEBUG_FLOW
-    debug_print("[FLOW] Init.\r\n");
-#endif
+    DEBUG_PRINT("Init");
     sfm3000_init(1);
     reset_volume();
 }
@@ -72,18 +78,14 @@ uint8_t poll_volume() {
         case 1:
             return 1;
         default:
-#if DEBUG_FLOW
-            debug_print("[FLOW] Error.\r\n");
-#endif
+            DEBUG_PRINT("Error");
             error = true;
             return 2;
     }
 }
 
 void reset_volume() {
-#if DEBUG_FLOW
-    debug_print("[FLOW] Reset.\r\n");
-#endif
+    DEBUG_PRINT("Reset");
     uint32_t curr_time = time_us();
     cli();
     volume = 0;
@@ -93,9 +95,7 @@ void reset_volume() {
 }
 
 uint8_t get_volume(int32_t *vol) {
-#if DEBUG_FLOW
-    debug_print("[FLOW] Get volume: %i %li.\r\n", error, volume);
-#endif
+    DEBUG_PRINT("Get volume %i %li", error, volume);
     cli();
     bool tmp_err = error;
     int32_t tmp_vol = volume;

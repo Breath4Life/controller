@@ -1,7 +1,6 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-#include "core/debug.h"
 #include "core/system.h"
 #include "core/buttons.h"
 #include "core/main_task.h"
@@ -16,6 +15,9 @@
 #include "hal/pins.h"
 #include "hal/power_monitoring.h"
 #include "hal/door_open.h"
+
+#define CURR_DEBUG_PREFIX mainTask
+#include "core/debug.h"
 
 volatile GlobalState_t globalState;
 
@@ -37,7 +39,7 @@ static void revert_parameters();
 TickType_t last_update_time;
 
 #if DEBUG_MAIN
-#define DEBUG_PRINT debug_print
+#define DEBUG_PRINT debug_print_prefix
 #else
 #define DEBUG_PRINT fake_debug_print
 #endif // DEBUG_MAIN
@@ -69,7 +71,7 @@ void MainTask(void *pvParameters)
 {
     TickType_t xLastWakeTime = xTaskGetTickCount();
 
-    DEBUG_PRINT("[MAIN] -> welcome.\r\n");
+    DEBUG_PRINT("-> welcome");
 
     // TODO SPEC and adjust this
     play_tone(440, 500);
@@ -80,9 +82,9 @@ void MainTask(void *pvParameters)
      * set globalState to welcome_wait_cal
      */
     globalState = welcome_wait_cal;
-    DEBUG_PRINT("[MAIN] -> welcome_wait_cal.\r\n");
+    DEBUG_PRINT("-> welcome_wait_cal");
     xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
-    DEBUG_PRINT("[MAIN] NOTIF_STATE -> LCD.\r\n");
+    DEBUG_PRINT("NOTIF_STATE -> LCD");
 
     // Indicate if the state has changed
     uint8_t updated_state;
@@ -99,18 +101,18 @@ void MainTask(void *pvParameters)
     while (1) {
         // 0. If globalState is critical failure, full restart required, do nothing.
         if (globalState == critical_failure) {
-            DEBUG_PRINT("[MAIN] Critically failed.\r\n");
+            DEBUG_PRINT("Critically failed");
             vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1000));
             continue;
         }
         if (alarmLevel == criticalPriorityAlarm && 
                 alarmCause != calibPatientConnected && 
                 alarmCause != calibIncorrectFlow ) {
-            DEBUG_PRINT("[MAIN] -> critical_failure.\r\n");
+            DEBUG_PRINT("-> critical_failure");
             globalState = critical_failure;
             xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
             xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_GLOBAL_STATE, eSetBits);
-            DEBUG_PRINT("[MAIN] NOT_STATE -> LCD. \r\n");
+            DEBUG_PRINT("NOT_STATE -> LCD");
         }
         updated_state = 0;
         updated_setting = 0;
@@ -144,7 +146,7 @@ void MainTask(void *pvParameters)
                 // reset to noAlarm
                 ackAlarm();
 
-                DEBUG_PRINT("[MAIN] -> calibration.\r\n");
+                DEBUG_PRINT("-> calibration");
                 updated_state = 1;
 
                 xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_GLOBAL_STATE, eSetBits);
@@ -163,10 +165,10 @@ void MainTask(void *pvParameters)
              */
             if (alarmLevel == criticalPriorityAlarm) {
                 globalState = welcome_wait_cal;
-                DEBUG_PRINT("[MAIN] -> welcome_wait_cal.\r\n");
+                DEBUG_PRINT("-> welcome_wait_cal");
 
                 xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
-                DEBUG_PRINT("[MAIN] NOT_STATE -> LCD. \r\n");
+                DEBUG_PRINT("NOT_STATE -> LCD");
             }
 
 #if SIM_MOTOR
@@ -175,7 +177,7 @@ void MainTask(void *pvParameters)
             if (motorState == motorStopped) {
 #endif
                 globalState = stop;
-                DEBUG_PRINT("[MAIN] -> stop.\r\n");
+                DEBUG_PRINT("-> stop");
 
                 xTaskNotify(lcdDisplayTaskHandle,
                         DISP_NOTIF_STATE | DISP_NOTIF_PARAM |
@@ -193,7 +195,7 @@ void MainTask(void *pvParameters)
 #endif
                 if (BUTTON_PRESSED(buttons_pressed, button_startstop)) {
                     globalState = welcome_wait_cal;
-                    DEBUG_PRINT("[MAIN] -> welcome_wait_cal.\r\n");
+                    DEBUG_PRINT("-> welcome_wait_cal");
                     updated_state = 1;
 
                     xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_GLOBAL_STATE, eSetBits);
@@ -229,7 +231,7 @@ void MainTask(void *pvParameters)
                 updated_setting = 1;
             }
             if (BUTTON_PRESSED(buttons_pressed, button_confirm)) {
-                DEBUG_PRINT("[MAIN] Current parameters saved.\r\n");
+                DEBUG_PRINT("Current parameters saved");
                 save_parameters();
                 updated_setting = 1;
             }
@@ -257,8 +259,8 @@ void MainTask(void *pvParameters)
              }
 
             if (updated_setting) {
-                DEBUG_PRINT("[MAIN] NOTIF_PARAM -> LCD.\r\n");
-                DEBUG_PRINT("[MAIN] Parameters changed.\r\n");
+                DEBUG_PRINT("NOTIF_PARAM -> LCD");
+                DEBUG_PRINT("Parameters changed");
                 last_update_time = xTaskGetTickCount();
                 xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PARAM, eSetBits);
             }
@@ -270,13 +272,13 @@ void MainTask(void *pvParameters)
             if (BUTTON_PRESSED(buttons_pressed, button_startstop)) {
                 if (globalState == stop) {
                     globalState = run;
-                    DEBUG_PRINT("[MAIN] -> run.\r\n");
+                    DEBUG_PRINT("-> run");
                     updated_state = 1;
 
                     xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_GLOBAL_STATE, eSetBits);
                 } else if (globalState == run) {
                     globalState = stop;
-                    DEBUG_PRINT("[MAIN] -> stop.\r\n");
+                    DEBUG_PRINT("-> stop");
                     updated_state = 1;
 
                     xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_GLOBAL_STATE, eSetBits);
@@ -300,7 +302,7 @@ void MainTask(void *pvParameters)
          */
         if (updated_state == 1) {
             xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
-            DEBUG_PRINT("[MAIN] NOTIF_STATE -> LCD. \r\n");
+            DEBUG_PRINT("NOTIF_STATE -> LCD");
         }
 
         /*
@@ -308,7 +310,7 @@ void MainTask(void *pvParameters)
          */
         if (error_power_aux()) {
 #if POWER_AUX_CHECK
-            DEBUG_PRINT("[MAIN] POWER AUX ERROR.\r\n");
+            DEBUG_PRINT("POWER AUX ERROR");
             sendNewAlarm(auxPower);
 #endif
         }
@@ -318,7 +320,7 @@ void MainTask(void *pvParameters)
          */
         if (error_power_main()) {
 #if POWER_MAIN_CHECK
-            DEBUG_PRINT("[MAIN] POWER MAIN ERROR.\r\n");
+            DEBUG_PRINT("POWER MAIN ERROR");
             sendNewAlarm(powerError);
 #endif
         }
@@ -328,7 +330,7 @@ void MainTask(void *pvParameters)
          */
         if (is_door_open()) {
 #if DOOR_CHECK
-            DEBUG_PRINT("[MAIN] DOOR OPEN.\r\n");
+            DEBUG_PRINT("DOOR OPEN");
             sendNewAlarm(doorOpen);
 #endif
         }

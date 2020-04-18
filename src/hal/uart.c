@@ -29,7 +29,7 @@ void uart_init()
     transmitting = 0;
 }
 
-void uart_transmit(char *data)
+void uart_transmit(const char *data)
 {
     while (*data != '\0') {
         ringbuf_put(&uart_buf, *data);

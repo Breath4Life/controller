@@ -12,4 +12,4 @@ void uart_init();
  *
  * @param data: Null-terminated character string to transmit.
  */
-void uart_transmit(char *data);
+void uart_transmit(const char *data);

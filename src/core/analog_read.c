@@ -8,11 +8,13 @@
 #include "core/main_task.h"
 #include "core/motor_control.h"
 #include "core/display.h"
-#include "core/debug.h"
 #include "core/alarm.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
+
+#define CURR_DEBUG_PREFIX analogRead
+#include "core/debug.h"
 
 #define N_ANALOG_READS 3
 
@@ -20,10 +22,10 @@
 #define INIT_CYCLE_P_PEAK -100
 
 #if DEBUG_ANALOG_READ
-#define DEBUG_PRINT debug_print
+#define DEBUG_PRINT debug_print_prefix
 #else
 #define DEBUG_PRINT fake_debug_print
-#endif // DEBUG_PRINT
+#endif // DEBUG_ANALOG_READ
 
 // Instantaneous pressure in cmH2O
 volatile int16_t p;
@@ -72,7 +74,7 @@ void init_analog_read() {
 
 void AnalogReadTask(void *pvParameters) {
     TickType_t xLastWakeTime = xTaskGetTickCount();
-    DEBUG_PRINT("[ANALOG-READ] Starting.\r\n");
+    DEBUG_PRINT("Starting");
 
     while (1) {
         if (aio_ready()) {
@@ -85,7 +87,7 @@ void AnalogReadTask(void *pvParameters) {
                     if (globalState == run) {
                         if (p > p_max) {
                             // Overpressure
-                            DEBUG_PRINT("[P-SENS] OVERPRESSURE.\r\n");
+                            DEBUG_PRINT("OVERPRESSURE");
                             sendNewAlarm(highPressure);
                             xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_OVER_PRESSURE, eSetBits);
                         }
@@ -101,23 +103,23 @@ void AnalogReadTask(void *pvParameters) {
                             p_peak = cycle_p_peak;
                             sei();
                             cycle_p_peak = INIT_CYCLE_P_PEAK;
-                            DEBUG_PRINT("[P-SENS] Updated p_peak.\r\n");
+                            DEBUG_PRINT("Upd p_peak");
                             xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PEAK_P, eSetBits);
 
                             if (p_peak < NO_PRESSURE_THRESHOLD) {
                                 // No pressure
-                                DEBUG_PRINT("[P-SENS] NO PRESSURE.\r\n");
+                                DEBUG_PRINT("NO PRESSURE");
                                 sendNewAlarm(noPressure);
                             } else if (p_peak < LOW_PRESSURE_THRESHOLD) {
                                 // Low pressure
-                                DEBUG_PRINT("[P-SENS] LOW PRESSURE.\r\n");
+                                DEBUG_PRINT("LOW PRESSURE");
                                 sendNewAlarm(lowPressure);
                             }
                         }
                     } else if (globalState == calibration) {
                         if (p > CALIBRATION_MAX_P) {
                             // Pressure increased during self-calibration
-                            DEBUG_PRINT("[P-SENS] PATIENT CONNECTED?\r\n");
+                            DEBUG_PRINT("PATIENT CONNECTED?");
                             xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_OVER_PRESSURE, eSetBits);
                             sendNewAlarm(calibPatientConnected);
                         }
@@ -129,7 +131,7 @@ void AnalogReadTask(void *pvParameters) {
                     temp0 = mes2temp(res);
 
                     if (temp0 > MAX_TEMP0) {
-                        DEBUG_PRINT("[T0-SENS] HIGH TEMP: %i.\r\n", temp0);
+                        DEBUG_PRINT("T0 HIGH TEMP: %i", temp0);
                         sendNewAlarm(highTemperature);
                     }
                     curr_mes = temperature1;
@@ -138,7 +140,7 @@ void AnalogReadTask(void *pvParameters) {
                     temp1 = mes2temp(res);
 
                     if (temp1 > MAX_TEMP1) {
-                        DEBUG_PRINT("[T1-SENS] HIGH TEMP: %i.\r\n", temp1);
+                        DEBUG_PRINT("T1 HIGH TEMP: %i", temp1);
                         sendNewAlarm(highTemperature);
                     }
                     curr_mes = pressure;
@@ -218,7 +220,7 @@ void measure_p_plateau() {
     p_plateau = p;
     sei();
     // TODO: alarm on p_plateau?
-    DEBUG_PRINT("[P-SENS] p_plateau = %i.\r\n", p_plateau);
+    DEBUG_PRINT("p_plateau = %i", p_plateau);
     xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PLATEAU_P, eSetBits);
 }
 
@@ -226,6 +228,6 @@ void measure_peep() {
     cli();
     peep = p;
     sei();
-    DEBUG_PRINT("[P-SENS] peep = %i.\r\n", peep);
+    DEBUG_PRINT("peep = %i", peep);
     xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PARAM, eSetBits);
 }
