@@ -1,7 +1,11 @@
-#ifndef BUZZER_H_
-#define BUZZER_H_
 /** Task in charge of generating the buzzer sound.
  */
+#ifndef BUZZER_H_
+#define BUZZER_H_
+
+#include <stdint.h>
+#include <stdbool.h>
+
 #include "FreeRTOS.h"
 
 
@@ -18,8 +22,9 @@ void notify_buzzer();
  *
  * @param frequency Frequency of the tone (in Hz).
  * @param time Duration of the tone (in ms).
+ * @param 
  */
-void play_tone(uint16_t frequency, uint16_t time);
+void play_tone(uint16_t frequency, uint16_t time, bool high_volume);
 
 /**
  * @BuzzerTask Buzzer sound generation handling task.

@@ -74,7 +74,7 @@ void MainTask(void *pvParameters)
     DEBUG_PRINT("-> welcome");
 
     // TODO SPEC and adjust this
-    play_tone(440, 500);
+    play_tone(440, 500, false);
 
     vTaskDelayUntil(&xLastWakeTime, WELCOME_MSG_DUR);
     /*
