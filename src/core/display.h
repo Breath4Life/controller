@@ -5,28 +5,29 @@
 #include "FreeRTOS.h"
 
 // Welcome message
-#define WELCOME_MSG1            "Breath4Life v1.0"
-#define WELCOME_MSG2            "Starting...     "
+#define WELCOME_MSG1            "BREATH4LIFE V1.0"
+#define WELCOME_MSG2            "SN:00001 UP:0042"
 
 // Waiting calibration message
-#define WAIT_CALI_MSG1          "Press START     "
-#define WAIT_CALI_MSG2          "to calibrate.   "
-
-// Calibration error messages
-#define PAT_CONNECTED_MSG       "Remove patient !"
-#define INC_FLOW_MSG            "Flow-check fail."
-#define UNKNOWN_ERROR_MSG       "Unknown error..."
-#define RETRY_CALI_MSG          "START to re-try."
+#define WAIT_CALI_MSG1          "START to        "
+#define WAIT_CALI_MSG2          "self-calibrate  "
 
 // Calibration message
-#define CALI_MSG1               "Calibrating...  "
-#define CALI_MSG2               "Please wait...  "
+#define CALI_MSG1               "Wait...         "
+#define CALI_MSG2               "Self-calibrating"
+
+// Calibration error messages
+#define CALI_ERROR_MSG1         "ABORTED: "
+#define CALI_ERROR_MSG2         "START to retry  "
+
+// Stop and run state messages
+#define RUNNING_MSG             "Running"
+#define STOPPED_MSG             "Stopped"
+#define MUTED_MSG               " MUTED "
 
 // Critical failure messages
-#define DOOR_OPEN_MSG           "! DOOR IS OPEN !"
-#define MOTOR_ERROR_MSG         "! MOTOR ERROR  !"
-#define POWER_ERROR_MSG         "! POWER ERROR  !"
-#define CRITICAL_FAILURE_MSG    "RESTART REQUIRED"
+#define CRITICAL_FAILURE_MSG1   "CRITICAL:"
+#define CRITICAL_FAILURE_MSG2   "RESTART REQUIRED"
 
 // The alarm state changed.
 #define DISP_NOTIF_ALARM 0x01
@@ -38,8 +39,8 @@
 #define DISP_NOTIF_PEAK_P 0x08
 // The global state changed.
 #define DISP_NOTIF_STATE 0x10
-// Wake-up the LCD when the mute button is pressed
-#define DISP_NOTIF_WAKEUP 0x20
+// The mute button has been pressed
+#define DISP_NOTIF_MUTE 0x20
 
 /**
  * @LCDDisplayTask Handle the display of the LCD screen.

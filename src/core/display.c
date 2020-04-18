@@ -27,25 +27,24 @@
 
 static const char *errorCode[] = {
     "       ",
-    "MXPSR  ",
-    "NOPSR  ",
-    "HOPSR  ",
-    "MXTPM  ",
-    "LOPSR  ",
-    "TIDALV ",
-    "RESPR  ",
-    "BATTERY",
-    "FLOW   ",
-    "PATIENT",
-    "DOOR   ",
-    "MOTOR  ",
-    "POWER  "
+    "MXPSR11",
+    "NOPSR12",
+    "HIPSR13",
+    "HITMP14",
+    "LOPSR21",
+    "VOLUM22", // LOVOL, HIVOL
+    "RESPR23", // LOBPM, HIBPM
+    "LOBAT24",
+    "SENSO15",
+    "PATCO16",
+    "ODOOR03",
+    "MOTOR02",
+    "POWER01"
 };
 
 static void lcdWriteTwoLines(char * firstLine, char * secondLine);
 
 static void initDisplay();
-static void displayWelcomeMsg();
 
 // Pressure measurements display
 static void displayPlateauPressure();
@@ -57,7 +56,8 @@ static void displayState();
 static void displayErrorCode();
 
 // Used for the alternating muted indication
-static TickType_t muteMsgLastToggle = 0;
+static TimeOut_t muteMsgToggleTimeOut;
+static TickType_t muteMsgToggleRemTime;
 static bool muteMsgVisible = false;
 
 // Parameters display
@@ -68,25 +68,27 @@ static void displayRespFreq(bool visible);
 static void displayExtraParam(bool visible);
 
 // Used for unconfirmed parameters blinking
-static TickType_t paramLastToggle = 0;
+static TimeOut_t paramToggleTimeOut;
+static TickType_t paramToggleRemTime;
 static bool paramVisible = true;
 
-static TickType_t pollAlarmMutedDisplay();
-static TickType_t pollUnsavedParamDisplay();
+static void pollAlarmMutedDisplay();
+static void pollUnsavedParamDisplay();
 
 static void processDisplayNotification(uint32_t notification);
 
 void LCDDisplayTask(void *pvParameters)
 {
+    DEBUG_PRINT("[LCD] Starting.\r\n");
     initDisplay();
-    displayWelcomeMsg();
+    displayState();
 
     uint32_t notification = 0;
     BaseType_t notif_recv = pdFALSE;
 
     while (true) {
-        TickType_t nextMuteMsgToggle = pollAlarmMutedDisplay();
-        TickType_t nextParamToggle = pollUnsavedParamDisplay();
+        pollAlarmMutedDisplay();
+        pollUnsavedParamDisplay();
 
         if (notif_recv == pdTRUE) {
             processDisplayNotification(notification);
@@ -96,7 +98,7 @@ void LCDDisplayTask(void *pvParameters)
 
         notification = 0;
         notif_recv = xTaskNotifyWait( 0x0, ALL_NOTIF_BITS, &notification,
-                                      MIN(nextMuteMsgToggle, nextParamToggle));
+                                      MIN(muteMsgToggleRemTime, paramToggleRemTime));
 
     }
 }
@@ -105,48 +107,35 @@ void LCDDisplayTask(void *pvParameters)
  * Initializes the display.
  */
 static void initDisplay() {
-    lcd_initLCD();
-    DEBUG_PRINT("[LCD] Init.\r\n");
     // Note: this delay is needed for correct operation of the LCD afterwards
     vTaskDelay(pdMS_TO_TICKS(100));
-}
-
-/*
- * Displays the welcome message.
- */
-static void displayWelcomeMsg() {
-    lcdWriteTwoLines(WELCOME_MSG1, WELCOME_MSG2);
 }
 
 /*
  * If alarm is muted, LCD information zone must alternate between
  * a muted alarm indication and the current state/error information
  */
-static TickType_t pollAlarmMutedDisplay() {
-    TickType_t currentTime = xTaskGetTickCount();
-
+static void pollAlarmMutedDisplay() {
     if (alarmMuted) {
-        if (currentTime - muteMsgLastToggle > MUTE_MSG_PERIOD) {
+        if (xTaskCheckForTimeOut(&muteMsgToggleTimeOut, &muteMsgToggleRemTime) == pdTRUE) {
             if (muteMsgVisible) {
                 refreshInfoZone();
             } else {
-                lcd_write_string(" MUTED ", 1, 10, NO_CR_LF);
+                lcd_write_string(MUTED_MSG, 1, 10, NO_CR_LF);
             }
 
-            muteMsgLastToggle = currentTime;
+            vTaskSetTimeOutState(&muteMsgToggleTimeOut);
+            muteMsgToggleRemTime = MUTE_MSG_PERIOD;
             muteMsgVisible = !muteMsgVisible;
+        }
+    } else {
+        if (muteMsgVisible) {
+            // Ensures the state/error information is visible when alarm has been unmuted
+            refreshInfoZone();
+        }
 
-            return MUTE_MSG_PERIOD;
-         } else {
-            // FIXME: overflow risk? Use FreeRTOS TimeOut?
-            return MAX(MUTE_MSG_PERIOD - (currentTime - muteMsgLastToggle), 0);
-         }
-    } else if (muteMsgVisible) {
-        // Ensures the state/error information is visible when alarm has been unmuted
-        refreshInfoZone();
+        muteMsgToggleRemTime = portMAX_DELAY;
     }
-
-    return portMAX_DELAY;
 }
 
 /*
@@ -154,7 +143,7 @@ static TickType_t pollAlarmMutedDisplay() {
  * alarm error code, depending on the alarm state.
  */
 static void refreshInfoZone() {
-    if (alarmLevel == noAlarm) {
+    if (alarmCause == noError) {
         displayState();
     } else {
         displayErrorCode();
@@ -164,23 +153,22 @@ static void refreshInfoZone() {
 /*
  * Unsaved parameters must blink while unconfirmed
  */
-static TickType_t pollUnsavedParamDisplay() {
-    TickType_t currentTime = xTaskGetTickCount();
-
+static void pollUnsavedParamDisplay() {
     if (unsaved_parameters()) {
-        if (currentTime - paramLastToggle > PARAM_BLINK_PERIOD) {
+        if (xTaskCheckForTimeOut(&paramToggleTimeOut, &paramToggleRemTime) == pdTRUE) {
             toggleUnsavedParameters();
-            return PARAM_BLINK_PERIOD;
-        } else {
-            // FIXME: overflow risk? Use FreeRTOS TimeOut?
-            return MAX(PARAM_BLINK_PERIOD - (currentTime - paramLastToggle), 0);
-        }
-    } else if (!paramVisible) {
-        // Ensure parameters are visible when confirmed
-        refreshParametersZone();
-    }
 
-    return portMAX_DELAY;
+            vTaskSetTimeOutState(&paramToggleTimeOut);
+            paramToggleRemTime = PARAM_BLINK_PERIOD;
+        }
+    } else {
+        if (!paramVisible) {
+            // Ensure parameters are visible when confirmed
+            refreshParametersZone();
+        }
+
+        paramToggleRemTime = portMAX_DELAY;
+    }
 }
 
 static void toggleUnsavedParameters() {
@@ -196,7 +184,6 @@ static void toggleUnsavedParameters() {
         displayExtraParam(!paramVisible);
     }
 
-    paramLastToggle = xTaskGetTickCount();
     paramVisible = !paramVisible;
 }
 
@@ -209,8 +196,9 @@ static void refreshParametersZone() {
     displayRespFreq(true);
     displayExtraParam(true);
 
+    vTaskSetTimeOutState(&paramToggleTimeOut);
+    paramToggleRemTime = PARAM_BLINK_PERIOD;
     paramVisible = true;
-    paramLastToggle = xTaskGetTickCount();
 }
 
 
@@ -285,7 +273,7 @@ static void displayPlateauPressure() {
  */
 static void displayPeakPressure() {
     char peakPressureBuffer[6];
-    sprintf(peakPressureBuffer, "PIC%2i", p_peak);
+    sprintf(peakPressureBuffer, "PK%2i ", p_peak);
     lcd_write_string(peakPressureBuffer, 1, 5, NO_CR_LF);
 }
 
@@ -293,45 +281,35 @@ static void displayPeakPressure() {
  * Display current state in the LCD information zone.
  */
 static void displayState() {
-    if (globalState == critical_failure) {
-        DEBUG_PRINT("[LCD] rcvd crit_fail.\r\n");
-        switch (alarmCause) {
-            case doorOpen:
-                lcdWriteTwoLines(DOOR_OPEN_MSG, CRITICAL_FAILURE_MSG);
-                break;
-            case cfMotorError:
-                lcdWriteTwoLines(MOTOR_ERROR_MSG, CRITICAL_FAILURE_MSG);
-                break;
-            case powerError:
-                lcdWriteTwoLines(POWER_ERROR_MSG, CRITICAL_FAILURE_MSG);
-                break;
-             default:
-                // Should never happen
-                DEBUG_PRINT("[LCD] Unknown critical failure.\r\n");
-                lcdWriteTwoLines(UNKNOWN_ERROR_MSG, CRITICAL_FAILURE_MSG);
-        }
-    } else if (globalState == welcome_wait_cal) {
-        switch (alarmCause) {
-            case noError:
+    switch (globalState) {
+        case welcome:
+            DEBUG_PRINT("[LCD] gS = welcome.\r\n");
+            lcdWriteTwoLines(WELCOME_MSG1, WELCOME_MSG2);
+            break;
+        case welcome_wait_cal:
+            DEBUG_PRINT("[LCD] gS = welcome_wait_cal.\r\n");
+            if (alarmCause == noError) {
                 lcdWriteTwoLines(WAIT_CALI_MSG1, WAIT_CALI_MSG2);
-                break;
-            case calibPatientConnected:
-                lcdWriteTwoLines(PAT_CONNECTED_MSG, RETRY_CALI_MSG);
-                break;
-            case calibIncorrectFlow:
-                lcdWriteTwoLines(INC_FLOW_MSG, RETRY_CALI_MSG);
-                break;
-            default:
-                // Should never happen
-                DEBUG_PRINT("[LCD] Unknown calib error.\r\n");
-                lcdWriteTwoLines(UNKNOWN_ERROR_MSG, RETRY_CALI_MSG);
-        }
-    } else if(globalState == calibration) {
-        lcdWriteTwoLines(CALI_MSG1, CALI_MSG2);
-    } else if (globalState == stop) {
-        lcd_write_string(" STOP  ",1,10,NO_CR_LF);
-    } else if (globalState == run) {
-        lcd_write_string(" RUN   ",1,10,NO_CR_LF);
+            } else {
+                lcdWriteTwoLines(CALI_ERROR_MSG1, CALI_ERROR_MSG2);
+            }
+            break;
+        case calibration:
+            DEBUG_PRINT("[LCD] gS = calibration.\r\n");
+            lcdWriteTwoLines(CALI_MSG1, CALI_MSG2);
+            break;
+        case stop:
+            DEBUG_PRINT("[LCD] gS = stop.\r\n");
+            lcd_write_string(STOPPED_MSG, 1, 10, NO_CR_LF);
+            break;
+        case run:
+            DEBUG_PRINT("[LCD] gS = run.\r\n");
+            lcd_write_string(RUNNING_MSG, 1, 10, NO_CR_LF);
+            break;
+        case critical_failure:
+            DEBUG_PRINT("[LCD] gS = critical_failure.\r\n");
+            lcdWriteTwoLines(CRITICAL_FAILURE_MSG1, CRITICAL_FAILURE_MSG2);
+            break;
     }
 }
 
@@ -345,26 +323,33 @@ static void displayErrorCode() {
 static void processDisplayNotification(uint32_t notification) {
     // Update parameters
     if (notification & DISP_NOTIF_PARAM) {
-        DEBUG_PRINT("[LCD] Rcvd NOTIF_PARAM.\r\n");
+        DEBUG_PRINT("[LCD] Rcvd PARAM.\r\n");
         refreshParametersZone();
     }
 
     // Update plateau pressure
     if (notification & DISP_NOTIF_PLATEAU_P) {
-        DEBUG_PRINT("[LCD] Rcvd NOTIF_PLATEAU_P.\r\n");
+        DEBUG_PRINT("[LCD] Rcvd PLATEAU_P.\r\n");
         displayPlateauPressure();
     }
 
     // Update peak pressure
     if (notification & DISP_NOTIF_PEAK_P) {
-        DEBUG_PRINT("[LCD] Rcvd NOTIF_PEAK_P.\r\n");
+        DEBUG_PRINT("[LCD] Rcvd PEAK_P.\r\n");
         displayPeakPressure();
     }
 
     // Update LCD information zone
     if (notification & (DISP_NOTIF_STATE | DISP_NOTIF_ALARM)) {
-        DEBUG_PRINT("[LCD] Rcvd NOTIF_STATE|NOTIF_ALARM.\r\n");
+        DEBUG_PRINT("[LCD] Rcvd STATE|ALARM.\r\n");
         refreshInfoZone();
+    }
+
+    if (notification & DISP_NOTIF_MUTE) {
+        DEBUG_PRINT("[LCD] Rcvd MUTE.\r\n");
+        // Initialize timeout for the mute indicator
+        vTaskSetTimeOutState(&muteMsgToggleTimeOut);
+        muteMsgToggleRemTime = 0;
     }
 }
 
