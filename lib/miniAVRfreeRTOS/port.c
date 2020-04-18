@@ -67,7 +67,7 @@
 
 #elif defined( portUSE_TIMER1 )
 /* Hardware constants for Timer1. */
-    #warning "Timer1 used for scheduler."
+    //#warning "Timer1 used for scheduler."
     #define    portSCHEDULER_ISR        TIMER1_COMPA_vect
     #define portCLEAR_COUNTER_ON_MATCH  ( (uint8_t) _BV(WGM12) )
     #define portPRESCALE_64             ( (uint8_t) (_BV(CS11)|_BV(CS10)) )

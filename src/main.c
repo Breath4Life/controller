@@ -15,6 +15,7 @@
 #include "core/analog_read.h"
 #include "core/volume.h"
 #include "core/eeprom.h"
+#include "core/alarm.h"
 
 #include "hal/io.h"
 #include "hal/pins.h"

@@ -168,7 +168,6 @@ static const char *notif_names[] = {
 #define MOTOR_ACTIVE 1
 
 static void genMotorError(char *msg);
-static void motorStChCalib(char *state);
 static bool bwaitTimeoutExpired();
 static bool resumeBoundedWaitNotification();
 static bool boundedWaitNotification(TickType_t ticksToWait, bool allow_timeout);
@@ -267,17 +266,8 @@ void init_motor() {
 static void genMotorError(char *msg) {
     MOTOR_DEBUG_PRINT("gErr %s %i/%i (%i)", msg, motorState, breathState, calibState);
     motorErrorState = errorStopping;
-    //motor_anticipated_stop();
-    //motor_disable();
     motorState = motorError;
     stop_and_wait();
-}
-
-static void motorStChCalib(char *state) {
-    motor_anticipated_stop();
-    motor_disable();
-    motorState = motorInit;
-    MOTOR_DEBUG_PRINT("halting in %s", state);
 }
 
 // Return true if the bounded wait timeout has expired, false otherwise.
@@ -443,7 +433,7 @@ static void endAbortCalib(){
     // Notify main task if needed
     if (flagNotifEndCalib) {
         sendNewAlarm(notifToSendEndCalib);
-    } 
+    }
     // Wait for notification
     unboundedWaitNotification();
 }
@@ -485,14 +475,14 @@ static uint8_t testLimValue(uint8_t lim, uint8_t value) {
     }
 }
 
-// Test the value of the both limit switch 
+// Test the value of the both limit switch
 // return 0 if succesful tests, 1 otherwise
 static uint8_t testLims(uint8_t up, uint8_t down) {
     return testLimValue(get_lim_up_v(),up) || 
         testLimValue(get_lim_down_v(), down);
 }
 
-// Test the values of the switch depending on the 
+// Test the values of the switch depending on the
 // current calibState value
 // Return 0 if succesful test, 1 otherwise
 // TODO: extend to return error code (using shift in each case for example)
@@ -550,7 +540,7 @@ static void calib_move_and_wait(uint32_t targetPosition, uint32_t max_freq) {
     if (switches_test_value == 0) {
         move_and_wait(targetPosition, max_freq);
     } else {
-        abortCalib(1,calibIncorrectFlow);     
+        abortCalib(1,calibIncorrectFlow);
     }
 }
 

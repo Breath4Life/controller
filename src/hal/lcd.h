@@ -360,7 +360,7 @@ void lcd_timer_isr( void );
 /// -------------
 /// Returns last written column in row or 0 if row or column was out of range
 ///
-uint8_t lcd_write_string( char * ch__string, uint8_t u8__row, uint8_t u8__column, uint8_t u8__cr_lf );
+uint8_t lcd_write_string(const char * ch__string, uint8_t u8__row, uint8_t u8__column, uint8_t u8__cr_lf );
 
 
 ///  void lcd_clear_row( uint8_t u8__row )

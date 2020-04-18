@@ -92,7 +92,6 @@ void MainTask(void *pvParameters)
     uint8_t updated_setting;
     // Received notifications from other tasks
     uint32_t notification = 0;
-    BaseType_t notif_recv = pdFALSE;
 
 #if SIM_MOTOR
     uint32_t calib_start = 0;
@@ -348,7 +347,7 @@ void MainTask(void *pvParameters)
         /*
          * 16. Bounded wait for notification (10ms)
          */
-        notif_recv = xTaskNotifyWait(0x0, ALL_NOTIF_BITS, &notification, pdMS_TO_TICKS(10));
+        xTaskNotifyWait(0x0, ALL_NOTIF_BITS, &notification, pdMS_TO_TICKS(10));
     }
 }
 

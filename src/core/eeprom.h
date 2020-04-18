@@ -26,5 +26,5 @@ void eepromTask(void *pvParameters);
 // TODO implement this
 /** @SET_CYCLE_COUNT Function that sets the current cycle count
  */
-#define SET_CYCLE_COUNT(x) (x)
+#define SET_CYCLE_COUNT(x) do {} while (0)
 #endif // EEPROM_H_
