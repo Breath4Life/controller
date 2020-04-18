@@ -11,13 +11,13 @@ OBJ += $(subst $(FREERTOS_DIR)/,obj/$(FREERTOS_DIR)/,$(subst .c,.o,$(FREERTOS_SR
 
 MCU_TARGET     = atmega2560
 
-OPTIMIZE       = -Os
+OPTIMIZE       = -Os -flto
 LIBS           = 
 DEFS           = -D ARDUINO=100 -D F_CPU=16000000UL
 CC             = avr-gcc
 CXX			   = avr-g++
 
-COMMON_FLAGS        = -g -Wall $(OPTIMIZE) -mmcu=$(MCU_TARGET) $(DEFS) -Isrc/ -I$(FREERTOS_DIR) -DRT_B4L -flto
+COMMON_FLAGS        = -g -Wall $(OPTIMIZE) -mmcu=$(MCU_TARGET) $(DEFS) -Isrc/ -I$(FREERTOS_DIR) -DRT_B4L -fshort-enums
 override CFLAGS        = $(COMMON_FLAGS) -std=gnu11
 override CPPFLAGS      = $(COMMON_FLAGS)
 override LDFLAGS       = -Wl,--gc-sections,-Map,$(PRG).map -fuse-linker-plugin -fno-exceptions -ffunction-sections -fdata-sections -MMD 
