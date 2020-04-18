@@ -25,8 +25,6 @@
 // TODO
 // * delay motor disable to prevent overrunning
 // * fix timeout values
-// check that notif is always properly disabled when needed
-// robustify calibration & etc.
 
 #define MOTOR_VOL_CTRL 0
 

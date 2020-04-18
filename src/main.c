@@ -37,23 +37,12 @@ void initHardware(void)
 
     uart_init();
 
-    dio_init(DIO_PIN_MOTOR_UART_TX,           DIO_INPUT);
-    dio_init(DIO_PIN_MOTOR_UART_RX,           DIO_OUTPUT);
-
-    dio_init(DIO_PIN_MOTOR_STEP,              DIO_OUTPUT);
-    dio_init(DIO_PIN_MOTOR_STEP_BIS,          DIO_OUTPUT);
-    dio_init(DIO_PIN_MOTOR_ENABLE,            DIO_OUTPUT);
-    dio_init(DIO_PIN_MOTOR_DIRECTION,         DIO_OUTPUT);
-    dio_init(DIO_PIN_MOTOR_ERROR,              DIO_OUTPUT);
-
     dio_init(DIO_PIN_DEBUGLED,                DIO_OUTPUT);
 
     dio_init(DIO_PIN_I2C_FLOW_SENSOR_DATA,    DIO_OUTPUT);
     dio_init(DIO_PIN_I2C_FLOW_SENSOR_CLOCK,   DIO_OUTPUT);
 
-    dio_init(DIO_PIN_AUX_ALARM_GATE_PIN,      DIO_INPUT);
-
-    dio_init(DIO_PIN_STEP_COUNTER_TN,         DIO_OUTPUT);
+    //dio_init(DIO_PIN_AUX_ALARM_GATE_PIN,      DIO_INPUT);
 
     dio_init(DIO_PIN_LCD_EN,                  DIO_OUTPUT);
     dio_init(DIO_PIN_LCD_RS,                  DIO_OUTPUT);
@@ -77,6 +66,8 @@ void initHardware(void)
     init_volume();
 
     door_open_init();
+
+    initAlarm();
 }
 
 int main(void)
