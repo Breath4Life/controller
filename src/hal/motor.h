@@ -90,6 +90,12 @@ void set_motor_current_position_value(int32_t new_abs_position);
  */
 void motor_anticipated_stop();
 
+/** @motor_error Check if the motor driver signals an error
+ *
+ * @return true if there is an error, false otherwise
+ */
+bool motor_error();
+
 extern volatile bool motor_inmotion;
 
 #endif // PWM_BOUND_H_

@@ -153,11 +153,17 @@ void setup_motor()
   setup_pwm_step();
   setup_ext_cnt5();
 
-  // TMC Dir pin
+  // Dir pin
   dio_init(DIO_PIN_MOTOR_DIRECTION, DIO_OUTPUT);
-  // TMC enable pin
+  // Enable pin
   dio_init(DIO_PIN_MOTOR_ENABLE, DIO_OUTPUT);
   dio_write(DIO_PIN_MOTOR_ENABLE, MOTORCTRL_DRIVE_ENBL_FALSE);
+  // Error pin
+  dio_init(DIO_PIN_MOTOR_ERROR, DIO_INPUT_PULLUP);
+}
+
+bool motor_error() {
+  return (dio_read(DIO_PIN_MOTOR_ERROR) == DIO_HIGH);
 }
 
 // Interrupt callback for Timer5 (step counter)
