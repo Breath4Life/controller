@@ -38,6 +38,8 @@
 #define DISP_NOTIF_PEAK_P 0x08
 // The global state changed.
 #define DISP_NOTIF_STATE 0x10
+// Wake-up the LCD when the mute button is pressed
+#define DISP_NOTIF_WAKEUP 0x20
 
 /**
  * @LCDDisplayTask Handle the display of the LCD screen.
