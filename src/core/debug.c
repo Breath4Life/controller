@@ -17,7 +17,7 @@
 #include "core/volume.h"
 
 static const char *debugPrefixStr[] = {
-    "[MOTOR] ",
+    "[MTR] ",
     "[MAIN] ",
     "[ANALOG] ",
     "[BUZZER] ",
