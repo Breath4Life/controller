@@ -80,7 +80,8 @@ void initAlarm() {
     alarmLevel = noAlarm;
     alarmCause = noError;
     newAlarmCause = noError;
-    setMuteState(false);
+    alarmMuted = false;
+    dio_write(DIO_PIN_ALARM_LED_PAUSED, DIO_LOW);
     set_alarm_led(alarmLevel);
 }
 
