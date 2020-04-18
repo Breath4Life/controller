@@ -16,6 +16,7 @@
 #include "core/motor_control.h"
 #include "core/volume.h"
 #include "core/alarm.h"
+#include "core/parameters.h"
 #include "hal/limit_switch.h"
 
 #define CURR_DEBUG_PREFIX motor

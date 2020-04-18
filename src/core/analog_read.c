@@ -9,6 +9,7 @@
 #include "core/motor_control.h"
 #include "core/display.h"
 #include "core/alarm.h"
+#include "core/parameters.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
