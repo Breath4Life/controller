@@ -26,20 +26,20 @@
 #define PARAM_BLINK_PERIOD pdMS_TO_TICKS(250)
 
 static const char *errorCode[] = {
-    "",
-    "MXPSR",
-    "NOPSR",
-    "HOPSR",
-    "MXTPM",
-    "LOPSR",
-    "TIDALV",
-    "RESPR",
+    "       ",
+    "MXPSR  ",
+    "NOPSR  ",
+    "HOPSR  ",
+    "MXTPM  ",
+    "LOPSR  ",
+    "TIDALV ",
+    "RESPR  ",
     "BATTERY",
-    "FLOW",
+    "FLOW   ",
     "PATIENT",
-    "DOOR",
-    "MOTOR",
-    "POWER"
+    "DOOR   ",
+    "MOTOR  ",
+    "POWER  "
 };
 
 static void lcdWriteTwoLines(char * firstLine, char * secondLine);
@@ -69,7 +69,7 @@ static void displayExtraParam(bool visible);
 
 // Used for unconfirmed parameters blinking
 static TickType_t paramLastToggle = 0;
-static bool paramVisible = false;
+static bool paramVisible = true;
 
 static TickType_t pollAlarmMutedDisplay();
 static TickType_t pollUnsavedParamDisplay();
@@ -81,21 +81,23 @@ void LCDDisplayTask(void *pvParameters)
     initDisplay();
     displayWelcomeMsg();
 
+    uint32_t notification = 0;
+    BaseType_t notif_recv = pdFALSE;
+
     while (true) {
         TickType_t nextMuteMsgToggle = pollAlarmMutedDisplay();
         TickType_t nextParamToggle = pollUnsavedParamDisplay();
-
-        uint32_t notification = 0;
-        BaseType_t notif_recv = xTaskNotifyWait( 0x0,
-                                                 ALL_NOTIF_BITS,
-                                                 &notification,
-                                                 MIN(nextMuteMsgToggle, nextParamToggle));
 
         if (notif_recv == pdTRUE) {
             processDisplayNotification(notification);
         }
 
         lcd_refreshLCD();
+
+        notification = 0;
+        notif_recv = xTaskNotifyWait( 0x0, ALL_NOTIF_BITS, &notification,
+                                      MIN(nextMuteMsgToggle, nextParamToggle));
+
     }
 }
 
@@ -103,11 +105,10 @@ void LCDDisplayTask(void *pvParameters)
  * Initializes the display.
  */
 static void initDisplay() {
-    DEBUG_PRINT("[LCD] Init.\r\n");
-    TickType_t xLastWakeTime = xTaskGetTickCount();
-    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
-
     lcd_initLCD();
+    DEBUG_PRINT("[LCD] Init.\r\n");
+    // Note: this delay is needed for correct operation of the LCD afterwards
+    vTaskDelay(pdMS_TO_TICKS(100));
 }
 
 /*
@@ -132,12 +133,13 @@ static TickType_t pollAlarmMutedDisplay() {
                 lcd_write_string(" MUTED ", 1, 10, NO_CR_LF);
             }
 
-            muteMsgLastToggle = xTaskGetTickCount();
+            muteMsgLastToggle = currentTime;
             muteMsgVisible = !muteMsgVisible;
 
             return MUTE_MSG_PERIOD;
          } else {
-            return currentTime - muteMsgLastToggle;
+            // FIXME: overflow risk? Use FreeRTOS TimeOut?
+            return MAX(MUTE_MSG_PERIOD - (currentTime - muteMsgLastToggle), 0);
          }
     } else if (muteMsgVisible) {
         // Ensures the state/error information is visible when alarm has been unmuted
@@ -170,7 +172,8 @@ static TickType_t pollUnsavedParamDisplay() {
             toggleUnsavedParameters();
             return PARAM_BLINK_PERIOD;
         } else {
-            return currentTime - paramLastToggle;
+            // FIXME: overflow risk? Use FreeRTOS TimeOut?
+            return MAX(PARAM_BLINK_PERIOD - (currentTime - paramLastToggle), 0);
         }
     } else if (!paramVisible) {
         // Ensure parameters are visible when confirmed

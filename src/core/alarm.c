@@ -87,6 +87,7 @@ void initAlarm() {
 static void setMuteState(bool mute) {
     alarmMuted = mute;
     dio_write(DIO_PIN_ALARM_LED_PAUSED, alarmMuted);
+    xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_WAKEUP, eSetBits);
 }
 
 void mutePressed() {
