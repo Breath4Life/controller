@@ -77,10 +77,10 @@ int main(void)
 
     // Create the different tasks
     xTaskCreate(MainTask, "MainTask", 512, NULL, 12, &mainTaskHandle);
-    xTaskCreate(MotorControlTask, "MotorControl", 512, NULL, 10, &motorControlTaskHandle);
-    xTaskCreate(BuzzerTask, "Buzzer", 128, NULL, 4, &buzzerTaskHandle);
+    xTaskCreate(MotorControlTask, "MotorControl", 1024, NULL, 10, &motorControlTaskHandle);
+    xTaskCreate(BuzzerTask, "Buzzer", 256, NULL, 4, &buzzerTaskHandle);
     xTaskCreate(LCDDisplayTask, "LCDDisplay", 512, NULL, 3, &lcdDisplayTaskHandle);
-    xTaskCreate(AnalogReadTask, "ReadAnalog", 128, NULL, 2, &analogReadTaskHandle);
+    xTaskCreate(AnalogReadTask, "ReadAnalog", 256, NULL, 2, &analogReadTaskHandle);
     //xTaskCreate(eepromTask, "EEPROM", 128, NULL, 1, &eepromTaskHandle);
 
     // Run the OS

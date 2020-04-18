@@ -14,19 +14,40 @@
 #ifndef LIMIT_SWITCH_H_
 #define LIMIT_SWITCH_H_
 
+#include <stdint.h>
+
+#include "hal/pins.h"
 #include "core/system.h"
 #include "core/motor_control.h"
 
 #define SWITCH_HANDLING_TASK motorControlTaskHandle
-#define LIM_SWITCH_UP MOTOR_NOTIF_LIM_UP
-#define LIM_SWITCH_DOWN MOTOR_NOTIF_LIM_DOWN
+
+// Duration [us] for the debouncing algorithm.
+#define BOUNCE_THRESHOLD 10000L
+
+#define LIM_DOWN 0
+#define LIM_UP 1
+
+#define N_SWITCHES 2
+static const enum dio_pin switchPins[N_SWITCHES] = {
+    DIO_PIN_LIM_SWITCH_DOWN_MONITORING,
+    DIO_PIN_LIM_SWITCH_UP_MONITORING
+};
+static const uint32_t switchNotifs[N_SWITCHES] = {
+    MOTOR_NOTIF_LIM_DOWN,
+    MOTOR_NOTIF_LIM_UP,
+};
+
+typedef enum {
+    LimSwitchNotPressed,
+    LimSwitchPressed,
+} LimSwitchState_t;
 
 /** @init_limit_switch Initialize the limit switch handling
  * Sets up the pins config and the ISR.
  */
 void init_limit_switch();
 
-uint8_t get_lim_down_v();
-uint8_t get_lim_up_v();
+LimSwitchState_t get_lim_v(uint8_t sw);
 
 #endif // LIMIT_SWITCH_H_

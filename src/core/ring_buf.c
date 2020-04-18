@@ -51,28 +51,24 @@ int ringbuf_get(rbuf_t* _this)
   return item;
 }
 
-void ringbuf_put(rbuf_t* _this, const unsigned char item)
-{
-  if (_this->count < RBUF_SIZE)
-  {
+static void put_nocheck(rbuf_t* _this, const unsigned char item) {
     // set the item at head position
     _this->buf[_this->head] = item;
     // advance the head
     _this->head = ringbuf_adv(_this->head, RBUF_SIZE);
     // increase the total count
     ++_this->count;
-  }
-  else
+}
+
+void ringbuf_put(rbuf_t* _this, const unsigned char item)
+{
+  if (_this->count < RBUF_SIZE-3)
   {
-      _this->buf[0] = 'B';
-      _this->buf[1] = 'U';
-      _this->buf[2] = 'F';
-      _this->buf[3] = ' ';
-      _this->buf[4] = 'O';
-      _this->buf[5] = 'V';
-      _this->buf[6] = 'F';
-      _this->tail= 0;
-      _this->head = 6;
+      put_nocheck(_this, item);
+  } else if (_this->count < RBUF_SIZE-2) {
+      put_nocheck(_this, 'B');
+      put_nocheck(_this, 'U');
+      put_nocheck(_this, 'F');
   }
 }
 

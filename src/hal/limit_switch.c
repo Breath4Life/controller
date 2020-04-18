@@ -23,77 +23,80 @@
 #include "core/debug.h"
 #include "core/system.h"
 
-#define DEBUG_LIM_SWITCH 0
+#if DEBUG_LIM_SWITCH
+#define DEBUG_PRINT debug_print
+#define DEBUG_PRINT_FROM_ISR debug_print_FromISR
+#else
+#define DEBUG_PRINT fake_debug_print
+#define DEBUG_PRINT_FROM_ISR fake_debug_print
+#endif // DEBUG_LIM_SWITCH
 
-// Last read state of the switches
-static volatile uint8_t lim_switch_down_lvl;
-static volatile uint8_t lim_switch_up_lvl;
+typedef struct {
+    // Last read state of the switches
+    LimSwitchState_t last_value;
+    // Currently exposed state
+    LimSwitchState_t exposed_value;
+    // Last time [us] of trigger of the debouncing algorithm.
+    uint32_t last_bouncing;
+} LimSwitchMachine_t;
 
-// Duration [us] for the debouncing algorithm.
-const uint32_t threshold_time_irq = 10000;
-// Last time [us] of trigger of the debouncing algorithm.
-static uint32_t last_start_bouncing = 0;
+volatile LimSwitchMachine_t switchMachines[N_SWITCHES];
 
 void init_limit_switch() {
-    // init pins
-    dio_init(DIO_PIN_LIM_SWITCH_DOWN_MONITORING, DIO_INPUT_PULLUP);
-    dio_init(DIO_PIN_LIM_SWITCH_UP_MONITORING, DIO_INPUT_PULLUP);
-    // current levels
-    lim_switch_down_lvl = dio_read(DIO_PIN_LIM_SWITCH_DOWN_MONITORING);
-    lim_switch_up_lvl = dio_read(DIO_PIN_LIM_SWITCH_UP_MONITORING);
+    // initialize pins and state machines
+    uint8_t sw;
+    for (sw=0; sw<N_SWITCHES; sw++) {
+        dio_init(switchPins[sw], DIO_INPUT_PULLUP);
+        switchMachines[sw].last_value = dio_read(switchPins[sw]);
+        switchMachines[sw].exposed_value = switchMachines[sw].last_value;
+        switchMachines[sw].last_bouncing = 0;
+    }
     // enable level change interrupt (on PCINT7:0)
     PCMSK0 =  _BV(PCINT0) | _BV(PCINT1);
     PCICR |= _BV(PCIE0);
 }
 
-// We need to read the levels of the pins in the ISR since the interrupt is non-specific:
-// we don't know which pin toggled and in which direction.
-uint8_t get_lim_down_v() {
-    if (time_us() - last_start_bouncing > threshold_time_irq) {
-        return dio_read(DIO_PIN_LIM_SWITCH_DOWN_MONITORING);
+LimSwitchState_t get_lim_v(uint8_t sw) {
+    uint8_t b;
+    cli();
+    if (time_us() - switchMachines[sw].last_bouncing > BOUNCE_THRESHOLD) {
+        b=0;
+        // not bouncing anymore
+        switchMachines[sw].exposed_value = switchMachines[sw].last_value;
     } else {
-        return lim_switch_down_lvl;  
+        b=1;
+        // bouncing, we keep the value we exposed, that is:
+        // for rising edge start exposing 1, for falling edge, keep exposing 1
     }
-}
-
-uint8_t get_lim_up_v() {
-    if (time_us() - last_start_bouncing > threshold_time_irq) {
-        return dio_read(DIO_PIN_LIM_SWITCH_UP_MONITORING);
-    } else {
-        return lim_switch_up_lvl;  
-    }
+    sei();
+    DEBUG_PRINT("S%x %x %x", sw, switchMachines[sw].exposed_value, b);
+    return switchMachines[sw].exposed_value;
 }
 
 ISR(PCINT0_vect) {
-    uint8_t l_down = dio_read(DIO_PIN_LIM_SWITCH_DOWN_MONITORING);
-    uint8_t l_up = dio_read(DIO_PIN_LIM_SWITCH_UP_MONITORING);
     BaseType_t higherPriorityTaskWoken = pdFALSE;
     uint32_t current_time_irq = time_us();
-    uint8_t flagToggle;
-    flagToggle = (l_up == lim_switch_up_lvl && l_down == lim_switch_down_lvl);
-    if (flagToggle) {
-        return;
-    }
-    if (current_time_irq - last_start_bouncing > threshold_time_irq) {
-        if (l_down && !lim_switch_down_lvl) {
-            xTaskNotifyFromISR(SWITCH_HANDLING_TASK, LIM_SWITCH_DOWN, eSetBits, &higherPriorityTaskWoken);
-#if DEBUG_LIM_SWITCH
-            debug_print_FromISR("switch down pressed\r\n");
-#endif // DEBUG_LIM_SWITCH
+    uint8_t sw;
+    for (sw=0; sw<N_SWITCHES; sw++) {
+        LimSwitchState_t new_value = dio_read(switchPins[sw]);
+        LimSwitchState_t old_value = switchMachines[sw].last_value;
+        if (new_value != old_value) {
+            if (current_time_irq - switchMachines[sw].last_bouncing > BOUNCE_THRESHOLD) {
+                // We are not bouncing, let's send notification if we have a rising edge.
+                if (new_value == LimSwitchPressed) {
+                    //DEBUG_PRINT_FROM_ISR("SW%x\r\n", sw);
+                    switchMachines[sw].exposed_value = LimSwitchPressed;
+                    xTaskNotifyFromISR(
+                            SWITCH_HANDLING_TASK,
+                            switchNotifs[sw],
+                            eSetBits,
+                            &higherPriorityTaskWoken);
+                }
+                switchMachines[sw].last_bouncing = current_time_irq;
+                switchMachines[sw].last_value = new_value;
+            }
         }
-        if (l_up && !lim_switch_up_lvl) {
-            xTaskNotifyFromISR(SWITCH_HANDLING_TASK, LIM_SWITCH_UP, eSetBits, &higherPriorityTaskWoken);
-#if DEBUG_LIM_SWITCH
-            debug_print_FromISR("switch up pressed\r\n");
-#endif // DEBUG_LIM_SWITCH
-        }
-        //last_start_bouncing = current_time_irq;
     }
-    if(!flagToggle) {
-        last_start_bouncing = current_time_irq;
-    }
-    lim_switch_down_lvl = l_down;
-    lim_switch_up_lvl = l_up;
     if (higherPriorityTaskWoken) {
         taskYIELD();
     }

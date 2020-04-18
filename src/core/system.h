@@ -44,5 +44,6 @@ extern volatile GlobalState_t globalState;
 #define DEBUG_DISPLAY (1 && DEBUG)
 #define DEBUG_EEPROM (1 && DEBUG)
 #define DEBUG_FLOW (1 && DEBUG)
+#define DEBUG_LIM_SWITCH (1 && DEBUG)
 
 #endif // SYSTEM_H_

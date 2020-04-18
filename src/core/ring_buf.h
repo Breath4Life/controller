@@ -6,7 +6,7 @@
 #include <stdbool.h>
 
 // maximum buffer size
-#define RBUF_SIZE 512
+#define RBUF_SIZE 768
 
 // buffer structure
 typedef struct ring_buf_s
