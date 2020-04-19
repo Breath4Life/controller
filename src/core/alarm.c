@@ -41,8 +41,8 @@ static const AlarmLevel_t alarmLevels[] = {
  mediumPriorityAlarm, // abnVolume
  mediumPriorityAlarm, // abnFreq
  mediumPriorityAlarm, // auxPower
- criticalPriorityAlarm, // calibPatientConnected
- criticalPriorityAlarm, // calibIncorrectFlow
+ highPriorityAlarm, // calibPatientConnected
+ highPriorityAlarm, // calibIncorrectFlow
  criticalPriorityAlarm, // doorOpen
  criticalPriorityAlarm, // cfMotorError
  criticalPriorityAlarm // powerError
