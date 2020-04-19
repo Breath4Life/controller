@@ -30,14 +30,13 @@ static const char *errorCode[] = {
     "       ",
     "MXPSR11",
     "NOPSR12",
-    "HIPSR13",
-    "HITMP14",
+    "HITMP13",
     "LOPSR21",
     "VOLUM22", // LOVOL, HIVOL
     "RESPR23", // LOBPM, HIBPM
     "LOBAT24",
-    "SENSO15",
-    "PATCO16",
+    "SENSO14",
+    "PATCO15",
     "ODOOR03",
     "MOTOR02",
     "POWER01"
@@ -289,9 +288,9 @@ static void displayPeakPressure() {
  * Display current state (run or stop) in the LCD information zone.
  */
 static void displayState() {
-    if (globalState == run) {
+    if (globalState == stop) {
         lcd_write_string(STOPPED_MSG, 1, 10, NO_CR_LF);
-    } else if (globalState == stop) {
+    } else if (globalState == run) {
         lcd_write_string(RUNNING_MSG, 1, 10, NO_CR_LF);
     }
 }

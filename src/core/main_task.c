@@ -49,6 +49,8 @@ void initMainTask()
 
 void MainTask(void *pvParameters)
 {
+    setGlobalState(welcome, false, false);
+
     uint32_t notification = 0;
 
     while (true) {
@@ -72,10 +74,6 @@ void MainTask(void *pvParameters)
 
         switch (globalState) {
             case welcome:
-                // FIXME: can we move this in initMainTask?
-                // (Not sure with notifications to LCD...)
-                setGlobalState(welcome, false, false);
-
                 // TODO SPEC and adjust this
                 play_tone(440, 500, false);
 
@@ -84,12 +82,17 @@ void MainTask(void *pvParameters)
                 setGlobalState(welcome_wait_cal, false, false);
                 break;
             case welcome_wait_cal:
+                // Move to calibration if START pressed
                 if (BUTTON_PRESSED(buttons_pressed, button_startstop)) {
+                    // Acknowledge alarm if any (useful if a previous calibration
+                    // attempt triggered an alarm)
                     ackAlarm();
                     setGlobalState(calibration, true, false);
                 }
                 break;
             case calibration:
+                // If an error occured during calibration, go back to
+                // welcome_wait_cal for an eventual other attempt
                 if (alarmLevel == highPriorityAlarm) {
                     setGlobalState(welcome_wait_cal, true, false);
                 }
@@ -124,21 +127,18 @@ void MainTask(void *pvParameters)
 
 #if POWER_AUX_CHECK
         if (error_power_aux()) {
-            DEBUG_PRINT("POWER AUX ERROR");
             sendNewAlarm(auxPower);
         }
 #endif
 
 #if POWER_MAIN_CHECK
         if (error_power_main()) {
-            DEBUG_PRINT("POWER MAIN ERROR");
             sendNewAlarm(powerError);
         }
 #endif
 
 #if DOOR_CHECK
         if (is_door_open()) {
-            DEBUG_PRINT("DOOR OPEN");
             sendNewAlarm(doorOpen);
         }
 #endif

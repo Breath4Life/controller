@@ -114,7 +114,7 @@ void AnalogReadTask(void *pvParameters) {
                         if (p > p_max) {
                             // Overpressure
                             DEBUG_PRINT("OVERPRESSURE");
-                            sendNewAlarm(highPressure);
+                            sendNewAlarm(overPressure);
                             xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_OVER_PRESSURE, eSetBits);
                         }
 

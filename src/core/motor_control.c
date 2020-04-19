@@ -27,7 +27,7 @@
 // * delay motor disable to prevent overrunning
 // * fix timeout values
 
-#define MOTOR_VOL_CTRL 0
+#define MOTOR_VOL_CTRL 1
 
 #if DEBUG_MOTOR
 #define DEBUG_PRINT debug_print_prefix

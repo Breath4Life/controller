@@ -52,7 +52,6 @@ static const char *alarmDescr[] = {
     "noError",
     "overPressure",
     "noPressure",
-    "highPressure",
     "highTemperature",
     "lowPressure",
     "abnVolume",
@@ -99,6 +98,12 @@ void mutePressed() {
 
 static void alarmChangeNotify() {
     set_alarm_led(alarmLevel);
+
+    // Automatic unmute if new alarmLevel is critical priority
+    if (alarmLevel == criticalPriorityAlarm) {
+        setMuteState(false);
+    }
+
     notify_buzzer();
     xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_ALARM, eSetBits);
 }
@@ -121,6 +126,7 @@ void ackAlarm() {
     newAlarmCause = noError;
     sei();
     xTaskNotify(mainTaskHandle, MAIN_NOTIF_ALARM, eSetBits);
+    xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
 }
 
 static void processNewAlarm() {
