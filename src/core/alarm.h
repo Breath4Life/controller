@@ -20,26 +20,28 @@ typedef enum {
 } AlarmLevel_t;
 
 #define ERROR_TABLE \
-    X(noError, "noError", noAlarm, "       ") \
-    X(overPressure, "overPressure", highPriorityAlarm, "MXPSR11") \
-    X(noPressure, "noPressure", highPriorityAlarm, "NOPSR12") \
-    X(highTemperature, "highTemperature", highPriorityAlarm, "HITMP13") \
-    X(motorHot, "motorHot", criticalPriorityAlarm, "HITMP14") \
-    X(lowPressure, "lowPressure", mediumPriorityAlarm, "LOPSR21") \
-    X(abnVolume, "abnVolume", mediumPriorityAlarm, "VOLUM22") \
-    X(abnFreq, "abnFreq", mediumPriorityAlarm, "RESPR23") \
-    X(auxPower, "auxPower", mediumPriorityAlarm, "LOBAT24") \
-    X(calibPatientConnected, "calibPatientConnected", highPriorityAlarm, "SENSO14") \
-    X(calibIncorrectFlow, "calibIncorrectFlow", highPriorityAlarm, "PATCO15") \
-    X(doorOpen, "doorOpen", criticalPriorityAlarm, "ODOOR03") \
-    X(cfMotorError, "cfMotorError", criticalPriorityAlarm, "MOTOR02") \
-    X(powerError, "powerError", criticalPriorityAlarm, "POWER01")
+    X(noError, "       ", noAlarm) \
+    X(overPressure, "MXPSR11", highPriorityAlarm) \
+    X(noPressure, "NOPSR12", highPriorityAlarm) \
+    X(highTemperature, "HITMP13", highPriorityAlarm) \
+    X(motorHot, "HITMP14", criticalPriorityAlarm) \
+    X(lowPressure, "LOPSR21", mediumPriorityAlarm) \
+    X(abnVolume, "VOLUM22", mediumPriorityAlarm) \
+    X(abnFreq, "RESPR23", mediumPriorityAlarm) \
+    X(auxPower, "LOBAT24", mediumPriorityAlarm) \
+    X(calibPatientConnected, "SENSO14", highPriorityAlarm) \
+    X(calibIncorrectFlow, "PATCO15", highPriorityAlarm) \
+    X(doorOpen, "ODOOR03", criticalPriorityAlarm) \
+    X(cfMotorError, "MOTOR02", criticalPriorityAlarm) \
+    X(powerError, "POWER01", criticalPriorityAlarm)
 
-#define X(a, b, c, d) a,
+#define X(a, b, c) a,
 typedef enum {
     ERROR_TABLE
 } AlarmCause_t;
 #undef X
+
+extern const char *alarmCodes[];
 
 extern volatile AlarmLevel_t alarmLevel;
 extern volatile AlarmCause_t alarmCause;

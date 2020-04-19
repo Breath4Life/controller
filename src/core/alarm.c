@@ -32,14 +32,14 @@ volatile bool alarmMuted;
 static volatile AlarmCause_t newAlarmCause;
 static TickType_t mute_time;
 
-#define X(a, b, c, d) c,
+#define X(a, b, c) c,
 static const AlarmLevel_t alarmLevels[] = {
     ERROR_TABLE
 };
 #undef X
 
-#define X(a, b, c, d) b,
-static const char *alarmDescr[] = {
+#define X(a, b, c) b,
+const char *alarmCodes[] = {
     ERROR_TABLE
 };
 #undef X
@@ -116,7 +116,7 @@ void ackAlarm() {
 
 static void processNewAlarm() {
     if (newAlarmCause != alarmCause) {
-        DEBUG_PRINT("[ALARM] new %s\r\n", alarmDescr[newAlarmCause]);
+        DEBUG_PRINT("[ALARM] new %s\r\n", alarmCodes[newAlarmCause]);
         cli();
         alarmCause = newAlarmCause;
         alarmLevel = alarmLevels[alarmCause];

@@ -26,12 +26,6 @@
 #define MUTE_MSG_PERIOD pdMS_TO_TICKS(2000L)
 #define PARAM_BLINK_PERIOD pdMS_TO_TICKS(250)
 
-#define X(a, b, c, d) d,
-static const char *errorCode[] = {
-    ERROR_TABLE
-};
-#undef X
-
 static void lcdWriteTwoLines(const char * firstLine, const char * secondLine);
 
 static void initDisplay();
@@ -289,7 +283,7 @@ static void displayState() {
  * Displays alarm error code in the LCD information zone.
  */
 static void displayErrorCode() {
-    lcd_write_string(errorCode[alarmCause], 1, 10, NO_CR_LF);
+    lcd_write_string(alarmCodes[alarmCause], 1, 10, NO_CR_LF);
 }
 
 // LCD welcome screen
