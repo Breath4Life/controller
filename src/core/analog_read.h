@@ -22,11 +22,11 @@
 
 // Threshold temperature in °C for the environment sensor temperature above
 // which a MACHINE_HIGH_TEMPERATURE alarm.
-#define MAX_TEMP0 50
+#define MAX_TEMP_MACHINE 60
 
 // Threshold temperature in °C for the motor sensor temperature above
 // which a MOTOR_HIGH_TEMPERATURE alarm.
-#define MAX_TEMP1 50
+#define MAX_TEMP_MOTOR 120
 
 /** @p Instantaneous pressure in cm H2O
  */

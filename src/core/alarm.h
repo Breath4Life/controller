@@ -24,6 +24,7 @@ typedef enum {
     X(overPressure, "overPressure", highPriorityAlarm, "MXPSR11") \
     X(noPressure, "noPressure", highPriorityAlarm, "NOPSR12") \
     X(highTemperature, "highTemperature", highPriorityAlarm, "HITMP13") \
+    X(motorHot, "motorHot", criticalPriorityAlarm, "HITMP14") \
     X(lowPressure, "lowPressure", mediumPriorityAlarm, "LOPSR21") \
     X(abnVolume, "abnVolume", mediumPriorityAlarm, "VOLUM22") \
     X(abnFreq, "abnFreq", mediumPriorityAlarm, "RESPR23") \

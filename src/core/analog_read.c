@@ -39,16 +39,16 @@ volatile int16_t p_plateau;
 // PEEP last measurement in cmH2O
 volatile int16_t peep;
 
-volatile int16_t temp0;
-volatile int16_t temp1;
+volatile int16_t temp_machine;
+volatile int16_t temp_motor;
 
 static int16_t mes2pres(uint16_t mes);
 static int16_t mes2temp(uint16_t mes);
 
 static enum {
-    pressure,
-    temperature0,
-    temperature1
+    mesPressure,
+    mesTempMachine,
+    mesTempMotor
 } curr_mes;
 
 static const uint8_t aio_pins[N_ANALOG_READS] = {
@@ -66,10 +66,10 @@ void init_analog_read() {
     peep = 0;
 
     // Initialize temperature measurements
-    temp0 = 0;
-    temp1 = 0;
+    temp_machine = 0;
+    temp_motor = 0;
 
-    curr_mes = pressure;
+    curr_mes = mesPressure;
     aio_read_start(aio_pins[curr_mes]);
 }
 
@@ -106,7 +106,7 @@ void AnalogReadTask(void *pvParameters) {
         if (aio_ready()) {
             uint16_t res = aio_read_result();
             switch (curr_mes) {
-                case pressure:
+                case mesPressure:
                     // Instantaneous pressure
                     p = mes2pres(res);
 
@@ -132,25 +132,25 @@ void AnalogReadTask(void *pvParameters) {
                         }
                     }
 
-                    curr_mes = temperature0;
+                    curr_mes = mesTempMachine;
                     break;
-                case temperature0:
-                    temp0 = mes2temp(res);
+                case mesTempMachine:
+                    temp_machine = mes2temp(res);
 
-                    if (temp0 > MAX_TEMP0) {
-                        DEBUG_PRINT("T0 HIGH TEMP: %i", temp0);
+                    if (temp_machine > MAX_TEMP_MACHINE) {
+                        DEBUG_PRINT("HIGH TEMP MACHINE: %i", temp_machine);
                         sendNewAlarm(highTemperature);
                     }
-                    curr_mes = temperature1;
+                    curr_mes = mesTempMotor;
                     break;
-                case temperature1:
-                    temp1 = mes2temp(res);
+                case mesTempMotor:
+                    temp_motor = mes2temp(res);
 
-                    if (temp1 > MAX_TEMP1) {
-                        DEBUG_PRINT("T1 HIGH TEMP: %i", temp1);
-                        sendNewAlarm(highTemperature);
+                    if (temp_motor > MAX_TEMP_MOTOR) {
+                        DEBUG_PRINT("HIGH TEMP MOTOR: %i", temp_motor);
+                        sendNewAlarm(motorHot);
                     }
-                    curr_mes = pressure;
+                    curr_mes = mesPressure;
                     break;
             }
             aio_read_start(aio_pins[curr_mes]);
