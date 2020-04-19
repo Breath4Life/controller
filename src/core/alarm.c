@@ -32,13 +32,13 @@ volatile bool alarmMuted;
 static volatile AlarmCause_t newAlarmCause;
 static TickType_t mute_time;
 
-#define X(a, b, c) c,
+#define X(a, b, c, d) c,
 static const AlarmLevel_t alarmLevels[] = {
     ERROR_TABLE
 };
 #undef X
 
-#define X(a, b, c) b,
+#define X(a, b, c, d) b,
 static const char *alarmDescr[] = {
     ERROR_TABLE
 };

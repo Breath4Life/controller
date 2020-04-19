@@ -20,21 +20,21 @@ typedef enum {
 } AlarmLevel_t;
 
 #define ERROR_TABLE \
-    X(noError, "noError", noAlarm) \
-    X(overPressure, "overPressure", highPriorityAlarm) \
-    X(noPressure, "noPressure", highPriorityAlarm) \
-    X(highTemperature, "highTemperature", highPriorityAlarm) \
-    X(lowPressure, "lowPressure", mediumPriorityAlarm) \
-    X(abnVolume, "abnVolume", mediumPriorityAlarm) \
-    X(abnFreq, "abnFreq", mediumPriorityAlarm) \
-    X(auxPower, "auxPower", mediumPriorityAlarm) \
-    X(calibPatientConnected, "calibPatientConnected", highPriorityAlarm) \
-    X(calibIncorrectFlow, "calibIncorrectFlow", highPriorityAlarm) \
-    X(doorOpen, "doorOpen", criticalPriorityAlarm) \
-    X(cfMotorError, "cfMotorError", criticalPriorityAlarm) \
-    X(powerError, "powerError", criticalPriorityAlarm)
+    X(noError, "noError", noAlarm, "       ") \
+    X(overPressure, "overPressure", highPriorityAlarm, "MXPSR11") \
+    X(noPressure, "noPressure", highPriorityAlarm, "NOPSR12") \
+    X(highTemperature, "highTemperature", highPriorityAlarm, "HITMP13") \
+    X(lowPressure, "lowPressure", mediumPriorityAlarm, "LOPSR21") \
+    X(abnVolume, "abnVolume", mediumPriorityAlarm, "VOLUM22") \
+    X(abnFreq, "abnFreq", mediumPriorityAlarm, "RESPR23") \
+    X(auxPower, "auxPower", mediumPriorityAlarm, "LOBAT24") \
+    X(calibPatientConnected, "calibPatientConnected", highPriorityAlarm, "SENSO14") \
+    X(calibIncorrectFlow, "calibIncorrectFlow", highPriorityAlarm, "PATCO15") \
+    X(doorOpen, "doorOpen", criticalPriorityAlarm, "ODOOR03") \
+    X(cfMotorError, "cfMotorError", criticalPriorityAlarm, "MOTOR02") \
+    X(powerError, "powerError", criticalPriorityAlarm, "POWER01")
 
-#define X(a, b, c) a,
+#define X(a, b, c, d) a,
 typedef enum {
     ERROR_TABLE
 } AlarmCause_t;
