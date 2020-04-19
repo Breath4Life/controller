@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "FreeRTOS.h"
 #include "task.h"
 
@@ -20,22 +21,24 @@
 #define CURR_DEBUG_PREFIX mainTask
 #include "core/debug.h"
 
-volatile GlobalState_t globalState;
-
-
 #if DEBUG_MAIN
 #define DEBUG_PRINT debug_print_prefix
 #else
 #define DEBUG_PRINT fake_debug_print
 #endif // DEBUG_MAIN
 
-#define SIM_MOTOR 0             // "simulate" motor to debug the rest
-#define ALARM_CHECK 1          // active/deactivate alarm check for debug
-#define CALIB_ERROR_CHECK 1     // active/deactivate calib error check during calib for debug
+volatile GlobalState_t globalState;
 
-#define POWER_AUX_CHECK 0       // active/deactivate power aux check for debug
-#define POWER_MAIN_CHECK 1      // active/deactivate power main check for debug
-#define DOOR_CHECK 1            // active/deactivate door check for debug
+static const char *globalStateDescr[] = {
+    "welcome",
+    "welcome_wait_cal",
+    "calibration",
+    "stop",
+    "run",
+    "critical_failure"
+};
+
+static void setGlobalState(GlobalState_t newState, bool notifyMotor, bool populateDisplay);
 
 void initMainTask()
 {
@@ -46,227 +49,132 @@ void initMainTask()
 
 void MainTask(void *pvParameters)
 {
-    TickType_t xLastWakeTime = xTaskGetTickCount();
-
-    DEBUG_PRINT("-> welcome");
-    xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
-    DEBUG_PRINT("NOTIF_STATE -> LCD");
-
-    // TODO SPEC and adjust this
-    play_tone(440, 500, false);
-
-    vTaskDelayUntil(&xLastWakeTime, WELCOME_MSG_DUR);
-    /*
-     * 4. If globalState is welcome and WELCOME_MSG_DUR s have elapsed,
-     * set globalState to welcome_wait_cal
-     */
-    globalState = welcome_wait_cal;
-    DEBUG_PRINT("-> welcome_wait_cal");
-    xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
-    DEBUG_PRINT("NOTIF_STATE -> LCD");
-
-    // Indicate if the state has changed
-    uint8_t updated_state;
-    // Received notifications from other tasks
     uint32_t notification = 0;
 
-#if SIM_MOTOR
-    uint32_t calib_start = 0;
-#endif
-
-    while (1) {
-        // 0. If globalState is critical failure, full restart required, do nothing.
-        if (globalState == critical_failure) {
-            DEBUG_PRINT("Critically failed");
-            vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1000));
-            continue;
+    while (true) {
+        // Move to critical_failure if alarmLevel is criticalPriorityAlarm
+        if (alarmLevel == criticalPriorityAlarm && globalState != critical_failure) {
+            setGlobalState(critical_failure, true, false);
         }
-        if (alarmLevel == criticalPriorityAlarm && 
-                alarmCause != calibPatientConnected && 
-                alarmCause != calibIncorrectFlow ) {
-            DEBUG_PRINT("-> critical_failure");
-            globalState = critical_failure;
-            xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
-            DEBUG_PRINT("NOT_STATE -> LCD");
-            xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_GLOBAL_STATE, eSetBits);
-        }
-        updated_state = 0;
-        /*
-         * TODO:
-         * - notif_LCD_to_send variable that is |=ed at different point
-         *   in the code, with a single xTaskNotify at the end of the loop
-         */
 
-        // 1. Read buttons
+        // Read buttons state
         ButtonsState buttons_pressed = poll_buttons();
 
-        // 2. If the MUTE button was pressed down: toggle mute_on and record time
+        // MUTE button pressed
         if (BUTTON_PRESSED(buttons_pressed, button_alarm_mute)) {
             mutePressed();
         }
 
-        // 3. If the ACK button was pressed down: new alarm state is noError
+        // ACK button pressed
         if (BUTTON_PRESSED(buttons_pressed, button_alarm_ack)) {
             ackAlarm();
         }
 
-        /*
-         * 5. If globalState is welcome_wait_cal and start/stop button was
-         * pressed down: set globalState to calibration and notify MotorTask
-         * to start calibration
-         */
-        if (globalState == welcome_wait_cal) {
-           if (BUTTON_PRESSED(buttons_pressed, button_startstop)) {
-                globalState = calibration;
-                // reset to noAlarm
-                ackAlarm();
+        switch (globalState) {
+            case welcome:
+                // FIXME: can we move this in initMainTask?
+                // (Not sure with notifications to LCD...)
+                setGlobalState(welcome, false, false);
 
-                DEBUG_PRINT("-> calibration");
-                updated_state = 1;
+                // TODO SPEC and adjust this
+                play_tone(440, 500, false);
 
-                xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_GLOBAL_STATE, eSetBits);
+                vTaskDelay(WELCOME_MSG_DUR);
 
-#if SIM_MOTOR
-                calib_start = xTaskGetTickCount();
-#endif
-            }
-        }
-        // 6. If globalState is calibration:
-        else if (globalState == calibration) {
-            /*
-             * 6a. If motorState is motorStopped, set globalState to stop and notify
-             * LCD that calibration is done (display settings + measured parameters
-             * + state).
-             */
-            if (alarmLevel == criticalPriorityAlarm) {
-                globalState = welcome_wait_cal;
-                DEBUG_PRINT("-> welcome_wait_cal");
-
-                xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
-                DEBUG_PRINT("NOT_STATE -> LCD");
-            }
-
-#if SIM_MOTOR
-            if (xTaskGetTickCount() - calib_start > 2*WELCOME_MSG_DUR) {
-#else
-            if (motorState == motorStopped) {
-#endif
-                globalState = stop;
-                DEBUG_PRINT("-> stop");
-
-                xTaskNotify(lcdDisplayTaskHandle,
-                        DISP_NOTIF_STATE | DISP_NOTIF_PARAM |
-                        DISP_NOTIF_PLATEAU_P | DISP_NOTIF_PEAK_P, eSetBits);
-            }
-            /*
-             * 6b. If motorState is calibrating and the start/stop button was pressed
-             * down, set globalState to welcome_wait_cal and notify motor of HALT
-             */
-
-#if SIM_MOTOR
-            else {
-#else
-            else if (motorState == motorCalibrating) {
-#endif
+                setGlobalState(welcome_wait_cal, false, false);
+                break;
+            case welcome_wait_cal:
                 if (BUTTON_PRESSED(buttons_pressed, button_startstop)) {
-                    globalState = welcome_wait_cal;
-                    DEBUG_PRINT("-> welcome_wait_cal");
-                    updated_state = 1;
-
-                    xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_GLOBAL_STATE, eSetBits);
+                    ackAlarm();
+                    setGlobalState(calibration, true, false);
                 }
-            }
-        }
-       /*
-        * 7. If globalState is stop or run:
-        */
-        else if (globalState == stop || globalState == run) {
-            upd_params(buttons_pressed);
-
-            /*
-             * 7b. If stop/start button was pressed down, update globalState
-             * accordingly
-             */
-            if (BUTTON_PRESSED(buttons_pressed, button_startstop)) {
-                if (globalState == stop) {
-                    globalState = run;
-                    DEBUG_PRINT("-> run");
-                    updated_state = 1;
-
-                    xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_GLOBAL_STATE, eSetBits);
-                } else if (globalState == run) {
-                    globalState = stop;
-                    DEBUG_PRINT("-> stop");
-                    updated_state = 1;
-
-                    xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_GLOBAL_STATE, eSetBits);
+                break;
+            case calibration:
+                if (alarmLevel == highPriorityAlarm) {
+                    setGlobalState(welcome_wait_cal, true, false);
                 }
-            }
+
+                if (motorState == motorStopped) {
+                    setGlobalState(stop, false, true);
+                } else if (motorState == motorCalibrating) {
+                    if (BUTTON_PRESSED(buttons_pressed, button_startstop)) {
+                        setGlobalState(welcome_wait_cal, true, false);
+                    }
+                }
+                break;
+            case stop:
+                upd_params(buttons_pressed);
+                if (BUTTON_PRESSED(buttons_pressed, button_startstop)) {
+                    setGlobalState(run, true, false);
+                }
+
+                break;
+            case run:
+                upd_params(buttons_pressed);
+                if (BUTTON_PRESSED(buttons_pressed, button_startstop)) {
+                    setGlobalState(stop, true, false);
+                }
+
+               break;
+            case critical_failure:
+                break;
         }
 
-        // 8. Update the alarm state if needed (muting and new alarms)
         pollAlarm();
 
-        /*
-         * Common to any changing state, notify LCD of a state change
-         */
-        if (updated_state == 1) {
-            xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
-            DEBUG_PRINT("NOTIF_STATE -> LCD");
-        }
-
-        /*
-         * 11. Check BATTERY_LOW signal
-         */
-        if (error_power_aux()) {
 #if POWER_AUX_CHECK
+        if (error_power_aux()) {
             DEBUG_PRINT("POWER AUX ERROR");
             sendNewAlarm(auxPower);
-#endif
         }
+#endif
 
-        /*
-         * 12. Check POWER_FAIL signal
-         */
-        if (error_power_main()) {
 #if POWER_MAIN_CHECK
+        if (error_power_main()) {
             DEBUG_PRINT("POWER MAIN ERROR");
             sendNewAlarm(powerError);
-#endif
         }
+#endif
 
-        /*
-         * 13. Check if casing door is open
-         */
-        if (is_door_open()) {
 #if DOOR_CHECK
+        if (is_door_open()) {
             DEBUG_PRINT("DOOR OPEN");
             sendNewAlarm(doorOpen);
-#endif
         }
+#endif
 
-        /*
-         * 14. EEPROM total operating writing
-         */
-        // TODO
-
-        /*
-         * 15. Poll volume sensing.
-         */
         poll_volume();
 
-        /*
-         * 16. Bounded wait for notification (10ms)
-         */
         xTaskNotifyWait(0x0, ALL_NOTIF_BITS, &notification, pdMS_TO_TICKS(10));
     }
 }
 
-uint8_t stoppedOrRunning() {
-    return (globalState == stop || globalState == run);
+static void setGlobalState( GlobalState_t newState,
+                            bool notifyMotor,
+                            bool populateDisplay) {
+    globalState = newState;
+    DEBUG_PRINT("-> %s", globalStateDescr[newState]);
+
+    if (populateDisplay) {
+        // Populate display when moving from calibration to stop
+        xTaskNotify(  lcdDisplayTaskHandle,
+                        DISP_NOTIF_STATE |
+                        DISP_NOTIF_PARAM |
+                        DISP_NOTIF_PLATEAU_P |
+                        DISP_NOTIF_PEAK_P, eSetBits);
+        DEBUG_PRINT("NOTIF_STATE|PARAM|PLATEAU_P|PEAK_P -> LCD");
+    } else {
+        xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
+        DEBUG_PRINT("NOTIF_STATE -> LCD");
+    }
+
+    if (notifyMotor) {
+        xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_GLOBAL_STATE, eSetBits);
+        DEBUG_PRINT("NOTIF_STATE -> MOTOR");
+    }
 }
 
-// TODO: move
+// TODO: move, nothing to do here
 void check_volume(uint32_t actual_vol) {
     // Convert target tidal volume to tens µl
     int32_t target_vol = tidal_vol * 1000L;
@@ -276,3 +184,4 @@ void check_volume(uint32_t actual_vol) {
         sendNewAlarm(abnVolume);
     }
 }
+
