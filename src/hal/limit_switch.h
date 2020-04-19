@@ -23,6 +23,9 @@
 #define SWITCH_HANDLING_TASK motorControlTaskHandle
 
 // Duration [us] for the debouncing algorithm.
+// Typical bouncing total duration is 500 us to 1 ms, with max observed 3.5 ms
+// (three switches sample).
+// To have some margin, we take 10 ms
 #define BOUNCE_THRESHOLD 10000L
 
 #define LIM_DOWN 0
