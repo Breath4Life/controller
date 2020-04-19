@@ -32,37 +32,17 @@ volatile bool alarmMuted;
 static volatile AlarmCause_t newAlarmCause;
 static TickType_t mute_time;
 
+#define X(a, b, c) c,
 static const AlarmLevel_t alarmLevels[] = {
- noAlarm, // noError
- highPriorityAlarm, // overPressure
- highPriorityAlarm, // noPressure
- highPriorityAlarm, // highTemperature
- mediumPriorityAlarm, // lowPressure
- mediumPriorityAlarm, // abnVolume
- mediumPriorityAlarm, // abnFreq
- mediumPriorityAlarm, // auxPower
- highPriorityAlarm, // calibPatientConnected
- highPriorityAlarm, // calibIncorrectFlow
- criticalPriorityAlarm, // doorOpen
- criticalPriorityAlarm, // cfMotorError
- criticalPriorityAlarm // powerError
+    ERROR_TABLE
 };
+#undef X
 
+#define X(a, b, c) b,
 static const char *alarmDescr[] = {
-    "noError",
-    "overPressure",
-    "noPressure",
-    "highTemperature",
-    "lowPressure",
-    "abnVolume",
-    "abnFreq",
-    "auxPower",
-    "calibPatientConnected",
-    "calibIncorrectFlow",
-    "doorOpen",
-    "cfMotorError",
-    "powerError"
+    ERROR_TABLE
 };
+#undef X
 
 
 static void setMuteState(bool mute);

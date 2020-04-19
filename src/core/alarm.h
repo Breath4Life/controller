@@ -19,21 +19,26 @@ typedef enum {
     criticalPriorityAlarm
 } AlarmLevel_t;
 
+#define ERROR_TABLE \
+    X(noError, "noError", noAlarm) \
+    X(overPressure, "overPressure", highPriorityAlarm) \
+    X(noPressure, "noPressure", highPriorityAlarm) \
+    X(highTemperature, "highTemperature", highPriorityAlarm) \
+    X(lowPressure, "lowPressure", mediumPriorityAlarm) \
+    X(abnVolume, "abnVolume", mediumPriorityAlarm) \
+    X(abnFreq, "abnFreq", mediumPriorityAlarm) \
+    X(auxPower, "auxPower", mediumPriorityAlarm) \
+    X(calibPatientConnected, "calibPatientConnected", highPriorityAlarm) \
+    X(calibIncorrectFlow, "calibIncorrectFlow", highPriorityAlarm) \
+    X(doorOpen, "doorOpen", criticalPriorityAlarm) \
+    X(cfMotorError, "cfMotorError", criticalPriorityAlarm) \
+    X(powerError, "powerError", criticalPriorityAlarm)
+
+#define X(a, b, c) a,
 typedef enum {
-    noError,
-    overPressure,
-    noPressure,
-    highTemperature,
-    lowPressure,
-    abnVolume,
-    abnFreq,
-    auxPower,
-    calibPatientConnected,
-    calibIncorrectFlow,
-    doorOpen,
-    cfMotorError,
-    powerError
+    ERROR_TABLE
 } AlarmCause_t;
+#undef X
 
 extern volatile AlarmLevel_t alarmLevel;
 extern volatile AlarmCause_t alarmCause;
