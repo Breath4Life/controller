@@ -34,8 +34,8 @@ volatile GlobalState_t globalState;
 #define CALIB_ERROR_CHECK 1     // active/deactivate calib error check during calib for debug
 
 #define POWER_AUX_CHECK 0       // active/deactivate power aux check for debug
-#define POWER_MAIN_CHECK 0      // active/deactivate power main check for debug
-#define DOOR_CHECK 0            // active/deactivate door check for debug
+#define POWER_MAIN_CHECK 1      // active/deactivate power main check for debug
+#define DOOR_CHECK 1            // active/deactivate door check for debug
 
 void initMainTask()
 {
@@ -49,6 +49,8 @@ void MainTask(void *pvParameters)
     TickType_t xLastWakeTime = xTaskGetTickCount();
 
     DEBUG_PRINT("-> welcome");
+    xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
+    DEBUG_PRINT("NOTIF_STATE -> LCD");
 
     // TODO SPEC and adjust this
     play_tone(440, 500, false);
@@ -85,8 +87,8 @@ void MainTask(void *pvParameters)
             DEBUG_PRINT("-> critical_failure");
             globalState = critical_failure;
             xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
-            xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_GLOBAL_STATE, eSetBits);
             DEBUG_PRINT("NOT_STATE -> LCD");
+            xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_GLOBAL_STATE, eSetBits);
         }
         updated_state = 0;
         /*

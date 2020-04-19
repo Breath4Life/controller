@@ -229,6 +229,8 @@
     static volatile uint8_t u8__sr_data_byte = 0x00;
 #endif
 
+static volatile uint8_t display_dirty = 0;
+
 
 static volatile uint8_t u8__lcd_data_buffer[LCD_DATA_BUFFER_SIZE];
 
@@ -303,7 +305,12 @@ void lcd_timer_isr( void )
                     {
                         u8__data_byte = 0x00;
                         u8__buffer_counter = 0;
-                        TIMSK2 = 0<<OCIE2A; // Disable timer2 compare match interrupt
+                        if (display_dirty) {
+                            // go for another round of display
+                            display_dirty = 0;
+                        } else {
+                            TIMSK2 = 0<<OCIE2A; // Disable timer2 compare match interrupt
+                        }
                     }
 
                     u8__data_byte |= 0x80;
@@ -716,5 +723,11 @@ void lcd_initLCD() {
 
 
 void lcd_refreshLCD() {
-    TIMSK2 = 1<<OCIE2A; // Enable timer2 compare match interrupt
+    cli();
+    if (TIMSK2 & _BV(OCIE2A)) {
+        display_dirty = 1;
+    } else {
+        TIMSK2 = 1<<OCIE2A; // Enable timer2 compare match interrupt
+    }
+    sei();
 }

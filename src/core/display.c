@@ -43,7 +43,7 @@ static const char *errorCode[] = {
     "POWER01"
 };
 
-static void lcdWriteTwoLines(char * firstLine, char * secondLine);
+static void lcdWriteTwoLines(const char * firstLine, const char * secondLine);
 
 static void initDisplay();
 
@@ -311,8 +311,10 @@ static void welcomeScreen() {
 // LCD welcome_wait_cal screen
 static void welcomeWaitCalScreen() {
     if (alarmCause == noError) {
+        DEBUG_PRINT("[LCD] Normal.\r\n");
         lcdWriteTwoLines(WAIT_CALI_MSG1, WAIT_CALI_MSG2);
     } else {
+        DEBUG_PRINT("[LCD] Error.\r\n");
         lcdWriteTwoLines(CALI_ERROR_MSG1, CALI_ERROR_MSG2);
         displayErrorCode();
     }
@@ -340,6 +342,10 @@ static void normalScreen(uint32_t notification) {
     } else {
         if (notification & DISP_NOTIF_ALARM) {
             displayErrorCode();
+            // Reset mute timeout (if any) to make new error
+            // code appear for 2s first
+            vTaskSetTimeOutState(&muteMsgToggleTimeOut);
+            muteMsgToggleRemTime = MAX(muteMsgToggleRemTime, MUTE_MSG_PERIOD);
         }
     }
 
@@ -357,25 +363,53 @@ static void criticalFailureScreen() {
 static void refreshLCD(uint32_t notification) {
    switch (globalState) {
         case welcome:
+            DEBUG_PRINT("[LCD] gS = welcome.\r\n");
             welcomeScreen();
             break;
         case welcome_wait_cal:
+            DEBUG_PRINT("[LCD] gS = welcome_wait_cal.\r\n");
             welcomeWaitCalScreen();
             break;
         case calibration:
+            DEBUG_PRINT("[LCD] gS = calibration.\r\n");
             calibrationScreen();
             break;
         case stop:
         case run:
+            DEBUG_PRINT("[LCD] gS = stop|run.\r\n");
             normalScreen(notification);
             break;
         case critical_failure:
+            DEBUG_PRINT("[LCD] gS = critical_failure.\r\n");
             criticalFailureScreen();
             break;
     }
 }
 
 static void processDisplayNotification(uint32_t notification) {
+#if DEBUG_DISPLAY
+    switch (notification) {
+        case DISP_NOTIF_ALARM:
+           DEBUG_PRINT("[LCD] NOTIF_ALARM.\r\n");
+           break;
+        case DISP_NOTIF_PARAM:
+           DEBUG_PRINT("[LCD] NOTIF_PARAM.\r\n");
+           break;
+        case DISP_NOTIF_PLATEAU_P:
+           DEBUG_PRINT("[LCD] NOTIF_PLATEAU_P.\r\n");
+           break;
+        case DISP_NOTIF_PEAK_P:
+           DEBUG_PRINT("[LCD] NOTIF_PEAK_P.\r\n");
+           break;
+        case DISP_NOTIF_STATE:
+           DEBUG_PRINT("[LCD] NOTIF_STATE.\r\n");
+           break;
+        case DISP_NOTIF_MUTE:
+           DEBUG_PRINT("[LCD] NOTIF_MUTE.\r\n");
+           break;
+    }
+#endif // DEBUG_DISPLAY
+
     if (notification & DISP_NOTIF_REFRESH) {
         refreshLCD(notification);
     } else if (notification & DISP_NOTIF_MUTE) {
@@ -385,7 +419,7 @@ static void processDisplayNotification(uint32_t notification) {
     }
 }
 
-static void lcdWriteTwoLines(char * firstLine, char * secondLine) {
+static void lcdWriteTwoLines(const char * firstLine, const char * secondLine) {
     lcd_write_string(firstLine, 1, 1, NO_CR_LF);
     lcd_write_string(secondLine, 2, 1, NO_CR_LF);
 }
