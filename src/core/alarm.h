@@ -10,7 +10,7 @@
 
 #define POWER_AUX_CHECK 0       // active/deactivate power aux check for debug
 #define POWER_MAIN_CHECK 0      // active/deactivate power main check for debug
-#define DOOR_CHECK 0            // active/deactivate door check for debug
+#define DOOR_CHECK 1            // active/deactivate door check for debug
 
 typedef enum {
     noAlarm,
@@ -23,7 +23,6 @@ typedef enum {
     noError,
     overPressure,
     noPressure,
-    highPressure,
     highTemperature,
     lowPressure,
     abnVolume,
