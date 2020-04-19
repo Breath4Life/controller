@@ -8,6 +8,9 @@
 
 #include "FreeRTOS.h"
 
+#include "core/volume.h"
+#include "core/analog_read.h"
+
 // Notification that can be sent to the motor control task.
 #define MOTOR_NOTIF_LIM_DOWN 0x01
 #define MOTOR_NOTIF_LIM_UP 0x02
@@ -21,6 +24,23 @@
 // Threshold used in the flow-check calibration [ul]
 // FIXME put 600000
 #define VOLUME_CHECK_THRESHOLD 400000L
+
+#define HOOK_START_INSP do { \
+    reset_volume(); \
+    reset_pressure(); \
+} while (0)
+
+#define HOOK_END_INSP do { \
+    \
+} while (0)
+
+#define HOOK_START_EXP do { \
+    publish_p_peak(); \
+} while (0)
+
+#define HOOK_END_PLATEAU do { \
+    measure_p_plateau(); \
+} while (0)
 
 typedef enum {
     motorInit,

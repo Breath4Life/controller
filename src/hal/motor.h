@@ -78,7 +78,7 @@ uint32_t motor_remaining_distance();
 
 /* @set_motor_current_position_value Reset the current absolute position of the
  * motor, while not moving it.
- * 
+ *
  * @param new_abs_position New absolute position of the motor.
  */
 void set_motor_current_position_value(int32_t new_abs_position);

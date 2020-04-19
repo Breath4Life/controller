@@ -179,10 +179,13 @@ static void move_and_wait(uint32_t targetPosition, uint32_t max_speed);
 static void calib_move_and_wait(uint32_t targetPosition, uint32_t max_speed);
 static void run_move_and_wait(uint32_t targetPosition, uint32_t max_speed);
 static void stop_and_wait();
-static void doExpiration();
+static void startExpiration();
 static uint8_t test_notif(uint32_t tested_notif);
 static uint8_t need_recalibration();
-static void abort_insp();
+static void startInsp();
+static void finishInsp(bool need_stop);
+static void startPlateau();
+static void finishPlateau(bool need_stop);
 static void overPressureRunning();
 
 // TODO something real
@@ -376,10 +379,11 @@ static void stop_and_wait() {
     boundedWaitNotification(pdMS_TO_TICKS(2*1000), false);
 }
 
-static void doExpiration() {
-    DEBUG_PRINT("doExpiration");
-    // TODO do not base PID on volume when there is an
-    // error... (aka recalibreFlag is set).
+static void startExpiration() {
+    DEBUG_PRINT("startExpiration");
+    HOOK_START_EXP;
+    // TODO do not base PID on volume when there is a motor
+    // issue ... (aka recalibreFlag is set).
     if (get_volume(&cycle_volume) != 0) {
         DEBUG_PRINT("No valid volume");
         cycle_volume = 0;
@@ -397,19 +401,62 @@ static uint8_t need_recalibration() {
     return recalibrateFlag || ((cycleCount & 0x3) == 0) || motor_error();
 }
 
-static void abort_insp() {
-    breathState = inspStopping;
-    recalibrateFlag = true;
-    DEBUG_PRINT("recalibrate INSP asked");
-    // TODO wait a bit... to respect Ti ?
-    stop_and_wait();
+static void startInsp() {
+    compute_config();
+    motor_enable();
+    HOOK_START_INSP;
+    breathState = insp;
+    targetPosition = homePosition + insp_pulses;
+    DEBUG_PRINT("Ti pulses used %u",targetPosition);
+    DEBUG_PRINT("=> target %u",targetPosition);
+    DEBUG_PRINT("cur pos %u",motor_current_position());
+    DEBUG_PRINT("home %u",homePosition);
+    DEBUG_PRINT("to insp");
+    run_move_and_wait(targetPosition, f_insp);
+}
+
+static void finishInsp(bool need_stop) {
+    HOOK_END_INSP;
+    if (need_stop) {
+        // abort
+        breathState = inspStopping;
+        recalibrateFlag = true;
+        DEBUG_PRINT("recalibrate INSP asked");
+        // TODO wait a bit... to respect Ti ?
+        stop_and_wait();
+    } else {
+        startPlateau();
+    }
+}
+
+static void startPlateau() {
+    breathState = plateau;
+    targetPosition = homePosition + insp_pulses + plateau_pulses;
+    run_move_and_wait(targetPosition, f_plateau);
+    DEBUG_PRINT("to plateau %lu %lu", plateau_pulses, f_plateau);
+}
+
+static void finishPlateau(bool need_stop) {
+    HOOK_END_PLATEAU;
+    if (need_stop) {
+        // abort
+        breathState = inspStopping;
+        recalibrateFlag = true;
+        DEBUG_PRINT("recalibrate PLATEAU asked");
+        // TODO wait a bit... to respect Ti ?
+        stop_and_wait();
+    } else {
+        startExpiration();
+    }
 }
 
 static void overPressureRunning() {
     switch (breathState) {
         case insp:
+            finishInsp(true);
+            break;
         case plateau:
-            abort_insp();
+            finishPlateau(true);
             break;
         default:
             resumeBoundedWaitNotification();
@@ -816,15 +863,13 @@ void MotorControlTask(void *pvParameters)
                 } else if (test_notif(MOTOR_NOTIF_MOVEMENT_FINISHED)) {
                     switch (breathState) {
                         case insp:
-                            breathState = plateau;
-                            targetPosition = homePosition + insp_pulses + plateau_pulses;
-                            run_move_and_wait(targetPosition, f_plateau);
-                            DEBUG_PRINT("to plateau %lu %lu", plateau_pulses, f_plateau);
+                            finishInsp(false);
                             break;
                         case plateau:
-                            //measure_p_plateau();
+                            finishPlateau(false);
+                            break;
                         case inspStopping:
-                            doExpiration();
+                            startExpiration();
                             break;
                         case expiration:
                             DEBUG_PRINT("finished EXP");
@@ -921,8 +966,10 @@ void MotorControlTask(void *pvParameters)
                 } else if (test_notif(MOTOR_NOTIF_LIM_DOWN)) {
                     switch (breathState) {
                         case insp:
+                            finishInsp(true);
+                            break;
                         case plateau:
-                            abort_insp();
+                            finishPlateau(true);
                             break;
                         case expiration:
                         case inspStopping:
@@ -971,17 +1018,7 @@ void MotorControlTask(void *pvParameters)
                             }
                             break;
                         case startNewCycle:
-                            compute_config();
-                            motor_enable();
-                            reset_volume();
-                            breathState = insp;
-                            targetPosition = homePosition + insp_pulses;
-                            DEBUG_PRINT("Ti pulses used %u",targetPosition);
-                            DEBUG_PRINT("=> target %u",targetPosition);
-                            DEBUG_PRINT("cur pos %u",motor_current_position());
-                            DEBUG_PRINT("home %u",homePosition);
-                            DEBUG_PRINT("to insp");
-                            run_move_and_wait(targetPosition, f_insp);
+                            startInsp();
                             break;
                         default:
                             genMotorError("URCH Bno notif");

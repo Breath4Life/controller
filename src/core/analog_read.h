@@ -72,4 +72,7 @@ void measure_p_plateau();
  */
 void measure_peep();
 
+void reset_pressure();
+void publish_p_peak();
+
 #endif // ANALOG_READ_H_

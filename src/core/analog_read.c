@@ -73,6 +73,31 @@ void init_analog_read() {
     aio_read_start(aio_pins[curr_mes]);
 }
 
+void reset_pressure() {
+    cli();
+    cycle_p_peak = INIT_CYCLE_P_PEAK;
+    sei();
+}
+
+// Inspiration is over, set p_peak, notify LCD and check thresholds
+void publish_p_peak() {
+    cli();
+    p_peak = cycle_p_peak;
+    sei();
+    DEBUG_PRINT("Upd p_peak");
+    xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PEAK_P, eSetBits);
+
+    if (p_peak < NO_PRESSURE_THRESHOLD) {
+        // No pressure
+        DEBUG_PRINT("NO PRESSURE");
+        sendNewAlarm(noPressure);
+    } else if (p_peak < LOW_PRESSURE_THRESHOLD) {
+        // Low pressure
+        DEBUG_PRINT("LOW PRESSURE");
+        sendNewAlarm(lowPressure);
+    }
+}
+
 void AnalogReadTask(void *pvParameters) {
     TickType_t xLastWakeTime = xTaskGetTickCount();
     DEBUG_PRINT("Starting");
@@ -94,29 +119,10 @@ void AnalogReadTask(void *pvParameters) {
                         }
 
                         // Track max. instantaneous pressure during inspiration
-                        if (breathState == insp && p > cycle_p_peak) {
+                        if (p > cycle_p_peak) {
                             cycle_p_peak = p;
                         }
 
-                        // Inspiration is over, set p_peak, notify LCD and check thresholds
-                        if (breathState == plateau && cycle_p_peak != INIT_CYCLE_P_PEAK) {
-                            cli();
-                            p_peak = cycle_p_peak;
-                            sei();
-                            cycle_p_peak = INIT_CYCLE_P_PEAK;
-                            DEBUG_PRINT("Upd p_peak");
-                            xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PEAK_P, eSetBits);
-
-                            if (p_peak < NO_PRESSURE_THRESHOLD) {
-                                // No pressure
-                                DEBUG_PRINT("NO PRESSURE");
-                                sendNewAlarm(noPressure);
-                            } else if (p_peak < LOW_PRESSURE_THRESHOLD) {
-                                // Low pressure
-                                DEBUG_PRINT("LOW PRESSURE");
-                                sendNewAlarm(lowPressure);
-                            }
-                        }
                     } else if (globalState == calibration) {
                         if (p > CALIBRATION_MAX_P) {
                             // Pressure increased during self-calibration
