@@ -40,6 +40,9 @@ static void displayState();
 static void displayErrorCode();
 
 // Used for the alternating muted indication
+static void pollAlarmMutedDisplay();
+static void delayAlarmMutedDisplay();
+static void initAlarmMutedDisplay();
 static TimeOut_t muteMsgToggleTimeOut;
 static TickType_t muteMsgToggleRemTime;
 static bool muteMsgVisible = false;
@@ -52,12 +55,10 @@ static void displayRespFreq(bool visible);
 static void displayExtraParam(bool visible);
 
 // Used for unconfirmed parameters blinking
+static void pollUnsavedParamDisplay();
 static TimeOut_t paramToggleTimeOut;
 static TickType_t paramToggleRemTime;
 static bool paramVisible = true;
-
-static void pollAlarmMutedDisplay();
-static void pollUnsavedParamDisplay();
 
 static void processDisplayNotification(uint32_t notification);
 
@@ -123,10 +124,31 @@ static void pollAlarmMutedDisplay() {
         if (muteMsgVisible) {
             // Ensures the state/error information is visible when alarm has been unmuted
             refreshInfoZone();
+            muteMsgVisible = false;
         }
 
         muteMsgToggleRemTime = portMAX_DELAY;
     }
+}
+
+/*
+ * Delay mute message timeout (if any) to make new
+ * error code/new state appears first for MUTE_MSG_PERIOD
+ */
+static void delayAlarmMutedDisplay() {
+    vTaskSetTimeOutState(&muteMsgToggleTimeOut);
+    muteMsgToggleRemTime = MAX(muteMsgToggleRemTime, MUTE_MSG_PERIOD);
+    muteMsgVisible = false;
+}
+
+/*
+ * Initialize mute message timeout.
+ */
+static void initAlarmMutedDisplay() {
+    // Initialize timeout for the mute indicator
+    vTaskSetTimeOutState(&muteMsgToggleTimeOut);
+    muteMsgToggleRemTime = 0;
+    muteMsgVisible = false;
 }
 
 /*
@@ -276,6 +298,8 @@ static void displayState() {
         lcd_write_string(STOPPED_MSG, 1, 10, NO_CR_LF);
     } else if (globalState == run) {
         lcd_write_string(RUNNING_MSG, 1, 10, NO_CR_LF);
+    } else {
+        lcd_write_string(BLANK_MSG, 1, 10, NO_CR_LF);
     }
 }
 
@@ -296,10 +320,12 @@ static void welcomeWaitCalScreen() {
     if (alarmCause == noError) {
         DEBUG_PRINT("[LCD] Normal.\r\n");
         lcdWriteTwoLines(WAIT_CALI_MSG1, WAIT_CALI_MSG2);
+        displayState();
     } else {
         DEBUG_PRINT("[LCD] Error.\r\n");
         lcdWriteTwoLines(CALI_ERROR_MSG1, CALI_ERROR_MSG2);
         displayErrorCode();
+        delayAlarmMutedDisplay();
     }
 }
 
@@ -321,14 +347,12 @@ static void normalScreen(uint32_t notification) {
     if (alarmCause == noError) {
         if (notification & DISP_NOTIF_STATE) {
             displayState();
+            delayAlarmMutedDisplay();
          }
     } else {
         if (notification & DISP_NOTIF_ALARM) {
             displayErrorCode();
-            // Reset mute timeout (if any) to make new error
-            // code appear for 2s first
-            vTaskSetTimeOutState(&muteMsgToggleTimeOut);
-            muteMsgToggleRemTime = MAX(muteMsgToggleRemTime, MUTE_MSG_PERIOD);
+            delayAlarmMutedDisplay();
         }
     }
 
@@ -370,35 +394,29 @@ static void refreshLCD(uint32_t notification) {
 }
 
 static void processDisplayNotification(uint32_t notification) {
-#if DEBUG_DISPLAY
-    switch (notification) {
-        case DISP_NOTIF_ALARM:
-           DEBUG_PRINT("[LCD] NOTIF_ALARM.\r\n");
-           break;
-        case DISP_NOTIF_PARAM:
-           DEBUG_PRINT("[LCD] NOTIF_PARAM.\r\n");
-           break;
-        case DISP_NOTIF_PLATEAU_P:
-           DEBUG_PRINT("[LCD] NOTIF_PLATEAU_P.\r\n");
-           break;
-        case DISP_NOTIF_PEAK_P:
-           DEBUG_PRINT("[LCD] NOTIF_PEAK_P.\r\n");
-           break;
-        case DISP_NOTIF_STATE:
-           DEBUG_PRINT("[LCD] NOTIF_STATE.\r\n");
-           break;
-        case DISP_NOTIF_MUTE:
-           DEBUG_PRINT("[LCD] NOTIF_MUTE.\r\n");
-           break;
+    if (notification & DISP_NOTIF_ALARM) {
+        DEBUG_PRINT("[LCD] NOTIF_ALARM.\r\n");
     }
-#endif // DEBUG_DISPLAY
+    if (notification & DISP_NOTIF_PARAM) {
+        DEBUG_PRINT("[LCD] NOTIF_PARAM.\r\n");
+    }
+    if (notification & DISP_NOTIF_PLATEAU_P) {
+        DEBUG_PRINT("[LCD] NOTIF_PLATEAU_P.\r\n");
+    }
+    if (notification & DISP_NOTIF_PEAK_P) {
+        DEBUG_PRINT("[LCD] NOTIF_PEAK_P.\r\n");
+    }
+    if (notification & DISP_NOTIF_STATE) {
+        DEBUG_PRINT("[LCD] NOTIF_STATE.\r\n");
+    }
+    if (notification & DISP_NOTIF_MUTE) {
+        DEBUG_PRINT("[LCD] NOTIF_MUTE.\r\n");
+    }
 
     if (notification & DISP_NOTIF_REFRESH) {
         refreshLCD(notification);
     } else if (notification & DISP_NOTIF_MUTE) {
-        // Initialize timeout for the mute indicator
-        vTaskSetTimeOutState(&muteMsgToggleTimeOut);
-        muteMsgToggleRemTime = 0;
+        initAlarmMutedDisplay();
     }
 }
 

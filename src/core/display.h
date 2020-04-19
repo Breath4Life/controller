@@ -9,12 +9,12 @@
 #define WELCOME_MSG2            "SN:00001 UP:0042"
 
 // Waiting calibration message
-#define WAIT_CALI_MSG1          " Press START to "
-#define WAIT_CALI_MSG2          " self-calibrate "
+#define WAIT_CALI_MSG1          "START to "
+#define WAIT_CALI_MSG2          "self-calibrate  "
 
 // Calibration message
-#define CALI_MSG1               "Self-calibrating"
-#define CALI_MSG2               "Please wait...  "
+#define CALI_MSG1               "Wait...  "
+#define CALI_MSG2               "Self-calibrating"
 
 // Calibration error messages
 #define CALI_ERROR_MSG1         "ABORTED: "
@@ -23,6 +23,7 @@
 // Stop and run state messages
 #define RUNNING_MSG             "Running"
 #define STOPPED_MSG             "Stopped"
+#define BLANK_MSG               "       "
 #define MUTED_MSG               " MUTED "
 
 // Critical failure messages
