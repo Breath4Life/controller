@@ -103,10 +103,15 @@ void sendNewAlarm(AlarmCause_t alarm) {
 // Do NOT call from context where interrupts are disabled
 void ackAlarm() {
     cli();
-    newAlarmCause = noError;
-    sei();
-    xTaskNotify(mainTaskHandle, MAIN_NOTIF_ALARM, eSetBits);
+    if (alarmLevels[newAlarmCause] == criticalPriorityAlarm) {
+        // Cannot ACK critical failures
+        sei();
+    } else {
+        newAlarmCause = noError;
+        sei();
+        xTaskNotify(mainTaskHandle, MAIN_NOTIF_ALARM, eSetBits);
     xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_STATE, eSetBits);
+    }
 }
 
 static void processNewAlarm() {
