@@ -264,7 +264,7 @@ static void displayExtraParam(bool visible) {
                 sprintf(extraParamBuffer, "Pmax = %2u", p_max);
                 break;
             case 2:
-                sprintf(extraParamBuffer, "PEEP = %2u", peep);
+                sprintf(extraParamBuffer, "PEEP = %2i", peep);
                 break;
         }
     }
