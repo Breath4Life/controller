@@ -16,6 +16,10 @@
 
 #define ALARM_AUTO_UNMUTE_DELAY 120 * 1000L
 
+#define BPM_CHECK_PERIOD_MS 60 * 1000L
+#define BPM_CHECK_PERIOD_PER_MIN 1
+#define BPM_TOL 2
+
 // MAIN wake-up notification
 #define MAIN_NOTIF_ALARM 0x01
 

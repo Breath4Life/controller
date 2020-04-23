@@ -25,10 +25,6 @@
 // FIXME put 600000
 #define VOLUME_CHECK_THRESHOLD 400000L
 
-#define BPM_CHECK_PERIOD_MS 60 * 1000L
-#define BPM_CHECK_PERIOD_PER_MIN (60 * 1000L)/BPM_CHECK_PERIOD_MS
-#define BPM_TOL 2
-
 #define HOOK_START_INSP do { \
     reset_volume(); \
     reset_pressure(); \
@@ -112,6 +108,8 @@ extern volatile BreathState_t breathState;
 /** @motorErrorState sub-state of the motor when in motorError state.
  */
 extern volatile MotorErrorState_t motorErrorState;
+
+extern volatile uint32_t cycleCount;
 
 /** @init_motor Initialize the motor state machine
  */
