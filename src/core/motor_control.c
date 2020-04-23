@@ -405,7 +405,6 @@ static void startInsp() {
     motor_enable();
     HOOK_START_INSP;
     breathState = insp;
-
     targetPosition = homePosition + insp_pulses;
     DEBUG_PRINT("Ti pulses used %u",targetPosition);
     DEBUG_PRINT("=> target %u",targetPosition);
