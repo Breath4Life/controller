@@ -113,7 +113,8 @@ static bool waitTimeoutAllowed;
 static int32_t cycle_volume;
 
 static uint32_t cycleCount;
-
+static uint8_t bpmCheckCycleCount;
+static TickType_t bpmCheckStartTime;
 
 #if DEBUG_MOTOR
 static const char *state_names[] = {
@@ -265,6 +266,8 @@ void init_motor() {
     boundedWaitTime = 0;
     vTaskSetTimeOutState(&timeOutBoundedWait);
     cycleCount = 0;
+
+    bpmCheckCycleCount = 0;
 }
 
 static void genMotorError(char *msg) {
@@ -332,6 +335,21 @@ static void startCycleEnd() {
     breathState = cycleEnd;
     TickType_t curr_time = xTaskGetTickCount();
     TickType_t cycle_elapsed_time = curr_time - cycleStartTime;
+
+    bpmCheckCycleCount += 1;
+    // If averaging period of respiratory frequency is over
+    if (xTaskGetTickCount() - bpmCheckStartTime > pdMS_TO_TICKS(BPM_CHECK_PERIOD_MS)) {
+        // Measure the actual respiratory frequency
+        uint8_t bpmMeasured = bpmCheckCycleCount / BPM_CHECK_PERIOD_PER_MIN;
+        // Raise alarm if absolute difference is not within given tolerance
+        if (ABS(bpmMeasured - bpm) > BPM_TOL) {
+            sendNewAlarm(abnFreq);
+        }
+
+        // Reset rspiratory
+        bpmCheckCycleCount = 0;
+    }
+
     TickType_t wait_time;
     if (cycle_elapsed_time < ticksTctTime) {
         motor_disable();
@@ -406,6 +424,11 @@ static void startInsp() {
     motor_enable();
     HOOK_START_INSP;
     breathState = insp;
+    // Initialize the respiratory frequency measurement
+    if (bpmCheckCycleCount == 0) {
+        bpmCheckStartTime = xTaskGetTickCount();
+    }
+
     targetPosition = homePosition + insp_pulses;
     DEBUG_PRINT("Ti pulses used %u",targetPosition);
     DEBUG_PRINT("=> target %u",targetPosition);
