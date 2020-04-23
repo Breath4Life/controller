@@ -109,6 +109,8 @@ extern volatile BreathState_t breathState;
  */
 extern volatile MotorErrorState_t motorErrorState;
 
+extern volatile uint32_t cycleCount;
+
 /** @init_motor Initialize the motor state machine
  */
 void init_motor();
