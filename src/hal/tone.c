@@ -13,8 +13,8 @@ void tone_init()
     tone_stop();
     dio_init(DIO_PIN_ALARM_SOUND, DIO_OUTPUT);
     dio_init(DIO_PIN_ALARM_SOUND_BIS, DIO_OUTPUT);
-    dio_write(DIO_PIN_ALARM_SOUND, DIO_LOW);
-    dio_write(DIO_PIN_ALARM_SOUND_BIS, DIO_LOW);
+    dio_write(DIO_PIN_ALARM_SOUND, DIO_HIGH);
+    dio_write(DIO_PIN_ALARM_SOUND_BIS, DIO_HIGH);
 }
 
 
