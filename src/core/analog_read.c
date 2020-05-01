@@ -29,8 +29,8 @@
 #define DEBUG_PRINT fake_debug_print
 #endif // DEBUG_ANALOG_READ
 
-#define SEND_TO_SERIAL 0
-#define CALIBRATE_FLOW 1
+#define SEND_TO_SERIAL 1
+#define CALIBRATE_FLOW 0
 
 // Instantaneous pressure in cmH2O
 volatile int16_t p;
@@ -141,11 +141,11 @@ void AnalogReadTask(void *pvParameters) {
                             sendNewAlarm(calibPatientConnected);
                         }
                     }
-
-                    curr_mes = mesTempMachine;
+                    curr_mes = mesFlow;
                     break;
                 case mesFlow:
                     flow = mes2flow(res);
+                    curr_mes = mesTempMachine;
                     break;
                 case mesTempMachine:
                     temp_machine = mes2temp(res);
