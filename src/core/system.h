@@ -33,7 +33,7 @@ extern volatile GlobalState_t globalState;
 // DEBUG
 
 #ifndef DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #endif // DEBUG
 
 #define DEBUG_MOTOR (1 && DEBUG)

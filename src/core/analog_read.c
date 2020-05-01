@@ -3,6 +3,7 @@
 #include "core/analog_read.h"
 #include "hal/io.h"
 #include "hal/pins.h"
+#include "hal/time.h"
 #include "core/utils.h"
 #include "core/system.h"
 #include "core/main_task.h"
@@ -17,7 +18,7 @@
 #define CURR_DEBUG_PREFIX analogRead
 #include "core/debug.h"
 
-#define N_ANALOG_READS 3
+#define N_ANALOG_READS 4
 
 // Absurd value than can never happen
 #define INIT_CYCLE_P_PEAK -100
@@ -27,6 +28,9 @@
 #else
 #define DEBUG_PRINT fake_debug_print
 #endif // DEBUG_ANALOG_READ
+
+#define SEND_TO_SERIAL 0
+#define CALIBRATE_FLOW 1
 
 // Instantaneous pressure in cmH2O
 volatile int16_t p;
@@ -39,20 +43,26 @@ volatile int16_t p_plateau;
 // PEEP last measurement in cmH2O
 volatile int16_t peep;
 
+// Flow measured with differential pressure sensor
+volatile int32_t flow;
+
 volatile int16_t temp_machine;
 volatile int16_t temp_motor;
 
 static int16_t mes2pres(uint16_t mes);
+static int32_t mes2flow(uint16_t mes);
 static int16_t mes2temp(uint16_t mes);
 
 static enum {
     mesPressure,
+    mesFlow,
     mesTempMachine,
     mesTempMotor
 } curr_mes;
 
 static const uint8_t aio_pins[N_ANALOG_READS] = {
     AIO_PIN_PRESSURE_SENSOR_0,
+    AIO_PIN_PRESSURE_SENSOR_1,
     AIO_PIN_TEMP_SENSOR_0,
     AIO_PIN_TEMP_SENSOR_1
 };
@@ -134,6 +144,9 @@ void AnalogReadTask(void *pvParameters) {
 
                     curr_mes = mesTempMachine;
                     break;
+                case mesFlow:
+                    flow = mes2flow(res);
+                    break;
                 case mesTempMachine:
                     temp_machine = mes2temp(res);
 
@@ -189,8 +202,15 @@ static int16_t mes2pres(uint16_t mes) {
     // FIXME mes in uint16_t, could that cause any problem?
     int16_t tmp = scale_MPX5010DP * mes + offset_MPX5010DP;
 
+#if SEND_TO_SERIAL
+    // Send curr_time and in µs, pressure in 1/8cmH2O
+    debug_print("%lu:%i\r\n", time_us(), (tmp >> 4) + 1);
+#endif
+
     // TODO check scale and offset calculation above
-    return (tmp >> 6);
+    // FIXME: +1 for auto-zero (i.e., set measured pressure to 0
+    // when pressured difference is supposed to be 0)
+    return (tmp >> 6) + 1;
 }
 
 static int16_t mes2temp(uint16_t mes) {
@@ -220,6 +240,55 @@ static int16_t mes2temp(uint16_t mes) {
     int32_t tmp = (-150 * ((int32_t) mes) + 80550)/427;
 
     return (int16_t) tmp;
+}
+
+static int32_t mes2flow(uint16_t mes) {
+    /*
+     * MPXV7002DP pressure sensor
+     * --------------------------
+     * Unit conversion: 1kPa = 101.972mmH2O
+     *
+     * # Sensitivity
+     * 1 V/kPa ~= 9.8mV/mmH2O
+     * analogRead() precision is 10 bit on 5V: 1 = 4.9mV
+     * -> 1 corresponds to 0.5 mmH2O
+     *
+     * # Transfer function
+     * Vout[V] = Vs * (0.2 * p[kPa] + 0.5) with Vs = 5V
+     * = p[kPa] + 2.5
+     * -> p[kPa] = Vout[V] - 2.5
+     *
+     * analogRead() precision is 10 bit: 1 = 4.9mV.
+     *
+     * Scale for mmH2O = 0.0049 * 101.971 = 0.4996579
+     * Offset for mmH2O = -2.5 * 101.971 = -254.9275
+     * Scale for 1/2mmH2O = 0.0049 * 101.971 = 0.9993158 ≃ 1
+     * Offset for 1/2mmH2O = -2.5 * 101.971 = -509.855 ≃ -510
+     * -> p[1/2mmH2O] = r[reading] - 510
+     *
+     * No overflow can happen on int16_t.
+    */
+
+    // pressure in units of 1/2mmH2O
+    // -33 to zero output at zero pressure difference
+    int16_t pressure = ((int16_t) mes) - 510 - 33;
+
+    // FIXME: need proper calibration!
+    // Currently obtained from a rough diff. pressure/flow curve fitting
+    int32_t tmp;
+    if (pressure < -11) {
+        tmp = 1298 * pressure - 26201;
+    } else if (pressure < 18) {
+        tmp = 2648 * pressure - 11349;
+    } else {
+        tmp = 1455 * pressure + 11125;
+    }
+
+#if CALIBRATE_FLOW
+    debug_print("%lu:%i:%i:%li\r\n", time_us(), mes, pressure, tmp);
+#endif
+
+    return tmp;
 }
 
 void measure_p_plateau() {
