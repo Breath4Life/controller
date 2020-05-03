@@ -29,6 +29,10 @@
 
 volatile GlobalState_t globalState;
 
+// Used to measure the actual respiratory frequency
+static uint32_t lastCycleCount;
+static TickType_t startBPMCheckTime;
+
 static const char *globalStateDescr[] = {
     "welcome",
     "welcome_wait_cal",
@@ -39,6 +43,8 @@ static const char *globalStateDescr[] = {
 };
 
 static void setGlobalState(GlobalState_t newState, bool notifyMotor, bool populateDisplay);
+static void resetBPMCheck();
+static void checkBPM();
 
 void initMainTask()
 {
@@ -109,6 +115,8 @@ void MainTask(void *pvParameters)
                 upd_params(buttons_pressed);
                 if (BUTTON_PRESSED(buttons_pressed, button_startstop)) {
                     setGlobalState(run, true, false);
+                    // Reset actual BPM measurement when moving from stop to run
+                    resetBPMCheck();
                 }
 
                 break;
@@ -117,6 +125,8 @@ void MainTask(void *pvParameters)
                 if (BUTTON_PRESSED(buttons_pressed, button_startstop)) {
                     setGlobalState(stop, true, false);
                 }
+
+                checkBPM();
 
                break;
             case critical_failure:
@@ -171,6 +181,25 @@ static void setGlobalState( GlobalState_t newState,
     if (notifyMotor) {
         xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_GLOBAL_STATE, eSetBits);
         DEBUG_PRINT("NOTIF_STATE -> MOTOR");
+    }
+}
+
+static void resetBPMCheck() {
+    DEBUG_PRINT("Reset BPMCheck");
+    lastCycleCount = cycleCount;
+    startBPMCheckTime = xTaskGetTickCount();
+}
+
+static void checkBPM() {
+    TickType_t elapsedTime = xTaskGetTickCount() - startBPMCheckTime;
+    if (elapsedTime > pdMS_TO_TICKS(BPM_CHECK_PERIOD_MS)) {
+        uint8_t measuredBPM = ((uint8_t) (cycleCount - lastCycleCount)) / BPM_CHECK_PERIOD_PER_MIN;
+        DEBUG_PRINT("Measured BPM: %u", measuredBPM);
+        if (ABS(measuredBPM - bpm) > BPM_TOL) {
+            sendNewAlarm(abnFreq);
+        }
+
+        resetBPMCheck();
     }
 }
 

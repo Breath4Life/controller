@@ -112,8 +112,7 @@ static TickType_t boundedWaitTime;
 static bool waitTimeoutAllowed;
 static int32_t cycle_volume;
 
-static uint32_t cycleCount;
-
+volatile uint32_t cycleCount;
 
 #if DEBUG_MOTOR
 static const char *state_names[] = {
