@@ -29,8 +29,8 @@
 #define DEBUG_PRINT fake_debug_print
 #endif // DEBUG_ANALOG_READ
 
-#define SEND_TO_SERIAL 1
-#define CALIBRATE_FLOW 0
+#define SEND_TO_SERIAL 0
+#define CALIBRATE_FLOW 1
 
 // Instantaneous pressure in cmH2O
 volatile int16_t p;
@@ -270,22 +270,29 @@ static int32_t mes2flow(uint16_t mes) {
     */
 
     // pressure in units of 1/2mmH2O
-    // -33 to zero output at zero pressure difference
-    int16_t pressure = ((int16_t) mes) - 510 - 33;
+    // -510 - 37 to zero output at zero pressure difference
+    // FIXME: needs proper calibration for auto-zeroing
+    int32_t pressure = ((int32_t) mes) - 547L;
 
-    // FIXME: need proper calibration!
-    // Currently obtained from a rough diff. pressure/flow curve fitting
+    // FIXME: needs proper calibration: currently obtained
+    // from a rough diff. pressure/flow piecewise linear
+    // curve fitting
+    /*
     int32_t tmp;
     if (pressure < -11) {
-        tmp = 1298 * pressure - 26201;
+        tmp = 1298L * pressure - 26201L;
     } else if (pressure < 18) {
-        tmp = 2648 * pressure - 11349;
+        tmp = 2648L * pressure - 11349L;
     } else {
-        tmp = 1455 * pressure + 11125;
+        tmp = 1455L * pressure + 11125L;
     }
+    */
+
+    // Assume flow/pressure relation is linear
+    int32_t tmp = 1839L * pressure;
 
 #if CALIBRATE_FLOW
-    debug_print("%lu:%i:%i:%li\r\n", time_us(), mes, pressure, tmp);
+    debug_print("%lu:%li:%li:%li\r\n", time_us(), (int32_t) mes, pressure, tmp);
 #endif
 
     return tmp;
