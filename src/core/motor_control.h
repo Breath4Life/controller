@@ -109,6 +109,12 @@ extern volatile BreathState_t breathState;
  */
 extern volatile MotorErrorState_t motorErrorState;
 
+/** @cycleCount
+ * Count of the number of cycles of the device over it lifetime.
+ * Initialized by init_eeprom.
+ */
+extern volatile uint32_t cycleCount;
+
 /** @init_motor Initialize the motor state machine
  */
 void init_motor();
