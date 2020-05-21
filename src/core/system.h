@@ -39,12 +39,12 @@ extern volatile GlobalState_t globalState;
 #define DEBUG_MOTOR (0 && DEBUG)
 #define DEBUG_ALARM (0 && DEBUG)
 #define DEBUG_MAIN (0 && DEBUG)
-#define DEBUG_ANALOG_READ (1 && DEBUG)
+#define DEBUG_ANALOG_READ (0 && DEBUG)
 #define DEBUG_BUZZER (0 && DEBUG)
 #define DEBUG_DISPLAY (0 && DEBUG)
 #define DEBUG_EEPROM (0 && DEBUG)
 #define DEBUG_FLOW (0 && DEBUG)
 #define DEBUG_LIM_SWITCH (0 && DEBUG)
-#define DEBUG_MEASURE_PEEP (1 && DEBUG)
+#define DEBUG_MEASURE_PEEP (0 && DEBUG)
 
 #endif // SYSTEM_H_

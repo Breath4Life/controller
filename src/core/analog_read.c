@@ -29,7 +29,7 @@
 #define DEBUG_PRINT fake_debug_print
 #endif // DEBUG_ANALOG_READ
 
-#define SEND_TO_SERIAL 0
+#define SEND_TO_SERIAL 1
 #define CALIBRATE_FLOW 0
 
 // Instantaneous pressure in cmH2O
@@ -316,12 +316,14 @@ void measure_peep() {
     cli();
     peep = p;
     sei();
-    DEBUG_PRINT("peep = %i", peep);
+#if SEND_TO_SERIAL
+    debug_print("%lu:%i\r\n", time_us(), peep);
+#endif
     xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PARAM, eSetBits);
 }
 
 void get_flow(int32_t *f) {
-    DEBUG_PRINT("Get flow %li", flow);
+    //DEBUG_PRINT("Get flow %li", flow);
     cli();
     int32_t tmp_flow = flow;
     sei();
