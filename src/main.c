@@ -16,6 +16,7 @@
 #include "core/volume.h"
 #include "core/eeprom.h"
 #include "core/alarm.h"
+#include "core/measure_peep.h"
 
 #include "hal/io.h"
 #include "hal/pins.h"
@@ -69,6 +70,8 @@ void initHardware(void)
     door_open_init();
 
     initAlarm();
+
+    initPEEPMeasurement();
 }
 
 int main(void)

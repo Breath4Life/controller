@@ -30,7 +30,7 @@
 #endif // DEBUG_ANALOG_READ
 
 #define SEND_TO_SERIAL 0
-#define CALIBRATE_FLOW 1
+#define CALIBRATE_FLOW 0
 
 // Instantaneous pressure in cmH2O
 volatile int16_t p;
@@ -204,7 +204,7 @@ static int16_t mes2pres(uint16_t mes) {
 
 #if SEND_TO_SERIAL
     // Send curr_time and in µs, pressure in 1/8cmH2O
-    debug_print("%lu:%i\r\n", time_us(), (tmp >> 4) + 1);
+    debug_print("%lu:%i:", time_us(), (tmp >> 3) + 3);
 #endif
 
     // TODO check scale and offset calculation above
@@ -295,6 +295,11 @@ static int32_t mes2flow(uint16_t mes) {
     debug_print("%lu:%li:%li:%li\r\n", time_us(), (int32_t) mes, pressure, tmp);
 #endif
 
+#if SEND_TO_SERIAL
+    // Send curr_time and in µs, flow in ml/min
+    debug_print("%lu:%li\r\n", time_us(), tmp);
+#endif
+
     return tmp;
 }
 
@@ -313,4 +318,13 @@ void measure_peep() {
     sei();
     DEBUG_PRINT("peep = %i", peep);
     xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PARAM, eSetBits);
+}
+
+void get_flow(int32_t *f) {
+    DEBUG_PRINT("Get flow %li", flow);
+    cli();
+    int32_t tmp_flow = flow;
+    sei();
+
+    *f = tmp_flow;
 }

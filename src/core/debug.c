@@ -23,6 +23,7 @@ static const char *debugPrefixStr[] = {
     "[BUZZER] ",
     "[VOL] ",
     "[PARAM] ",
+    "[PEEP] ",
 };
 
 void _debug_print_FromISR(const char *fmt, ...)

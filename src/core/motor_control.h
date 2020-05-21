@@ -10,6 +10,7 @@
 
 #include "core/volume.h"
 #include "core/analog_read.h"
+#include "core/measure_peep.h"
 
 // Notification that can be sent to the motor control task.
 #define MOTOR_NOTIF_LIM_DOWN 0x01
@@ -35,6 +36,7 @@
 } while (0)
 
 #define HOOK_START_EXP do { \
+    armPEEPMeasurement(); \
     publish_p_peak(); \
 } while (0)
 

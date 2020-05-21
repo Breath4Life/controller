@@ -14,6 +14,7 @@ typedef enum {
     buzzerTsk,
     volumeDbg,
     parametersDbg,
+    measurePEEP
 } DebugPrefix_t;
 
 

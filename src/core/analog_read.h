@@ -75,4 +75,10 @@ void measure_peep();
 void reset_pressure();
 void publish_p_peak();
 
+/** @get_flow Reads the current flow measured with the differential pressure sensor.
+ *
+ * @param f: The current flow is written in this variable (unit: ml/min).
+ */
+void get_flow(int32_t *f);
+
 #endif // ANALOG_READ_H_

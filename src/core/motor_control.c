@@ -1009,7 +1009,8 @@ void MotorControlTask(void *pvParameters)
                     switch (breathState) {
                         case cycleEnd:
                             if (bwaitTimeoutExpired()) {
-                                measure_peep();
+                                // FIXME: old PEEP measurement
+                                //measure_peep();
                                 breathState = startNewCycle;
                                 DEBUG_PRINT("to Start new cycle");
                             } else {

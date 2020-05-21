@@ -12,6 +12,7 @@
 #include "core/buzzer.h"
 #include "core/alarm.h"
 #include "core/parameters.h"
+#include "core/measure_peep.h"
 
 #include "hal/io.h"
 #include "hal/pins.h"
@@ -118,7 +119,8 @@ void MainTask(void *pvParameters)
                     setGlobalState(stop, true, false);
                 }
 
-               break;
+                pollPEEPMeasurement();
+                break;
             case critical_failure:
                 break;
         }
