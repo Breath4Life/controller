@@ -17,6 +17,7 @@
 #define MOTOR_NOTIF_LIM_UP 0x02
 #define MOTOR_NOTIF_MOVEMENT_FINISHED 0x08
 #define MOTOR_NOTIF_GLOBAL_STATE 0x10
+#define MOTOR_NOTIF_INSP 0x20
 #define MOTOR_NOTIF_OVER_PRESSURE 0x80
 
 // Number of micro-steps per step of the stepper motor. (Driver configuration.)

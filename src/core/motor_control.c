@@ -36,9 +36,6 @@
 #endif // DEBUG_MOTOR
 #define MOTOR_ERROR_PRINT debug_print
 
-#define MOTOR_NOTIF_LIM (MOTOR_NOTIF_LIM_UP | MOTOR_NOTIF_LIM_DOWN)
-#define MOTOR_NOTIF_CYCLE (MOTOR_NOTIF_LIM | MOTOR_NOTIF_GLOBAL_STATE | MOTOR_NOTIF_OVER_PRESSURE | MOTOR_NOTIF_MOVEMENT_FINISHED)
-
 #define MOTOR_UP_POSITION (2000*MOTOR_USTEPS)
 
 #define MAX_POS_MARGIN (10*MOTOR_USTEPS)
@@ -802,6 +799,8 @@ void MotorControlTask(void *pvParameters)
                         default:
                             genMotorError("unexpected notif");
                     }
+                } else if (test_notif(MOTOR_NOTIF_INSP)) {
+                    genMotorError("URCH Cinsp");
                 } else {
                     switch (calibState) {
                         case calibStart:
@@ -1019,6 +1018,16 @@ void MotorControlTask(void *pvParameters)
                         case reCalibUpWaitStop:
                         case reCalibDown:
                             genMotorError("URCH LIM_DOWN");
+                            break;
+                    }
+                } else if (test_notif(MOTOR_NOTIF_INSP)) {
+                    switch (breathState) {
+                        case cycleEnd:
+                            breathState = startNewCycle;
+                            DEBUG_PRINT("to Start new cycle");
+                            break;
+                        default:
+                            resumeBoundedWaitNotification();
                             break;
                     }
                 } else {
