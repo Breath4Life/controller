@@ -40,7 +40,7 @@ extern volatile GlobalState_t globalState;
 #define DEBUG_ALARM (1 && DEBUG)
 #define DEBUG_MAIN (1 && DEBUG)
 #define DEBUG_ANALOG_READ (1 && DEBUG)
-#define DEBUG_BUZZER (0 && DEBUG)
+#define DEBUG_BUZZER (1 && DEBUG)
 #define DEBUG_DISPLAY (1 && DEBUG)
 #define DEBUG_EEPROM (1 && DEBUG)
 #define DEBUG_FLOW (1 && DEBUG)

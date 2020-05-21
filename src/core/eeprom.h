@@ -3,7 +3,7 @@
 #ifndef EEPROM_H_
 #define EEPROM_H_
 
-#define WRITE_EEPROM_PERIOD_MS 5 * 1000L // Try 5 * 1000L for Testing purpose
+#define WRITE_EEPROM_PERIOD_MS 300 * 1000L // Try 5 * 1000L for Testing purpose
 
 #include <stdbool.h>
 #include <stdint.h>
