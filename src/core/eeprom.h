@@ -3,7 +3,7 @@
 #ifndef EEPROM_H_
 #define EEPROM_H_
 
-#define WRITE_EEPROM_PERIOD_MS 300 * 1000L // Try 5 * 1000L for Testing purpose
+#define WRITE_EEPROM_PERIOD_MS 5 * 1000L // Try 5 * 1000L for Testing purpose
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -16,9 +16,15 @@
  */
 bool init_eeprom();
 
+/* Should be call after the init.
+ */
+void startEeprom();
+
 /** @eepromTask EEPROM writing of running time and number of cycles
  */
-void eepromTask(void *pvParameters);
+void pollEeprom();
+
+uint32_t total_operating_time;
 
 // TODO implement this
 /** @GET_CYCLE_COUNT Function that returns the motor cycle count
