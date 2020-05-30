@@ -398,7 +398,15 @@ static void startExpiration() {
 
 // TODO change this
 static uint8_t need_recalibration() {
-    return recalibrateFlag || ((cycleCount & 0x3) == 0) || motor_error();
+    bool ll_error = motor_error();
+    if (ll_error) {
+        DEBUG_PRINT("RCB LL ERR");
+    }
+    bool mod_recalib = ((cycleCount & 0x3) == 0);
+    if (mod_recalib) {
+        DEBUG_PRINT("RCB MOD");
+    }
+    return recalibrateFlag || mod_recalib || ll_error;
 }
 
 static void startInsp() {
