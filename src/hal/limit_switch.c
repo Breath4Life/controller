@@ -25,10 +25,12 @@
 
 #if DEBUG_LIM_SWITCH
 #define DEBUG_PRINT debug_print
-#define DEBUG_PRINT_FROM_ISR debug_print_FromISR
+#define DEBUG_PUTS_FROM_ISR puts_FromISR
+#define DEBUG_PINT_FROM_ISR print_c_FromISR
 #else
 #define DEBUG_PRINT fake_debug_print
-#define DEBUG_PRINT_FROM_ISR fake_debug_print
+#define DEBUG_PUTS_FROM_ISR(x) do {} while (0)
+#define DEBUG_PINT_FROM_ISR do {} while (0)
 #endif // DEBUG_LIM_SWITCH
 
 typedef struct {
@@ -59,6 +61,13 @@ void init_limit_switch() {
 LimSwitchState_t get_lim_v(uint8_t sw) {
     uint8_t b;
     cli();
+    LimSwitchState_t new_value = dio_read(switchPins[sw]);
+    LimSwitchState_t old_value = switchMachines[sw].last_value;
+    sei();
+    if (new_value != old_value) {
+        DEBUG_PRINT("LS%x ERR %x %x\r\n", sw, new_value, new_value, old_value);
+    }
+    cli();
     if (time_us() - switchMachines[sw].last_bouncing > BOUNCE_THRESHOLD) {
         b=0;
         // not bouncing anymore
@@ -69,7 +78,7 @@ LimSwitchState_t get_lim_v(uint8_t sw) {
         // for rising edge start exposing 1, for falling edge, keep exposing 1
     }
     sei();
-    DEBUG_PRINT("S%x %x %x", sw, switchMachines[sw].exposed_value, b);
+    DEBUG_PRINT("S%x %x %x\r\n", sw, switchMachines[sw].exposed_value, b);
     return switchMachines[sw].exposed_value;
 }
 
@@ -80,11 +89,15 @@ ISR(PCINT0_vect) {
     for (sw=0; sw<N_SWITCHES; sw++) {
         LimSwitchState_t new_value = dio_read(switchPins[sw]);
         LimSwitchState_t old_value = switchMachines[sw].last_value;
+        DEBUG_PUTS_FROM_ISR("IS");
+        DEBUG_PINT_FROM_ISR(sw);
+        DEBUG_PINT_FROM_ISR(new_value);
+        DEBUG_PINT_FROM_ISR(old_value);
+        DEBUG_PUTS_FROM_ISR("\r\n");
         if (new_value != old_value) {
             if (current_time_irq - switchMachines[sw].last_bouncing > BOUNCE_THRESHOLD) {
                 // We are not bouncing, let's send notification if we have a rising edge.
                 if (new_value == LimSwitchPressed) {
-                    //DEBUG_PRINT_FROM_ISR("SW%x\r\n", sw);
                     switchMachines[sw].exposed_value = LimSwitchPressed;
                     xTaskNotifyFromISR(
                             SWITCH_HANDLING_TASK,

@@ -383,7 +383,7 @@ static void startExpiration() {
     DEBUG_PRINT("startExpiration");
     HOOK_START_EXP;
     // TODO do not base PID on volume when there is a motor
-    // issue ... (aka recalibreFlag is set).
+    // issue ... (aka recalibrateFlag is set).
     if (get_volume(&cycle_volume) != 0) {
         DEBUG_PRINT("No valid volume");
         cycle_volume = 0;
@@ -405,6 +405,9 @@ static uint8_t need_recalibration() {
     bool mod_recalib = ((cycleCount & 0x3) == 0);
     if (mod_recalib) {
         DEBUG_PRINT("RCB MOD");
+    }
+    if (recalibrateFlag) {
+        DEBUG_PRINT("RCB FLAG");
     }
     return recalibrateFlag || mod_recalib || ll_error;
 }
