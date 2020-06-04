@@ -204,7 +204,7 @@ static int16_t mes2pres(uint16_t mes) {
 
 #if SEND_TO_SERIAL
     // Send curr_time and in µs, pressure in 1/8cmH2O
-    debug_print("%lu:%i:", time_us(), (tmp >> 3) + 3);
+    debug_print(":ip:%lu:%i\r\n", time_us(), (tmp >> 3) + 3);
 #endif
 
     // TODO check scale and offset calculation above
@@ -297,7 +297,7 @@ static int32_t mes2flow(uint16_t mes) {
 
 #if SEND_TO_SERIAL
     // Send curr_time and in µs, flow in ml/min
-    debug_print("%lu:%li\r\n", time_us(), tmp);
+    debug_print(":fl:%lu:%li\r\n", time_us(), tmp);
 #endif
 
     return tmp;
@@ -317,7 +317,7 @@ void measure_peep() {
     peep = p;
     sei();
 #if SEND_TO_SERIAL
-    debug_print("%lu:%i\r\n", time_us(), peep);
+    debug_print(":pe:%lu:%i\r\n", time_us(), peep);
 #endif
     xTaskNotify(lcdDisplayTaskHandle, DISP_NOTIF_PARAM, eSetBits);
 }
