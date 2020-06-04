@@ -195,7 +195,7 @@ static void checkBPM() {
     if (elapsedTime > pdMS_TO_TICKS(BPM_CHECK_PERIOD_MS)) {
         uint8_t measuredBPM = ((uint8_t) (cycleCount - lastCycleCount)) / BPM_CHECK_PERIOD_PER_MIN;
         DEBUG_PRINT("Measured BPM: %u", measuredBPM);
-        if (ABS(measuredBPM - bpm) > BPM_TOL) {
+        if (ABS(((int8_t) measuredBPM) - ((int8_t) bpm)) > BPM_TOL) {
             sendNewAlarm(abnFreq);
         }
 
