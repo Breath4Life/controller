@@ -475,8 +475,12 @@ uint32_t motor_current_position() {
   uint32_t curr_pos = motor_position_abs;
   uint32_t curr_pos_offset = get_cnt5();
   uint8_t cur_direction = motor_direction;
+  bool inMotion = motor_inmotion;
   sei();//allow interrupts
-  if (motor_inmotion) {
+  debug_print("[MTR_LL] cur pos %lu \r\n",curr_pos); 
+  debug_print("[MTR_LL] cur pos off %lu \r\n",curr_pos_offset); 
+  debug_print("[MTR_LL] cur dir %lu \r\n",cur_direction); 
+  if (inMotion) {
       if (cur_direction == MOTORCTRL_DIR_FORWARD) {
           curr_pos += curr_pos_offset;
       } else {

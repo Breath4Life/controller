@@ -365,8 +365,11 @@ static void move_and_wait(uint32_t targetPosition, uint32_t max_freq) {
         genMotorError("INMOTION");
     } else {
         uint32_t max_duration = 400 + (1000*ABS(((int32_t) targetPosition) - ((int32_t) motor_current_position())))/max_freq;
+        DEBUG_PRINT("m&w curr pre %lu", motor_current_position());
+        //DEBUG_PRINT("target %lu max_freq %lu", targetPosition, max_freq);
+        //DEBUG_PRINT("max_dur %lu", max_duration);
         set_motor_goto_position_accel_exec(targetPosition, max_freq, 2, 200*MOTOR_USTEPS);
-        DEBUG_PRINT("move_and_wait curr %lu", motor_current_position());
+        DEBUG_PRINT("m&w curr post %lu", motor_current_position());
         DEBUG_PRINT("target %lu max_freq %lu", targetPosition, max_freq);
         DEBUG_PRINT("max_dur %lu", max_duration);
         boundedWaitNotification(pdMS_TO_TICKS(max_duration), false);
@@ -437,6 +440,8 @@ static void finishInsp(bool need_stop) {
         stop_and_wait();
     } else {
         startPlateau();
+        // Note: added for debug
+        recalibrateFlag = true;
     }
 }
 
