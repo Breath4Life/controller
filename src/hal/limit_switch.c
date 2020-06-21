@@ -30,7 +30,7 @@
 #else
 #define DEBUG_PRINT fake_debug_print
 #define DEBUG_PUTS_FROM_ISR(x) do {} while (0)
-#define DEBUG_PINT_FROM_ISR do {} while (0)
+#define DEBUG_PINT_FROM_ISR(x) do {} while (0)
 #endif // DEBUG_LIM_SWITCH
 
 typedef struct {
