@@ -4,7 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class FPPPlotter:
-    def __init__(self, data=None, flush=False):
+    def __init__(self, data=None, flush=False, lookback=10):
+        self.lookback = lookback
         # Plot data
         self.fig = plt.figure()
         self.ax_flow = self.fig.add_subplot(2, 1, 1)
@@ -19,8 +20,8 @@ class FPPPlotter:
         self.ax_p.set_xlabel("Time [s]")
         self.ax_p.set_ylabel("Pressure [cmH2O]")
         self.ax_p.grid(True)
-        #self.line_p,  = self.ax_p.plot([0], [0], linewidth=1, marker='o', markersize=2, color='red')
-        #self.scatter_peep = self.ax_p.scatter([], [], marker='o', color='k')
+        self.line_p, = self.ax_p.plot([0], [0], linewidth=1, marker='o', markersize=2, color='red')
+        self.line_peep, = self.ax_p.plot([], [], 'x', color='k')
 
         if data is not None:
             self.upd_data(data, flush)
@@ -28,20 +29,26 @@ class FPPPlotter:
     def upd_data(self, data_sensor, flush=True):
         time_pressure, pressure, time_flow, flow, time_peep, peep = data_sensor
 
-        self.line_flow.set_xdata(time_flow)
-        self.line_flow.set_ydata(flow)
+        last_sample = max((x[-1] for x in (time_pressure, time_flow, time_peep) if x.shape[0]), default=0)
+        first_sample = min((x[0] for x in (time_pressure, time_flow, time_peep) if x.shape[0]), default=0)
+        time_range_start = max(first_sample, last_sample-self.lookback)
+        time_range_end = time_range_start + self.lookback
+
+        self.line_flow.set_data(time_flow, flow)
         self.ax_flow.relim()
+        self.ax_flow.set_xlim(time_range_start, time_range_end)
+        self.ax_flow.autoscale_view()
         #for xc in time_peep:
         #    self.ax_flow.axvline(x=xc, color='k', linestyle='--')
 
-        self.line_p,  = self.ax_p.plot(time_pressure, pressure, linewidth=1, marker='o', markersize=2, color='red')
-        #self.line_p.set_data(time_pressure, pressure)
+        self.line_p.set_data(time_pressure, pressure)
+        self.line_peep.set_data(time_peep, peep)
+        self.ax_p.relim()
+        self.ax_p.set_xlim(time_range_start, time_range_end)
+        self.ax_p.autoscale_view()
         #for xc in time_peep:
         #    plt.axvline(x=xc, color='k', linestyle='--')
-        #self.scatter_peep = self.ax_p.scatter(time_peep, peep, marker='o', color='k')
-        #self.scatter_peep.set_data(time_peep, peep)
         if flush:
-            plt.draw()
             self.fig.canvas.draw()
             self.fig.canvas.flush_events()
 
