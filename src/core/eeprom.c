@@ -29,7 +29,7 @@
 #endif
 
 // For EEPROM
-uint32_t total_operating_time;
+
 uint32_t *eeprom_offset;
 
 static TimeOut_t timeOutBoundedWait;
@@ -64,8 +64,8 @@ bool init_eeprom() {
         eeprom_offset = (uint32_t *) (uint16_t) eeprom_read_dword(EEPROM_ADDR_POS_DATA);
         total_operating_time = eeprom_read_dword(eeprom_offset + EEPROM_OFFSET_TOT_TIME);
         SET_CYCLE_COUNT(eeprom_read_dword(eeprom_offset + EEPROM_OFFSET_TOT_CYCLES));
-        DEBUG_PRINT("[MAIN] EEPROM, tot: %u\r\n", total_operating_time);
-        DEBUG_PRINT("[MAIN] EEPROM, cn: %u\r\n", GET_CYCLE_COUNT());
+        DEBUG_PRINT("[EEPROM] EEPROM, tot: %u\r\n", total_operating_time);
+        DEBUG_PRINT("[EEPROM] EEPROM, cn: %u\r\n", GET_CYCLE_COUNT());
         return false;
     }
     else {
@@ -80,21 +80,20 @@ bool init_eeprom() {
     }
 }
 
-void eepromTask(void *pvParameters) {
+void startEeprom() {
     reset_wait_time();
-    while (1) {
-        if (xTaskCheckForTimeOut(&timeOutBoundedWait, &boundedWaitTime)) {
-            reset_wait_time();
+} 
 
-            total_operating_time += WRITE_EEPROM_PERIOD_MS/1000L;
+void pollEeprom() {
+    if (xTaskCheckForTimeOut(&timeOutBoundedWait, &boundedWaitTime)) {
+        reset_wait_time();
 
-            DEBUG_PRINT("[EEPROM], tot: %u\r\n", total_operating_time);
-            DEBUG_PRINT("[EEPROM], cn: %u\r\n", GET_CYCLE_COUNT());
+        total_operating_time += WRITE_EEPROM_PERIOD_MS/1000L;
 
-            eeprom_inc_offset();
-            eeprom_write_data();
-        }
-        uint32_t notif_recv;
-        xTaskNotifyWait(0x0,ALL_NOTIF_BITS,&notif_recv,boundedWaitTime);
+        DEBUG_PRINT("[EEPROM], tot: %u\r\n", total_operating_time);
+        DEBUG_PRINT("[EEPROM], cn: %u\r\n", GET_CYCLE_COUNT());
+
+        eeprom_inc_offset();
+        eeprom_write_data();
     }
 }

@@ -28,15 +28,9 @@ typedef enum {
 #define debug_print(fmt, ...) do { _debug_print(fmt, ##__VA_ARGS__); } while (0)
 void _debug_print(const char *fmt, ...);
 
-/**
- * @debug_print Print a debug message on the UART.
- *
- * Print a message to UART0. The message, after formatting, cannot exceed 32 bytes.
- * This function supports the same arguments as printf.
- * Called when iterrupts are already disabled
- */
-#define debug_print_FromISR(fmt, ...) do { _debug_print_FromISR(fmt, ##__VA_ARGS__  ); } while (0)
-void _debug_print_FromISR(const char *fmt, ...);
+
+void puts_FromISR(const char *str);
+void print_c_FromISR(const char data);
 
 /**
  * @fake_debug_print Do nothing with varargs

@@ -52,6 +52,8 @@ void MainTask(void *pvParameters)
 {
     setGlobalState(welcome, false, false);
 
+    startEeprom();
+
     uint32_t notification = 0;
 
     while (true) {
@@ -126,6 +128,7 @@ void MainTask(void *pvParameters)
         }
 
         pollAlarm();
+        pollEeprom();
 
 #if POWER_AUX_CHECK
         if (error_power_aux()) {

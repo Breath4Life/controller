@@ -15,6 +15,8 @@
 #include "core/alarm.h"
 #include "core/utils.h"
 #include "core/parameters.h"
+#include "core/motor_control.h"
+#include "core/eeprom.h"
 
 #if DEBUG_DISPLAY
 #define DEBUG_PRINT debug_print
@@ -312,7 +314,11 @@ static void displayErrorCode() {
 
 // LCD welcome screen
 static void welcomeScreen() {
-    lcdWriteTwoLines(WELCOME_MSG1, WELCOME_MSG2);
+    char welcomeMsg2 [16];
+    uint32_t tot_op_time_hour = total_operating_time / 3600;
+    sprintf(welcomeMsg2,"CC:%05lu UP:%04lu",cycleCount,tot_op_time_hour);
+    DEBUG_PRINT("[EEPROM] %s \r\n",welcomeMsg2);
+    lcdWriteTwoLines(WELCOME_MSG1, welcomeMsg2);
 }
 
 // LCD welcome_wait_cal screen

@@ -31,7 +31,6 @@ TaskHandle_t motorControlTaskHandle;
 TaskHandle_t buzzerTaskHandle;
 TaskHandle_t lcdDisplayTaskHandle;
 TaskHandle_t analogReadTaskHandle;
-TaskHandle_t eepromTaskHandle;
 
 void initHardware(void)
 {
@@ -72,6 +71,8 @@ void initHardware(void)
     initAlarm();
 
     initPEEPMeasurement();
+
+    init_eeprom();
 }
 
 int main(void)
@@ -84,7 +85,6 @@ int main(void)
     xTaskCreate(BuzzerTask, "Buzzer", 256, NULL, 4, &buzzerTaskHandle);
     xTaskCreate(LCDDisplayTask, "LCDDisplay", 512, NULL, 3, &lcdDisplayTaskHandle);
     xTaskCreate(AnalogReadTask, "ReadAnalog", 256, NULL, 2, &analogReadTaskHandle);
-    //xTaskCreate(eepromTask, "EEPROM", 128, NULL, 1, &eepromTaskHandle);
 
     // Run the OS
     vTaskStartScheduler();
