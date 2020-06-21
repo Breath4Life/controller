@@ -19,7 +19,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #define MOTOR_DBG 0
-#define DEBUG_MOTOR_LL 0
+#define CURR_DEBUG_PREFIX motorLL
+#if DEBUG_MOTOR_LL
+#define DEBUG_PRINT debug_print_prefix
+#else
+#define DEBUG_PRINT fake_debug_print
+#endif // DEBUG_MOTOR_LL
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -477,9 +482,9 @@ uint32_t motor_current_position() {
   uint8_t cur_direction = motor_direction;
   bool inMotion = motor_inmotion;
   sei();//allow interrupts
-  debug_print("[MTR_LL] cur pos %lu \r\n",curr_pos); 
-  debug_print("[MTR_LL] cur pos off %lu \r\n",curr_pos_offset); 
-  debug_print("[MTR_LL] cur dir %lu \r\n",cur_direction); 
+  DEBUG_PRINT("pos %lu \r\n",curr_pos);
+  DEBUG_PRINT("pos off %lu \r\n",curr_pos_offset);
+  DEBUG_PRINT("dir %lu \r\n",cur_direction);
   if (inMotion) {
       if (cur_direction == MOTORCTRL_DIR_FORWARD) {
           curr_pos += curr_pos_offset;
@@ -529,9 +534,7 @@ void set_motor_goto_position_accel_exec(
     target_position_rel = target_position_abs - motor_position_abs;
     if (target_position_rel >= 0)
     {
-#if DEBUG_MOTOR_LL
-      debug_print("Forward %lu \r\n",motor_position_abs);
-#endif
+      DEBUG_PRINT("Forward %lu \r\n",motor_position_abs);
       direction = MOTORCTRL_DIR_FORWARD;
       if (target_position_rel == 1) // Special case: counter config is problematic in that case
       {
@@ -541,9 +544,7 @@ void set_motor_goto_position_accel_exec(
     }
     else
     {
-#if DEBUG_MOTOR_LL
-      debug_print("Backward %lu \r\n",motor_position_abs);
-#endif
+      DEBUG_PRINT("Backward %lu \r\n",motor_position_abs);
       direction = MOTORCTRL_DIR_BACKWARD;
       target_position_rel = -target_position_rel;
       if (target_position_rel == 1) // Special case: counter config is problematic in that case
@@ -556,7 +557,7 @@ void set_motor_goto_position_accel_exec(
     motor_target_position_rel = target_position_rel;
     motor_position_rel = 0;
 
-    //debug_print("To direction %u\r\n", direction);
+    //DEBUG_PRINT("To direction %u\r\n", direction);
     dio_write(DIO_PIN_MOTOR_DIRECTION, direction);
     motor_direction = direction;
 
@@ -569,9 +570,7 @@ void set_motor_goto_position_accel_exec(
       // 2* since there is acceleration and deceleration
       if (target_position_rel <= 2*step_num_base)
       {
-#if DEBUG_MOTOR_LL
-        debug_print("No time to accelerate/decelerate.\r\n");
-#endif
+        DEBUG_PRINT("No time to accelerate/decelerate.\r\n");
         accel_enbl = 0;
         set_threshold_cnt5(target_position_rel);
         selected_speed = MIN(MOTORCTRL_MAX_SPEED_SMALL_MVMT,target_speed);
@@ -579,9 +578,7 @@ void set_motor_goto_position_accel_exec(
       // CASE: slow movement
       else if (target_speed <= step_freq_base)
       {
-#if DEBUG_MOTOR_LL
-        debug_print("Slow movement.\r\n");
-#endif
+        DEBUG_PRINT("Slow movement.\r\n");
         accel_enbl = 0;
         if (target_position_rel <= COUNTER_STEP_MAX)
         {
@@ -596,9 +593,7 @@ void set_motor_goto_position_accel_exec(
       // CASE: acceleration needed
       else
       {
-#if DEBUG_MOTOR_LL
-        debug_print("Acceleration needed.\r\n");
-#endif
+        DEBUG_PRINT("Acceleration needed.\r\n");
         accel_enbl = 1;
         set_threshold_cnt5(step_num_base);
         selected_speed = step_freq_base;
@@ -645,9 +640,7 @@ void set_motor_current_position_value(long new_abs_position){
 // its movement
 // FIXME currently likely source of drift (stopping from fast speed immediately followed by disabling the motor)
 void motor_anticipated_stop(){
-#if DEBUG_MOTOR_LL
-    debug_print("ANT STATES: %lu %lu \r\n",motor_position_abs,motor_position_abs + get_cnt5());
-#endif
+    DEBUG_PRINT("ANT STATES: %lu %lu \r\n",motor_position_abs,motor_position_abs + get_cnt5());
     cli();
     if (motor_stopping) {
         sei();
@@ -662,9 +655,7 @@ void motor_anticipated_stop(){
             xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_MOVEMENT_FINISHED, eSetBits);
         }
     }
-#if DEBUG_MOTOR_LL
-    debug_print("motor ANTICIPATED STOP \r\n");
-#endif
+    DEBUG_PRINT("motor ANTICIPATED STOP \r\n");
 }
 
 void set_motor_goto_position(uint32_t target_position_abs, const uint16_t target_speed)

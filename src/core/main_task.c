@@ -32,12 +32,12 @@
 volatile GlobalState_t globalState;
 
 static const char *globalStateDescr[] = {
-    "welcome",
-    "welcome_wait_cal",
-    "calibration",
+    "wlc",
+    "wlc_wait_cal",
+    "calib",
     "stop",
     "run",
-    "critical_failure"
+    "crit_fail"
 };
 
 static void setGlobalState(GlobalState_t newState, bool notifyMotor, bool populateDisplay);

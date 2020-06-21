@@ -6,8 +6,6 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-#define SEND_TO_SERIAL 1
-
 #define MOCK_VOLUME_SENSOR 1
 
 #define ALL_NOTIF_BITS 0xFFFFFFFF
@@ -35,7 +33,7 @@ extern volatile GlobalState_t globalState;
 // DEBUG
 
 #ifndef DEBUG
-#define DEBUG 0
+#define DEBUG 1
 #endif // DEBUG
 
 #define DEBUG_MOTOR (1 && DEBUG)
@@ -47,5 +45,10 @@ extern volatile GlobalState_t globalState;
 #define DEBUG_EEPROM (1 && DEBUG)
 #define DEBUG_FLOW (1 && DEBUG)
 #define DEBUG_LIM_SWITCH (1 && DEBUG)
+#define DEBUG_MOTOR_LL (1 && DEBUG)
+#define DEBUG_MEASURE_PEEP (1 && DEBUG)
+
+// send parameters to plot graph
+#define SEND_TO_SERIAL 0
 
 #endif // SYSTEM_H_

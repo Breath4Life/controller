@@ -49,7 +49,7 @@ static int32_t last_flow;
  * Initialize the PEEPMeasurement machine.
  */
 void initPEEPMeasurement() {
-    DEBUG_PRINT("Init.");
+    DEBUG_PRINT("Init");
     PEEPMeasurementState = idle;
 }
 
@@ -58,12 +58,12 @@ void initPEEPMeasurement() {
  * phase. Sets the PEEPMeasurementState to wait_high_flow.
  */
 void armPEEPMeasurement() {
-    DEBUG_PRINT("wait_high_flow.");
+    DEBUG_PRINT("wait_high_flow");
     PEEPMeasurementState = wait_high_flow;
 }
 
 void resetPEEPMeasurement() {
-    DEBUG_PRINT("idel.");
+    DEBUG_PRINT("idle");
     PEEPMeasurementState = idle;
 }
 
@@ -84,20 +84,20 @@ void pollPEEPMeasurement() {
             break;
         case wait_high_flow:
             get_flow(&last_flow);
-            DEBUG_PRINT("Flow: %li", last_flow);
             // Entering the V-shaped expiration flow curve
             if (last_flow < FLOW_THRESHOLD_ENTRY) {
-                DEBUG_PRINT("wait_low_flow.");
+                DEBUG_PRINT("Flow %li", last_flow);
+                DEBUG_PRINT("wait_low_flow");
                 PEEPMeasurementState = wait_low_flow;
             }
             break;
         case wait_low_flow:
             get_flow(&last_flow);
-            DEBUG_PRINT("Flow: %li", last_flow);
             // Exiting the V-shaped expiration flow curve
             // -> end of expiration, time to measure the PEEP
             if (last_flow > FLOW_THRESHOLD_EXIT) {
-                DEBUG_PRINT("Measuring.");
+                DEBUG_PRINT("Flow %li", last_flow);
+                DEBUG_PRINT("Measuring");
                 measure_peep();
                 PEEPMeasurementState = wait_low_p;
                 DEBUG_PRINT("wait_low_p");
@@ -109,10 +109,12 @@ void pollPEEPMeasurement() {
             sei();
             int16_t dp = p_loc - peep;
             if (dp < DP_THRESH_INSP) {
+                DEBUG_PRINT("Detected");
 #if SEND_TO_SERIAL
                 debug_print(":dp:%lu:%i\r\n", time_us(), dp);
 #endif
                 motorStartInsp();
+                PEEPMeasurementState = idle;
             }
             break;
     }

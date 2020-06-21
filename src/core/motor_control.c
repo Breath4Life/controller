@@ -154,7 +154,7 @@ static const char *notif_names[] = {
     "",
     "NF_MVT_FINISHED",
     "NF_GLOBAL_STATE",
-    "",
+    "NF_INSP",
     "",
     "NF_OVER_PRESSURE",
 };
@@ -332,12 +332,9 @@ static void startCycleEnd() {
     TickType_t wait_time;
     if (cycle_elapsed_time < ticksTctTime) {
         motor_disable();
-        cycleStartTime += ticksTctTime;
         wait_time = ticksTctTime-cycle_elapsed_time;
     } else {
-        // cycle was too long (for whatever reason, such as re-calibration
-        // do not compensate on next cycle !
-        cycleStartTime = curr_time;
+        // cycle was too long
         wait_time = 0;
     }
     // wait for the end of the cycle
@@ -418,6 +415,9 @@ static void startInsp() {
     HOOK_START_INSP;
     breathState = insp;
     targetPosition = homePosition + insp_pulses;
+    // we do not care for frequency offset due to rounding, etc. as it should be low
+    // (<2% impact)
+    cycleStartTime = xTaskGetTickCount();
     DEBUG_PRINT("Ti pulses used %u",targetPosition);
     DEBUG_PRINT("=> target %u",targetPosition);
     DEBUG_PRINT("cur pos %u",motor_current_position());
@@ -1027,6 +1027,7 @@ void MotorControlTask(void *pvParameters)
                             DEBUG_PRINT("to Start new cycle");
                             break;
                         default:
+                            // Something else ?
                             resumeBoundedWaitNotification();
                             break;
                     }
