@@ -6,6 +6,8 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+#define SEND_TO_SERIAL 1
+
 #define MOCK_VOLUME_SENSOR 1
 
 #define ALL_NOTIF_BITS 0xFFFFFFFF

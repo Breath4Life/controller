@@ -28,6 +28,7 @@
 #define VOLUME_CHECK_THRESHOLD 400000L
 
 #define HOOK_START_INSP do { \
+    resetPEEPMeasurement(); \
     reset_volume(); \
     reset_pressure(); \
 } while (0)
@@ -128,5 +129,10 @@ void init_motor();
  * @param pvParameters Set to NULL.
  */
 void MotorControlTask(void *pvParameters);
+
+/**
+ * @motorStartInsp triggers an inspiration
+ */
+void motorStartInsp();
 
 #endif // MOTOR_CONTROL_H_

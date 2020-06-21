@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class FPPPlotter:
-    def __init__(self, data=None, flush=False, lookback=10):
+    def __init__(self, data=None, flush=False, lookback=20):
         self.lookback = lookback
         # Plot data
         self.fig = plt.figure()
@@ -22,29 +22,35 @@ class FPPPlotter:
         self.ax_p.grid(True)
         self.line_p, = self.ax_p.plot([0], [0], linewidth=1, marker='o', markersize=2, color='red')
         self.line_peep, = self.ax_p.plot([], [], 'x', color='k')
+        self.line_dp, = self.ax_p.plot([], [], 'd', color='orange')
 
         if data is not None:
             self.upd_data(data, flush)
 
     def upd_data(self, data_sensor, flush=True):
-        time_pressure, pressure, time_flow, flow, time_peep, peep = data_sensor
+        time_pressure, pressure, time_flow, flow, time_peep, peep, time_dp, dp = data_sensor
+        times = (time_pressure, time_flow, time_peep, time_dp)
 
-        last_sample = max((x[-1] for x in (time_pressure, time_flow, time_peep) if x.shape[0]), default=0)
-        first_sample = min((x[0] for x in (time_pressure, time_flow, time_peep) if x.shape[0]), default=0)
-        time_range_start = max(first_sample, last_sample-self.lookback)
-        time_range_end = time_range_start + self.lookback
+        if self.lookback is not None:
+            last_sample = max((x[-1] for x in times if x.shape[0]), default=0)
+            first_sample = min((x[0] for x in times if x.shape[0]), default=0)
+            time_range_start = max(first_sample, last_sample-self.lookback)
+            time_range_end = time_range_start + self.lookback
 
         self.line_flow.set_data(time_flow, flow)
         self.ax_flow.relim()
-        self.ax_flow.set_xlim(time_range_start, time_range_end)
+        if self.lookback is not None:
+            self.ax_flow.set_xlim(time_range_start, time_range_end)
         self.ax_flow.autoscale_view()
         #for xc in time_peep:
         #    self.ax_flow.axvline(x=xc, color='k', linestyle='--')
 
         self.line_p.set_data(time_pressure, pressure)
         self.line_peep.set_data(time_peep, peep)
+        self.line_dp.set_data(time_dp, dp)
         self.ax_p.relim()
-        self.ax_p.set_xlim(time_range_start, time_range_end)
+        if self.lookback is not None:
+            self.ax_p.set_xlim(time_range_start, time_range_end)
         self.ax_p.autoscale_view()
         #for xc in time_peep:
         #    plt.axvline(x=xc, color='k', linestyle='--')
@@ -54,26 +60,7 @@ class FPPPlotter:
 
 
 def plot_flow_pressure_peep(data_sensor):
-    FPPPlotter(data_sensor)
-
-def plot_res(time_flow, time_pressure, flow, pressure):
-    fig = plt.figure()
-    plt.subplot(2, 1, 1)
-    plt.plot(time_flow, flow, linewidth=3, marker='o', markersize=2,
-             color='blue')
-    plt.ylabel("Flow [l/min]")
-    plt.xlabel("Time [s]")
-    plt.title("Flow [l/min] (above) and pressure [cmH2O] (below) \n measured by MPX5010DP and iFlow 200S + MPXV7002DP")
-    plt.grid(True)
-
-    plt.subplot(2, 1, 2)
-    plt.plot(time_pressure, pressure, linewidth=3, marker='o', markersize=2,
-             color='red')
-    plt.ylabel("Pressure [cmH2O]")
-    plt.xlabel("Time [s]")
-    plt.grid(True)
-
-    plt.show()
+    FPPPlotter(data_sensor, lookback=None)
 
 def main(argv):
     filename = 'data/' + argv[0]

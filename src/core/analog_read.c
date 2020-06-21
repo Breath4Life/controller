@@ -29,7 +29,6 @@
 #define DEBUG_PRINT fake_debug_print
 #endif // DEBUG_ANALOG_READ
 
-#define SEND_TO_SERIAL 1
 #define CALIBRATE_FLOW 0
 
 // Instantaneous pressure in cmH2O

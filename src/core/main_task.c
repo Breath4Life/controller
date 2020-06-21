@@ -13,6 +13,7 @@
 #include "core/alarm.h"
 #include "core/parameters.h"
 #include "core/measure_peep.h"
+#include "core/eeprom.h"
 
 #include "hal/io.h"
 #include "hal/pins.h"

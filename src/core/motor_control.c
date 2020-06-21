@@ -1083,3 +1083,6 @@ void MotorControlTask(void *pvParameters)
 }
 #endif // MOTOR_ACTIVE
 
+void motorStartInsp() {
+    xTaskNotify(motorControlTaskHandle, MOTOR_NOTIF_INSP, eSetBits);
+}

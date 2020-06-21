@@ -77,6 +77,7 @@ def normalize_data(data_map):
     time_pressure = data_map['ip'].times()/1e6
     time_flow = data_map['fl'].times()/1e6
     time_peep = data_map['pe'].times()/1e6
+    time_dp = data_map['dp'].times()/1e6
 
     # Convert from 1/8cmH2O units to cmH2O
     pressure = data_map['ip'].values()/8
@@ -85,8 +86,9 @@ def normalize_data(data_map):
     flow = data_map['fl'].values()/1000
 
     peep = data_map['pe'].values()
+    dp = data_map['dp'].values()
 
-    return time_pressure, pressure, time_flow, flow, time_peep, peep
+    return time_pressure, pressure, time_flow, flow, time_peep, peep, time_dp, dp
 
 def main(argv):
     filename = 'data/' + argv[0]
@@ -106,6 +108,7 @@ def main(argv):
             'ip': TimedDataSet(),
             'fl': TimedDataSet(),
             'pe': TimedDataSet(),
+            'dp': TimedDataSet(),
             }
     
     plt.ion()
@@ -153,10 +156,10 @@ def main(argv):
     ser.close()
     print("Serial port closed.")
 
-    time_pressure, pressure, time_flow, flow, time_peep, peep = normalize_data(data_map)
+    time_pressure, pressure, time_flow, flow, time_peep, peep, time_dp, dp = normalize_data(data_map)
 
     # Save data
-    np.save(filename, [time_pressure, pressure, time_flow, flow, time_peep, peep])
+    np.save(filename, [time_pressure, pressure, time_flow, flow, time_peep, peep, time_dp, dp])
     print("Saved in " + filename + ".npy.")
 
     #plot_data.plot_flow_pressure_peep((time_pressure, pressure, time_flow, flow, time_peep, peep))
