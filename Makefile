@@ -1,12 +1,15 @@
 PRG            = main
 
 SOURCES_DIR    = src
-SRC            = $(shell find src/ -name '*.c') #$(wildcard $(SOURCES_DIR)/*.c)
+#SRC            = $(shell find src/ -name '*.c')
+SRC=$(wildcard $(SOURCES_DIR)/*.c)
+SRC+=$(wildcard $(SOURCES_DIR)/*/*.c)
 OBJ = $(subst src/,obj/src/,$(subst .c,.o,$(SRC)))
 OBJ_CPP =
 
 FREERTOS_DIR = lib/miniAVRfreeRTOS
-FREERTOS_SRC       = $(wildcard $(FREERTOS_DIR)/*.c)
+#FREERTOS_SRC       = $(shell find $(FREERTOS_DIR) -name '*.c')
+FREERTOS_SRC=$(wildcard $(FREERTOS_DIR)/*.c)
 OBJ += $(subst $(FREERTOS_DIR)/,obj/$(FREERTOS_DIR)/,$(subst .c,.o,$(FREERTOS_SRC)))
 
 MCU_TARGET     = atmega2560
@@ -32,13 +35,9 @@ print-%  : ; @echo $* = $($*)
 $(PRG).elf: $(OBJ) $(OBJ_CPP)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-$(OBJ): obj/%.o : %.c
+obj/%.o : %.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@ $(LIBS)
-
-$(OBJ_CPP): obj/%.o : %.cpp
-	@mkdir -p $(@D)
-	$(CXX) $(CPPFLAGS) $(LDFLAGS) -c $< -o $@ $(LIBS)
 
 clean:
 	rm -rf *.o $(PRG).elf *.eps *.png *.pdf *.bak
